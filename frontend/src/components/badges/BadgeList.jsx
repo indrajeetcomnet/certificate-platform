@@ -22,13 +22,13 @@ export default function BadgeList({
         icon={Award}
         title="No Badges Yet"
         description={emptyMessage}
-        className="py-8"
+        className="py-12"
       />
     );
   }
 
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 ${className}`}>
+    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5 ${className}`}>
       {badges.map((item, index) => {
         // item could be UserBadge (with .badge and .awardedAt) or flat Badge
         const badge = item.badge || item;
@@ -36,9 +36,9 @@ export default function BadgeList({
         const institutionName = item.awardedBy?.name || badge.institutionName || badge.institution?.name;
 
         return (
-          <Card
+          <div
             key={item.id || index}
-            className="flex flex-col justify-between p-4 hover:border-blue-300 dark:hover:border-blue-700 transition-all group"
+            className="flex flex-col justify-between p-5 rounded-2xl bg-white border border-stone-200/90 shadow-xs hover:shadow-md hover:border-amber-400/80 transition-all group"
           >
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-2">
@@ -46,23 +46,25 @@ export default function BadgeList({
               </div>
 
               {badge.description && (
-                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                <p className="text-xs font-medium text-stone-700 line-clamp-2 leading-relaxed">
                   {badge.description}
                 </p>
               )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-[11px] text-gray-500 flex flex-col gap-0.5">
+            <div className="mt-4 pt-3 border-t border-stone-200/80 text-xs text-stone-600 flex flex-col gap-1">
               {institutionName && (
-                <span className="font-medium text-gray-700 dark:text-gray-300 truncate">
-                  Issued by: {institutionName}
+                <span className="font-bold text-stone-900 truncate">
+                  Issuer: {institutionName}
                 </span>
               )}
               {awardedAt && (
-                <span className="text-gray-400">Awarded: {formatDate(awardedAt)}</span>
+                <span className="text-[11px] font-semibold text-stone-500">
+                  Awarded on {formatDate(awardedAt)}
+                </span>
               )}
             </div>
-          </Card>
+          </div>
         );
       })}
     </div>
