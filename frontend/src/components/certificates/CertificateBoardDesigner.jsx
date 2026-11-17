@@ -68,12 +68,82 @@ import { getAllUsers } from '../../api/usersApi';
 const A4_WIDTH_LANDSCAPE = 1123;
 const A4_HEIGHT_LANDSCAPE = 794;
 
+// Luxury Diploma Gradients
+const LUXURY_GRADIENTS = [
+  {
+    id: 'imperial-gold',
+    name: 'Imperial Gold',
+    css: 'linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 50%, #FDE68A 100%)',
+    preview: '#FEF9C3',
+  },
+  {
+    id: 'pearl-elegance',
+    name: 'Pearl Elegance',
+    css: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 50%, #F1F5F9 100%)',
+    preview: '#F8FAFC',
+  },
+  {
+    id: 'regal-silver',
+    name: 'Regal Silver',
+    css: 'linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 50%, #CBD5E1 100%)',
+    preview: '#E2E8F0',
+  },
+  {
+    id: 'emerald-distinction',
+    name: 'Emerald Mist',
+    css: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 50%, #D1FAE5 100%)',
+    preview: '#DCFCE7',
+  },
+  {
+    id: 'champagne-glow',
+    name: 'Champagne Glow',
+    css: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 50%, #FDE68A 100%)',
+    preview: '#FEF3C7',
+  },
+  {
+    id: 'warm-linen',
+    name: 'Warm Linen',
+    css: 'linear-gradient(135deg, #FAF7F2 0%, #F2EBE1 50%, #ECE3D4 100%)',
+    preview: '#F2EBE1',
+  },
+];
+
+// Anti-Counterfeiting Security Watermark Patterns
+const SECURITY_PATTERNS = [
+  { id: 'none', label: 'None / Plain' },
+  { id: 'guilloche', label: 'Guilloché Rosette' },
+  { id: 'grid', label: 'Precision Grid' },
+  { id: 'microdots', label: 'Micro-Dot Matrix' },
+  { id: 'waves', label: 'Security Waves' },
+  { id: 'sunburst', label: 'Sunburst Rays' },
+];
+
+function getSecurityPatternSvg(pattern) {
+  switch (pattern) {
+    case 'guilloche':
+      return `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23B45309' stroke-width='0.75' stroke-opacity='0.6'%3E%3Cpath d='M0 40 Q20 20 40 40 T80 40'/%3E%3Cpath d='M0 40 Q20 60 40 40 T80 40'/%3E%3Cpath d='M40 0 Q20 20 40 40 T40 80'/%3E%3Cpath d='M40 0 Q60 20 40 40 T40 80'/%3E%3Ccircle cx='40' cy='40' r='18'/%3E%3Ccircle cx='40' cy='40' r='28' stroke-dasharray='2,2'/%3E%3Ccircle cx='40' cy='40' r='38'/%3E%3C/g%3E%3C/svg%3E")`;
+    case 'grid':
+      return `url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 30 0 L 0 0 0 30' fill='none' stroke='%2394A3B8' stroke-width='0.5' stroke-opacity='0.5'/%3E%3C/svg%3E")`;
+    case 'microdots':
+      return `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%2378716C' fill-opacity='0.6'/%3E%3Ccircle cx='12' cy='12' r='1' fill='%2378716C' fill-opacity='0.6'/%3E%3C/svg%3E")`;
+    case 'waves':
+      return `url("data:image/svg+xml,%3Csvg width='60' height='30' viewBox='0 0 60 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 15 Q 15 0 30 15 T 60 15' fill='none' stroke='%23B45309' stroke-width='0.75' stroke-opacity='0.5'/%3E%3Cpath d='M0 15 Q 15 30 30 15 T 60 15' fill='none' stroke='%23B45309' stroke-width='0.75' stroke-opacity='0.5'/%3E%3C/svg%3E")`;
+    case 'sunburst':
+      return `radial-gradient(circle at center, transparent 35%, rgba(217, 119, 6, 0.15) 75%, transparent 100%), repeating-conic-gradient(from 0deg, rgba(217, 119, 6, 0.08) 0deg 3deg, transparent 3deg 6deg)`;
+    default:
+      return 'none';
+  }
+}
+
 // Default Template Definitions (Open & 100% User Modifiable)
 const TEMPLATE_PRESETS = {
   'imperial-gold': {
     name: 'Imperial Gold Champion',
     theme: 'gold',
+    bgType: 'color',
     bgClass: '#FDFBF7',
+    bgPattern: 'guilloche',
+    bgPatternOpacity: 0.08,
     borderStyle: 'double-gold',
     borderColor: '#B45309',
     elements: [
@@ -208,7 +278,10 @@ const TEMPLATE_PRESETS = {
   'royal-silver': {
     name: 'Royal Silver Medalist',
     theme: 'silver',
+    bgType: 'color',
     bgClass: '#FAF9F5',
+    bgPattern: 'grid',
+    bgPatternOpacity: 0.06,
     borderStyle: 'double-silver',
     borderColor: '#64748B',
     elements: [
@@ -331,7 +404,10 @@ const TEMPLATE_PRESETS = {
   'emerald-fellow': {
     name: 'Emerald Distinction',
     theme: 'emerald',
+    bgType: 'color',
     bgClass: '#F8FAF7',
+    bgPattern: 'guilloche',
+    bgPatternOpacity: 0.07,
     borderStyle: 'emerald-crest',
     borderColor: '#047857',
     elements: [
@@ -474,24 +550,58 @@ export default function CertificateBoardDesigner({
   const { showToast } = useToast();
 
   // Virtual Canvas dimensions
+  const parsedTemplate = (() => {
+    if (initialCertificate?.templateData) {
+      try {
+        return typeof initialCertificate.templateData === 'string'
+          ? JSON.parse(initialCertificate.templateData)
+          : initialCertificate.templateData;
+      } catch {}
+    }
+    return null;
+  })();
+
   const [orientation, setOrientation] = useState(
-    initialCertificate?.orientation || 'landscape'
+    parsedTemplate?.orientation || initialCertificate?.orientation || 'landscape'
   );
   const canvasWidth = orientation === 'landscape' ? A4_WIDTH_LANDSCAPE : A4_HEIGHT_LANDSCAPE;
   const canvasHeight = orientation === 'landscape' ? A4_HEIGHT_LANDSCAPE : A4_WIDTH_LANDSCAPE;
 
-  // Canvas visual style & colors
+  // Canvas visual style & background
+  const [bgType, setBgType] = useState(
+    parsedTemplate?.bgType || initialCertificate?.bgType || 'color'
+  ); // 'color' | 'gradient' | 'image'
   const [bgClass, setBgClass] = useState(
-    initialCertificate?.bgClass || '#FDFBF7'
+    parsedTemplate?.bgClass || initialCertificate?.bgClass || '#FDFBF7'
   );
+  const [bgGradient, setBgGradient] = useState(
+    parsedTemplate?.bgGradient || initialCertificate?.bgGradient || ''
+  );
+  const [bgPattern, setBgPattern] = useState(
+    parsedTemplate?.bgPattern || initialCertificate?.bgPattern || 'guilloche'
+  );
+  const [bgPatternOpacity, setBgPatternOpacity] = useState(
+    parsedTemplate?.bgPatternOpacity ?? initialCertificate?.bgPatternOpacity ?? 0.08
+  );
+  const [bgImageUrl, setBgImageUrl] = useState(
+    parsedTemplate?.bgImageUrl || initialCertificate?.bgImageUrl || null
+  );
+  const [bgImageOpacity, setBgImageOpacity] = useState(
+    parsedTemplate?.bgImageOpacity ?? initialCertificate?.bgImageOpacity ?? 1.0
+  );
+  const [bgImageFit, setBgImageFit] = useState(
+    parsedTemplate?.bgImageFit || initialCertificate?.bgImageFit || 'cover'
+  );
+  const bgFileInputRef = useRef(null);
+
   const [borderStyle, setBorderStyle] = useState(
-    initialCertificate?.borderStyle || 'double-gold'
+    parsedTemplate?.borderStyle || initialCertificate?.borderStyle || 'double-gold'
   );
   const [borderColor, setBorderStyleColor] = useState(
-    initialCertificate?.borderColor || '#B45309'
+    parsedTemplate?.borderColor || initialCertificate?.borderColor || '#B45309'
   );
   const [boardTheme, setBoardTheme] = useState(
-    initialCertificate?.boardTheme || 'gold'
+    parsedTemplate?.boardTheme || initialCertificate?.boardTheme || 'gold'
   );
 
   // Core Certificate Data
@@ -514,11 +624,8 @@ export default function CertificateBoardDesigner({
 
   // Elements Array
   const [elements, setElements] = useState(() => {
-    if (initialCertificate?.templateData) {
-      try {
-        const parsed = JSON.parse(initialCertificate.templateData);
-        if (parsed.elements && Array.isArray(parsed.elements)) return parsed.elements;
-      } catch {}
+    if (parsedTemplate?.elements && Array.isArray(parsedTemplate.elements)) {
+      return parsedTemplate.elements;
     }
     return TEMPLATE_PRESETS['imperial-gold'].elements;
   });
@@ -577,6 +684,23 @@ export default function CertificateBoardDesigner({
     document.addEventListener('mousedown', handleOutsideDownload);
     return () => document.removeEventListener('mousedown', handleOutsideDownload);
   }, []);
+
+  // Custom Background Upload handler
+  const handleBackgroundUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file (PNG, JPG, SVG)', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBgImageUrl(reader.result);
+      setBgType('image');
+      showToast('Custom background image applied!', 'success');
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Custom Signature state
   const [customSignerName, setCustomSignerName] = useState('Alexander Vance');
@@ -933,7 +1057,14 @@ export default function CertificateBoardDesigner({
     setDownloadMenuOpen(false);
     const templateData = {
       elements,
+      bgType,
       bgClass,
+      bgGradient,
+      bgPattern,
+      bgPatternOpacity,
+      bgImageUrl,
+      bgImageOpacity,
+      bgImageFit,
       borderStyle,
       borderColor,
       boardTheme,
@@ -963,7 +1094,14 @@ export default function CertificateBoardDesigner({
     try {
       const templateData = JSON.stringify({
         elements,
+        bgType,
         bgClass,
+        bgGradient,
+        bgPattern,
+        bgPatternOpacity,
+        bgImageUrl,
+        bgImageOpacity,
+        bgImageFit,
         borderStyle,
         borderColor,
         boardTheme,
@@ -1008,7 +1146,8 @@ export default function CertificateBoardDesigner({
 
   // Left Rail Tab Navigation Items
   const railTabs = [
-    { id: 'design', label: 'Design', icon: Palette, title: 'Styles, Colors & Borders' },
+    { id: 'design', label: 'Design', icon: Palette, title: 'Presets & Themes' },
+    { id: 'background', label: 'Background', icon: ImageIcon, title: 'Canvas Background, Patterns & Upload' },
     { id: 'text', label: 'Text', icon: Type, title: 'Add & Style Typography' },
     { id: 'elements', label: 'Elements', icon: Award, title: 'Medals, Badges & Seals' },
     { id: 'recipient', label: 'Recipient', icon: User, title: 'Athlete Credentials' },
@@ -1353,7 +1492,11 @@ export default function CertificateBoardDesigner({
                           type="button"
                           onClick={() => {
                             setElements(preset.elements);
-                            setBgClass(preset.bgClass);
+                            setBgType(preset.bgType || 'color');
+                            setBgClass(preset.bgClass || '#FDFBF7');
+                            setBgGradient(preset.bgGradient || '');
+                            setBgPattern(preset.bgPattern || 'none');
+                            setBgPatternOpacity(preset.bgPatternOpacity ?? 0.08);
                             setBorderStyle(preset.borderStyle);
                             setBorderStyleColor(preset.borderColor || '#B45309');
                             setBoardTheme(preset.theme);
@@ -1416,6 +1559,283 @@ export default function CertificateBoardDesigner({
                       color={borderColor}
                       onChange={(c) => setBorderStyleColor(c)}
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: BACKGROUND SUITE (SOLID, LUXURY GRADIENTS, PATTERNS, CUSTOM UPLOADS) */}
+              {activeRailTab === 'background' && (
+                <div className="space-y-4">
+                  {/* Mode Selector */}
+                  <div>
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-stone-500 mb-2">
+                      Background Style
+                    </label>
+                    <div className="grid grid-cols-3 gap-1 bg-stone-100 p-1 rounded-xl">
+                      {[
+                        { id: 'color', label: 'Solid Color' },
+                        { id: 'gradient', label: 'Gradient' },
+                        { id: 'image', label: 'Template' },
+                      ].map((mode) => (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setBgType(mode.id)}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                            bgType === mode.id
+                              ? 'bg-white text-stone-900 shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          {mode.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mode 1: Solid Color */}
+                  {bgType === 'color' && (
+                    <div className="space-y-3">
+                      <PaintColorPicker
+                        label="Solid Background Color"
+                        color={bgClass}
+                        onChange={(c) => {
+                          setBgClass(c);
+                          setBgType('color');
+                        }}
+                      />
+
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">
+                          Diploma Base Swatches
+                        </label>
+                        <div className="grid grid-cols-6 gap-1.5">
+                          {[
+                            { name: 'Ivory Cream', color: '#FDFBF7' },
+                            { name: 'Pure White', color: '#FFFFFF' },
+                            { name: 'Warm Parchment', color: '#FAF7EE' },
+                            { name: 'Alabaster', color: '#F8FAFC' },
+                            { name: 'Pale Gold', color: '#FEFCE8' },
+                            { name: 'Soft Mist', color: '#F1F5F9' },
+                          ].map((swatch) => (
+                            <button
+                              key={swatch.color}
+                              type="button"
+                              title={swatch.name}
+                              onClick={() => {
+                                setBgClass(swatch.color);
+                                setBgType('color');
+                              }}
+                              style={{ backgroundColor: swatch.color }}
+                              className={`h-7 rounded-lg border transition-all ${
+                                bgClass === swatch.color && bgType === 'color'
+                                  ? 'border-amber-600 ring-2 ring-amber-500/30 scale-105'
+                                  : 'border-stone-300 hover:border-stone-400'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mode 2: Luxury Diploma Gradients */}
+                  {bgType === 'gradient' && (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+                        Select Luxury Diploma Gradient
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {LUXURY_GRADIENTS.map((grad) => (
+                          <button
+                            key={grad.id}
+                            type="button"
+                            onClick={() => {
+                              setBgGradient(grad.css);
+                              setBgType('gradient');
+                            }}
+                            className={`p-2 rounded-xl border text-left transition-all ${
+                              bgGradient === grad.css && bgType === 'gradient'
+                                ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/40'
+                                : 'border-stone-200 hover:border-stone-300 bg-white'
+                            }`}
+                          >
+                            <div
+                              style={{ background: grad.css }}
+                              className="w-full h-8 rounded-lg border border-stone-200/80 mb-1.5 shadow-xs"
+                            />
+                            <div className="text-[11px] font-bold text-stone-800 truncate">
+                              {grad.name}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mode 3: Custom Background Image / Template Upload */}
+                  {bgType === 'image' && (
+                    <div className="space-y-3">
+                      <input
+                        ref={bgFileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        className="hidden"
+                        onChange={handleBackgroundUpload}
+                      />
+
+                      {bgImageUrl ? (
+                        <div className="space-y-3">
+                          <div className="relative rounded-xl border border-stone-200 overflow-hidden bg-stone-100 p-1 flex items-center justify-center">
+                            <img
+                              src={bgImageUrl}
+                              alt="Background Preview"
+                              className="max-h-28 max-w-full object-contain rounded-lg shadow-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBgImageUrl(null);
+                                setBgType('color');
+                                showToast('Custom background template removed', 'info');
+                              }}
+                              className="absolute top-2 right-2 p-1 rounded-full bg-white/90 text-stone-600 hover:text-red-600 shadow-md transition-colors"
+                              title="Remove background image"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => bgFileInputRef.current?.click()}
+                              className="flex-1 py-1.5 px-3 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-xs font-bold text-stone-700 text-center transition-all shadow-xs"
+                            >
+                              Replace Image
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBgImageUrl(null);
+                                setBgType('color');
+                              }}
+                              className="py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-xs font-bold text-red-700 transition-all"
+                            >
+                              Clear
+                            </button>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between text-[11px] font-bold text-stone-700 mb-1">
+                              <span>Image Opacity</span>
+                              <span className="font-mono text-stone-500">
+                                {Math.round(bgImageOpacity * 100)}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min="0.10"
+                              max="1.00"
+                              step="0.05"
+                              value={bgImageOpacity}
+                              onChange={(e) => setBgImageOpacity(parseFloat(e.target.value))}
+                              className="w-full accent-amber-600 cursor-pointer"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                              Image Sizing Mode
+                            </label>
+                            <div className="grid grid-cols-3 gap-1">
+                              {[
+                                { id: 'cover', label: 'Cover' },
+                                { id: 'contain', label: 'Contain' },
+                                { id: 'repeat', label: 'Tile' },
+                              ].map((fit) => (
+                                <button
+                                  key={fit.id}
+                                  type="button"
+                                  onClick={() => setBgImageFit(fit.id)}
+                                  className={`py-1 rounded-lg border text-xs font-bold transition-all ${
+                                    bgImageFit === fit.id
+                                      ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
+                                      : 'border-stone-200 bg-stone-50 text-stone-600 hover:bg-stone-100'
+                                  }`}
+                                >
+                                  {fit.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => bgFileInputRef.current?.click()}
+                          className="border-2 border-dashed border-stone-200 hover:border-amber-400 rounded-2xl p-6 text-center cursor-pointer transition-all bg-stone-50/50 hover:bg-amber-50/20 group"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
+                            <Upload className="w-5 h-5" />
+                          </div>
+                          <div className="text-xs font-bold text-stone-800 mb-0.5">
+                            Upload Custom Certificate Template
+                          </div>
+                          <p className="text-[10px] text-stone-500">
+                            PNG, JPG, or SVG (Up to 10MB)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Security Patterns & Anti-Counterfeit Watermark */}
+                  <div className="pt-3 border-t border-stone-200 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-black uppercase tracking-wider text-stone-500">
+                        Security Watermark
+                      </label>
+                      {bgPattern !== 'none' && (
+                        <span className="text-[10px] font-mono font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                          {Math.round(bgPatternOpacity * 100)}%
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {SECURITY_PATTERNS.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setBgPattern(p.id)}
+                          className={`p-2 rounded-xl border text-left text-xs font-bold transition-all ${
+                            bgPattern === p.id
+                              ? 'bg-amber-50 text-amber-900 border-amber-400 shadow-xs'
+                              : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {bgPattern !== 'none' && (
+                      <div>
+                        <div className="flex items-center justify-between text-[10px] font-semibold text-stone-500 mb-1">
+                          <span>Pattern Visibility</span>
+                          <span className="font-mono">{Math.round(bgPatternOpacity * 100)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.02"
+                          max="0.30"
+                          step="0.01"
+                          value={bgPatternOpacity}
+                          onChange={(e) => setBgPatternOpacity(parseFloat(e.target.value))}
+                          className="w-full accent-amber-600 cursor-pointer"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1939,18 +2359,48 @@ export default function CertificateBoardDesigner({
                 setSelectedId(null);
                 setIsInlineEditing(null);
                 setActiveColorPickerPopover(false);
+                setActiveRailTab('background');
+                setDrawerOpen(true);
               }}
               style={{
                 width: `${canvasWidth}px`,
                 height: `${canvasHeight}px`,
-                backgroundColor: bgClass,
+                backgroundColor: bgType === 'gradient' ? 'transparent' : bgClass,
+                backgroundImage: bgType === 'gradient' ? bgGradient : 'none',
               }}
-              className="relative shadow-2xl overflow-hidden border border-stone-300 select-none"
+              className="relative shadow-2xl overflow-hidden border border-stone-300 select-none cursor-default"
             >
 
-              {/* ── LUXURY BORDER SYSTEM (USER COLORABLE) ── */}
+              {/* ── SECURITY WATERMARK / PATTERN LAYER (Z-1) ── */}
+              {bgPattern && bgPattern !== 'none' && (
+                <div
+                  style={{
+                    opacity: bgPatternOpacity,
+                    backgroundImage: getSecurityPatternSvg(bgPattern),
+                    backgroundRepeat: bgPattern === 'sunburst' ? 'no-repeat' : 'repeat',
+                    backgroundSize: bgPattern === 'sunburst' ? '100% 100%' : 'auto',
+                  }}
+                  className="absolute inset-0 pointer-events-none z-[1]"
+                />
+              )}
+
+              {/* ── CUSTOM BACKGROUND IMAGE / TEMPLATE LAYER (Z-2) ── */}
+              {bgImageUrl && (
+                <div
+                  style={{
+                    opacity: bgImageOpacity,
+                    backgroundImage: `url(${bgImageUrl})`,
+                    backgroundSize: bgImageFit === 'cover' ? 'cover' : bgImageFit === 'contain' ? 'contain' : 'auto',
+                    backgroundRepeat: bgImageFit === 'repeat' ? 'repeat' : 'no-repeat',
+                    backgroundPosition: 'center',
+                  }}
+                  className="absolute inset-0 pointer-events-none z-[2]"
+                />
+              )}
+
+              {/* ── LUXURY BORDER SYSTEM (USER COLORABLE) (Z-5) ── */}
               {borderStyle === 'double-gold' && (
-                <>
+                <div className="absolute inset-0 pointer-events-none z-[5]">
                   <div
                     style={{ borderColor }}
                     className="absolute inset-5 rounded-xl border-2 pointer-events-none"
@@ -1964,11 +2414,11 @@ export default function CertificateBoardDesigner({
                   <div style={{ borderColor }} className="absolute top-7 right-7 w-6 h-6 border-t-2 border-r-2 pointer-events-none" />
                   <div style={{ borderColor }} className="absolute bottom-7 left-7 w-6 h-6 border-b-2 border-l-2 pointer-events-none" />
                   <div style={{ borderColor }} className="absolute bottom-7 right-7 w-6 h-6 border-b-2 border-r-2 pointer-events-none" />
-                </>
+                </div>
               )}
 
               {borderStyle === 'double-silver' && (
-                <>
+                <div className="absolute inset-0 pointer-events-none z-[5]">
                   <div
                     style={{ borderColor }}
                     className="absolute inset-5 rounded-xl border-2 pointer-events-none"
@@ -1982,11 +2432,11 @@ export default function CertificateBoardDesigner({
                   <div style={{ borderColor }} className="absolute top-7 right-7 w-6 h-6 border-t-2 border-r-2 pointer-events-none" />
                   <div style={{ borderColor }} className="absolute bottom-7 left-7 w-6 h-6 border-b-2 border-l-2 pointer-events-none" />
                   <div style={{ borderColor }} className="absolute bottom-7 right-7 w-6 h-6 border-b-2 border-r-2 pointer-events-none" />
-                </>
+                </div>
               )}
 
               {borderStyle === 'emerald-crest' && (
-                <>
+                <div className="absolute inset-0 pointer-events-none z-[5]">
                   <div
                     style={{ borderColor }}
                     className="absolute inset-5 rounded-xl border-2 pointer-events-none"
@@ -2000,14 +2450,16 @@ export default function CertificateBoardDesigner({
                   <div style={{ borderColor }} className="absolute top-7 right-7 w-6 h-6 border-t-2 border-r-2 pointer-events-none" />
                   <div style={{ borderColor }} className="absolute bottom-7 left-7 w-6 h-6 border-b-2 border-l-2 pointer-events-none" />
                   <div style={{ borderColor }} className="absolute bottom-7 right-7 w-6 h-6 border-b-2 border-r-2 pointer-events-none" />
-                </>
+                </div>
               )}
 
               {borderStyle === 'modern-thin' && (
-                <div
-                  style={{ borderColor }}
-                  className="absolute inset-6 rounded-lg border pointer-events-none"
-                />
+                <div className="absolute inset-0 pointer-events-none z-[5]">
+                  <div
+                    style={{ borderColor }}
+                    className="absolute inset-6 rounded-lg border pointer-events-none"
+                  />
+                </div>
               )}
 
               {/* ── REAL-TIME MAGNETIC SNAP GUIDE LINES ── */}
