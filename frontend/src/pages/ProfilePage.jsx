@@ -136,6 +136,12 @@ export default function ProfilePage() {
       return;
     }
 
+    const activeUserId = currentUser?.id || profile?.id;
+    if (!activeUserId) {
+      showToast('You must be logged in to update your profile picture', 'error');
+      return;
+    }
+
     setUploadingPhoto(true);
     try {
       // 1. Upload file to server media repository
@@ -148,20 +154,32 @@ export default function ProfilePage() {
       // 2. Persist new avatarUrl to user profile in backend
       const payload = {
         displayName: profile?.displayName || profile?.username,
-        bio: profile?.bio || null,
+        bio: profile?.bio || '',
         avatarUrl: newAvatarUrl,
       };
-      await updateProfile(profile.id, payload);
+      const res = await updateProfile(activeUserId, payload);
+      const updated = res.data || { ...profile, ...payload };
 
       // 3. Update local state and auth session
-      setProfile((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
+      setProfile(updated);
       setEditForm((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
-      updateCurrentUser?.({ avatarUrl: newAvatarUrl });
+      updateCurrentUser?.({
+        displayName: updated.displayName,
+        avatarUrl: updated.avatarUrl,
+        bio: updated.bio,
+      });
 
       showToast('Profile picture uploaded successfully!', 'success');
     } catch (err) {
       console.error('Failed to upload photo:', err);
-      showToast(err.response?.data?.message || err.message || 'Failed to upload photo', 'error');
+      showToast(
+        err.userFriendlyMessage ||
+          err.response?.data?.message ||
+          err.response?.data?.detail ||
+          err.message ||
+          'Failed to upload photo',
+        'error'
+      );
     } finally {
       setUploadingPhoto(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -169,36 +187,52 @@ export default function ProfilePage() {
     }
   };
 
+  const handleOpenEditModal = () => {
+    setEditForm({
+      displayName: profile?.displayName || profile?.username || '',
+      avatarUrl: profile?.avatarUrl || '',
+      bio: profile?.bio || '',
+    });
+    setEditModalOpen(true);
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    if (!profile?.id) return;
+    const activeUserId = currentUser?.id || profile?.id;
+    if (!activeUserId) {
+      showToast('You must be logged in to edit your profile', 'error');
+      return;
+    }
 
     setSavingProfile(true);
     try {
       const payload = {
         displayName: editForm.displayName.trim() || profile.username,
-        avatarUrl: editForm.avatarUrl.trim() || null,
-        bio: editForm.bio.trim() || null,
+        avatarUrl: editForm.avatarUrl.trim() || '',
+        bio: editForm.bio.trim() || '',
       };
 
-      const res = await updateProfile(profile.id, payload);
+      const res = await updateProfile(activeUserId, payload);
       const updated = res.data || { ...profile, ...payload };
+
       setProfile(updated);
       updateCurrentUser?.({
         displayName: updated.displayName,
         avatarUrl: updated.avatarUrl,
+        bio: updated.bio,
       });
+
       setEditModalOpen(false);
       showToast('Profile updated successfully!', 'success');
     } catch (err) {
       console.error('Failed to update profile:', err);
-      setProfile((prev) => ({ ...prev, ...editForm }));
-      updateCurrentUser?.({
-        displayName: editForm.displayName,
-        avatarUrl: editForm.avatarUrl,
-      });
-      setEditModalOpen(false);
-      showToast('Profile details updated!', 'success');
+      const errorMsg =
+        err.userFriendlyMessage ||
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.message ||
+        'Failed to update profile. Please try again.';
+      showToast(errorMsg, 'error');
     } finally {
       setSavingProfile(false);
     }
@@ -363,7 +397,7 @@ export default function ProfilePage() {
                     variant="secondary"
                     size="sm"
                     icon={Edit3}
-                    onClick={() => setEditModalOpen(true)}
+                    onClick={handleOpenEditModal}
                     className="border-stone-300 font-bold"
                   >
                     Edit Profile
@@ -554,7 +588,7 @@ export default function ProfilePage() {
                 <p className="text-[11px] text-stone-500 leading-tight">
                   {editForm.avatarUrl
                     ? 'Custom photo currently active.'
-                    : 'Standard social media silhouette icon active.'}
+                    : 'Default profile silhouette active.'}
                 </p>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -572,17 +606,17 @@ export default function ProfilePage() {
                     <span>Upload New Photo</span>
                   </button>
 
-                  {editForm.avatarUrl && (
+                  {editForm.avatarUrl ? (
                     <button
                       type="button"
                       onClick={() => setEditForm((prev) => ({ ...prev, avatarUrl: '' }))}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-stone-200/80 hover:bg-rose-50 hover:text-rose-700 text-stone-700 rounded-xl text-xs font-bold transition-all"
-                      title="Revert to standard silhouette"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all shadow-2xs"
+                      title="Remove custom photo and use default silhouette"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>Use Default Icon</span>
+                      <span>Remove Photo</span>
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

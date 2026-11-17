@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 const sizeMap = {
   xs: 'w-6 h-6 text-[10px]',
@@ -27,14 +27,26 @@ export default function Avatar({
   className = '',
 }) {
   const [imageError, setImageError] = useState(false);
+
+  // Reset image error state whenever src changes (e.g. upload, remove photo)
+  useEffect(() => {
+    setImageError(false);
+  }, [src]);
+
   const initials = useMemo(() => getInitials(name || alt), [name, alt]);
   const sizeClass = sizeMap[size] || sizeMap.md;
 
-  // Render actual image if provided and not failed
-  if (src && !imageError) {
+  // Clean and validate image src
+  const cleanSrc =
+    src && typeof src === 'string' && src.trim() !== '' && src.trim() !== 'null'
+      ? src.trim()
+      : null;
+
+  // Render actual image if provided and valid
+  if (cleanSrc && !imageError) {
     return (
       <img
-        src={src}
+        src={cleanSrc}
         alt={alt || name || 'Avatar'}
         onError={() => setImageError(true)}
         className={`${sizeClass} rounded-full object-cover ring-2 ring-white shadow-xs shrink-0 select-none ${className}`}
@@ -54,7 +66,8 @@ export default function Avatar({
     );
   }
 
-  // Fallback 2: Standard, sleek modern social media default silhouette avatar (Twitter / Instagram / LinkedIn style)
+  // Fallback 2: Standard modern social media default silhouette avatar (Instagram / LinkedIn / Twitter style)
+  // Automatically displayed whenever the user does not have a photo uploaded or removes photo.
   return (
     <div
       className={`${sizeClass} rounded-full bg-gradient-to-b from-stone-200 via-stone-200 to-stone-300 text-stone-500 flex items-center justify-center overflow-hidden ring-2 ring-white shadow-xs shrink-0 select-none relative ${className}`}

@@ -31,6 +31,7 @@ public class User {
 
     private String displayName;
 
+    @Column(columnDefinition = "TEXT")
     private String avatarUrl;
 
     @Column(columnDefinition = "TEXT")

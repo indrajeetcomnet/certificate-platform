@@ -37,6 +37,11 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String method = request.getMethod().toUpperCase();
         String clientIp = resolveClientIp(request);
 
+        // Allow unrestricted requests from loopback / localhost to prevent blocking local development and rapid HMR
+        if (isLoopback(clientIp)) {
+            return true;
+        }
+
         int limit;
         String category;
 
@@ -106,5 +111,9 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     private boolean isValidIp(String ip) {
         return ip != null && ip.matches("^[a-fA-F0-9:.]+$") && ip.length() <= 45;
+    }
+
+    private boolean isLoopback(String ip) {
+        return "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip) || "localhost".equalsIgnoreCase(ip);
     }
 }

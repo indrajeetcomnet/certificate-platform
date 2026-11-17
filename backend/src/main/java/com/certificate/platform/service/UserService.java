@@ -51,16 +51,21 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-        if (request.getDisplayName() != null) {
+        if (request.getDisplayName() != null && !request.getDisplayName().trim().isEmpty()) {
             String sanitized = sanitizeText(request.getDisplayName().trim());
             user.setDisplayName(sanitized);
         }
         if (request.getAvatarUrl() != null) {
-            user.setAvatarUrl(request.getAvatarUrl().trim());
+            String av = request.getAvatarUrl().trim();
+            user.setAvatarUrl(av.isEmpty() ? null : av);
+        } else {
+            user.setAvatarUrl(null);
         }
         if (request.getBio() != null) {
             String sanitizedBio = sanitizeText(request.getBio().trim());
-            user.setBio(sanitizedBio);
+            user.setBio(sanitizedBio.isEmpty() ? null : sanitizedBio);
+        } else {
+            user.setBio(null);
         }
 
         user = userRepository.save(user);
