@@ -1,0 +1,203 @@
+-- Users Table
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    display_name VARCHAR(150),
+    avatar_url VARCHAR(500),
+    bio TEXT,
+    role VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Institutions Table
+CREATE TABLE IF NOT EXISTS institutions (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    logo_url VARCHAR(500),
+    verified BOOLEAN NOT NULL DEFAULT FALSE,
+    user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Posts Table
+CREATE TABLE IF NOT EXISTS posts (
+    id BIGSERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    parent_post_id BIGINT REFERENCES posts(id) ON DELETE SET NULL,
+    post_type VARCHAR(50) NOT NULL DEFAULT 'ORIGINAL',
+    likes_count INT NOT NULL DEFAULT 0,
+    comments_count INT NOT NULL DEFAULT 0,
+    views_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Post Media Table
+CREATE TABLE IF NOT EXISTS post_media (
+    id BIGSERIAL PRIMARY KEY,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    media_url VARCHAR(500) NOT NULL,
+    media_type VARCHAR(50) NOT NULL DEFAULT 'IMAGE',
+    display_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Comments Table
+CREATE TABLE IF NOT EXISTS comments (
+    id BIGSERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    likes_count INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Likes Table
+CREATE TABLE IF NOT EXISTS likes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id BIGINT REFERENCES posts(id) ON DELETE CASCADE,
+    comment_id BIGINT REFERENCES comments(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_like_user_post UNIQUE (user_id, post_id),
+    CONSTRAINT uq_like_user_comment UNIQUE (user_id, comment_id)
+);
+
+-- Badges Table
+CREATE TABLE IF NOT EXISTS badges (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    rank INT NOT NULL,
+    category VARCHAR(100),
+    institution_id BIGINT REFERENCES institutions(id) ON DELETE SET NULL,
+    icon_url VARCHAR(500),
+    description TEXT,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Badges Table
+CREATE TABLE IF NOT EXISTS user_badges (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    badge_id BIGINT NOT NULL REFERENCES badges(id) ON DELETE CASCADE,
+    awarded_at TIMESTAMP WITHOUT TIME ZONE,
+    awarded_by_institution_id BIGINT REFERENCES institutions(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Certificates Table
+CREATE TABLE IF NOT EXISTS certificates (
+    id BIGSERIAL PRIMARY KEY,
+    unique_code VARCHAR(100) NOT NULL UNIQUE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    recipient_name VARCHAR(150) NOT NULL,
+    recipient_email VARCHAR(255),
+    institution_id BIGINT NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+    issued_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITHOUT TIME ZONE,
+    template_data TEXT,
+    verified BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sponsors Table
+CREATE TABLE IF NOT EXISTS sponsors (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    logo_url VARCHAR(500),
+    website_url VARCHAR(500),
+    banner_image_url VARCHAR(500),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    campaign_start TIMESTAMP WITHOUT TIME ZONE,
+    campaign_end TIMESTAMP WITHOUT TIME ZONE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sponsor Badges Table
+CREATE TABLE IF NOT EXISTS sponsor_badges (
+    id BIGSERIAL PRIMARY KEY,
+    sponsor_id BIGINT NOT NULL REFERENCES sponsors(id) ON DELETE CASCADE,
+    badge_id BIGINT NOT NULL REFERENCES badges(id) ON DELETE CASCADE,
+    priority INT NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- View Events Table
+CREATE TABLE IF NOT EXISTS view_events (
+    id BIGSERIAL PRIMARY KEY,
+    sponsor_id BIGINT NOT NULL REFERENCES sponsors(id) ON DELETE CASCADE,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    post_id BIGINT REFERENCES posts(id) ON DELETE SET NULL,
+    view_type VARCHAR(50) NOT NULL,
+    viewed_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    duration_ms BIGINT NOT NULL,
+    ip_hash VARCHAR(100),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Earnings Table
+CREATE TABLE IF NOT EXISTS earnings (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    sponsor_id BIGINT NOT NULL REFERENCES sponsors(id) ON DELETE CASCADE,
+    total_views BIGINT NOT NULL DEFAULT 0,
+    earned_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    period VARCHAR(20) NOT NULL,
+    calculated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Sessions Table
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(1000) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_info VARCHAR(500),
+    ip_address VARCHAR(100),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    last_activity_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITHOUT TIME ZONE
+);
+
+-- Audit Logs Table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    event_type VARCHAR(100) NOT NULL,
+    details TEXT,
+    ip_address VARCHAR(100),
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_certificates_unique_code ON certificates(unique_code);
+CREATE INDEX IF NOT EXISTS idx_certificates_institution ON certificates(institution_id);
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_view_events_sponsor_id ON view_events(sponsor_id);
+CREATE INDEX IF NOT EXISTS idx_view_events_user_id ON view_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_badges_user_id ON user_badges(user_id);
+CREATE INDEX IF NOT EXISTS idx_earnings_user_period ON earnings(user_id, period);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(token);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type);
