@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Bell, Award, User, LogOut, Shield, DollarSign, Trophy, MessageSquare } from 'lucide-react';
+import { Award, User, LogOut, Shield, DollarSign, Trophy, MessageSquare } from 'lucide-react';
 import SearchBar from '../ui/SearchBar';
 import Avatar from '../ui/Avatar';
 import Dropdown from '../ui/Dropdown';
+import NotificationDropdown from './NotificationDropdown';
 import { useAuth } from '../../context/AuthContext';
 import { getUnreadCount } from '../../api/messagesApi';
 
@@ -139,15 +140,8 @@ export default function Header({ onSearch, title = 'CertPlatform', isStudio = fa
           </Link>
         )}
 
-        {/* Notifications */}
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="p-2 rounded-xl text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition-colors relative"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />
-        </button>
+        {/* Notifications Popover Dropdown */}
+        <NotificationDropdown />
 
         {/* User profile dropdown */}
         {currentUser ? (
