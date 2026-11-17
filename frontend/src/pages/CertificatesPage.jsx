@@ -317,7 +317,7 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
         <Card className="overflow-hidden p-0 border border-stone-200/90 bg-white">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-stone-700">
-              <thead className="bg-stone-50 text-stone-500 font-bold border-b border-stone-200">
+              <thead className="bg-stone-50 text-stone-700 font-extrabold border-b border-stone-200 uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3 px-4">Certificate Title</th>
                   <th className="py-3 px-4">Recipient</th>
@@ -329,23 +329,23 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
               </thead>
               <tbody className="divide-y divide-stone-100 font-medium">
                 {paginatedItems.map((cert) => (
-                  <tr key={cert.id || cert.uniqueCode} className="hover:bg-stone-50/60 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-stone-900 max-w-[200px] truncate">
+                  <tr key={cert.id || cert.uniqueCode} className="hover:bg-stone-50/70 transition-colors">
+                    <td className="py-3.5 px-4 font-black text-stone-900 max-w-[200px] truncate">
                       {cert.title}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-stone-900">{cert.recipientName}</div>
-                      <div className="text-[11px] text-stone-400">{cert.recipientEmail}</div>
+                      <div className="text-[11px] font-semibold text-stone-600">{cert.recipientEmail}</div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
+                      <span className="font-mono font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-300">
                         {cert.uniqueCode}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-stone-500">{formatDate(cert.issuedAt)}</td>
+                    <td className="py-3.5 px-4 text-stone-700 font-semibold">{formatDate(cert.issuedAt)}</td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/50">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Verified</span>
                       </span>
                     </td>
@@ -354,7 +354,7 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
                         <button
                           type="button"
                           onClick={() => setPreviewCert(cert)}
-                          className="p-1.5 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
+                          className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
                           title="Preview Certificate"
                         >
                           <Eye className="w-4 h-4" />
@@ -362,7 +362,7 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
                         <button
                           type="button"
                           onClick={() => navigate(`/certificates/edit/${cert.id}`)}
-                          className="p-1.5 text-stone-400 hover:text-amber-700 hover:bg-stone-100 rounded-lg transition-colors"
+                          className="p-1.5 text-stone-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors"
                           title="Edit on Full-Window Studio"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -370,7 +370,7 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
                         <button
                           type="button"
                           onClick={() => handleDelete(cert.id)}
-                          className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-stone-100 rounded-lg transition-colors"
+                          className="p-1.5 text-stone-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
                           title="Delete Certificate"
                         >
                           <Trash2 className="w-4 h-4" />

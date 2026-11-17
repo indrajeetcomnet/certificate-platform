@@ -47,73 +47,73 @@ export default function CertificateCard({
 
   return (
     <>
-      <Card
-        className={`p-4 hover:border-blue-400 dark:hover:border-blue-600 transition-all flex flex-col justify-between ${className}`}
+      <div
+        className={`bg-white border border-stone-200/90 rounded-2xl shadow-xs hover:shadow-md hover:border-amber-400/80 transition-all p-5 flex flex-col justify-between ${className}`}
       >
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {/* Header / status */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center">
-                <Award className="w-5 h-5" />
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 flex items-center justify-center shrink-0 shadow-xs">
+                <Award className="w-5 h-5 text-amber-700" />
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-1">
+              <div className="min-w-0">
+                <h4 className="text-sm sm:text-base font-black text-stone-900 truncate leading-tight">
                   {title}
                 </h4>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{displayInstName}</p>
+                <p className="text-xs font-bold text-stone-600 truncate mt-0.5">{displayInstName}</p>
               </div>
             </div>
 
             <span
-              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+              className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
                 verified
-                  ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300'
-                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-300'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200/80'
               }`}
             >
-              {verified ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+              {verified ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Clock className="w-3.5 h-3.5 text-amber-600" />}
               {verified ? 'Verified' : 'Pending'}
             </span>
           </div>
 
-          {/* Recipient info */}
-          <div className="bg-gray-50 dark:bg-gray-800/60 p-2.5 rounded-lg space-y-1">
-            <div className="text-xs text-gray-500">Recipient</div>
-            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {/* Recipient info: High contrast, pure light theme */}
+          <div className="bg-stone-50 border border-stone-200/90 p-3.5 rounded-xl space-y-1">
+            <div className="text-[10px] font-black uppercase tracking-wider text-stone-500">Recipient</div>
+            <div className="text-sm font-black text-stone-900">
               {recipientName}
             </div>
             {certificate.recipientEmail && (
-              <div className="text-xs text-gray-400">{certificate.recipientEmail}</div>
+              <div className="text-xs font-semibold text-stone-600">{certificate.recipientEmail}</div>
             )}
           </div>
 
-          {/* Unique code (copyable) */}
-          <div className="flex items-center justify-between p-2 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs">
-            <code className="font-mono text-gray-700 dark:text-gray-300 truncate mr-2">
+          {/* Unique code (copyable): High visibility light badge */}
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl border border-stone-200/90 bg-stone-100/70 text-xs">
+            <code className="font-mono font-bold text-stone-900 truncate mr-2 select-all text-xs">
               {uniqueCode}
             </code>
             <button
               type="button"
               onClick={handleCopyCode}
               title="Copy Certificate Code"
-              className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded"
+              className="text-stone-600 hover:text-stone-900 p-1.5 rounded-lg hover:bg-stone-200/70 transition-colors"
             >
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
         {/* Footer & actions */}
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500">
-          <span>{formatDate(issuedAt)}</span>
+        <div className="mt-4 pt-3.5 border-t border-stone-200/80 flex items-center justify-between text-xs font-bold text-stone-700">
+          <span className="font-semibold text-stone-600">{formatDate(issuedAt)}</span>
 
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setViewModalOpen(true)}
               title="Preview Certificate"
-              className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
             >
               <Eye className="w-4 h-4" />
             </button>
@@ -124,7 +124,7 @@ export default function CertificateCard({
                   type="button"
                   onClick={() => onEdit?.(certificate)}
                   title="Edit Certificate"
-                  className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 rounded-lg text-stone-600 hover:text-amber-800 hover:bg-amber-50 transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
@@ -132,7 +132,7 @@ export default function CertificateCard({
                   type="button"
                   onClick={() => onDelete?.(id)}
                   title="Delete Certificate"
-                  className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 rounded-lg text-stone-600 hover:text-rose-700 hover:bg-rose-50 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -140,7 +140,7 @@ export default function CertificateCard({
             )}
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Modal for full visual preview */}
       <Modal

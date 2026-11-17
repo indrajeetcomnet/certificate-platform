@@ -181,7 +181,7 @@ export default function CreatePost({
 
             {/* Replying banner */}
             {parentPost && (
-              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              <p className="text-xs text-amber-800 font-bold">
                 Replying to @{parentPost.user?.username || 'post'}
               </p>
             )}
@@ -269,7 +269,7 @@ export default function CreatePost({
                   <LinkIcon className="w-3.5 h-3.5" />
                 </button>
 
-                <span className="hidden sm:inline text-[11px] text-stone-400">
+                <span className="hidden sm:inline text-[11px] text-stone-600 font-semibold">
                   (Drag & drop photos supported)
                 </span>
               </div>

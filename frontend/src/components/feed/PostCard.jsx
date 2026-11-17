@@ -194,16 +194,16 @@ export default function PostCard({
             <div className="flex items-center gap-1.5 flex-wrap">
               <Link
                 to={`/profile/${user.id || 1}`}
-                className="font-bold text-sm text-stone-900 hover:text-stone-700 hover:underline truncate"
+                className="font-black text-sm text-stone-900 hover:text-amber-800 hover:underline truncate"
               >
                 {user.displayName || user.username || 'User'}
               </Link>
-              <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 fill-amber-400/20 flex-shrink-0" title="Ranked Competitor" />
-              <span className="text-xs text-stone-400 truncate">
+              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 fill-amber-400/20 flex-shrink-0" title="Ranked Competitor" />
+              <span className="text-xs font-semibold text-stone-600 truncate">
                 @{user.username || 'user'}
               </span>
             </div>
-            <p className="text-[11px] text-stone-400 font-medium">
+            <p className="text-xs text-stone-600 font-semibold mt-0.5">
               {timeAgo(post.createdAt)}
             </p>
           </div>
@@ -219,8 +219,8 @@ export default function PostCard({
         </div>
       </div>
 
-      {/* Center: Post Content */}
-      <div className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed mb-3 whitespace-pre-wrap break-words">
+      {/* Center: Post Content - High contrast crisp typography */}
+      <div className="text-[14.5px] font-normal text-stone-900 leading-relaxed mb-3.5 whitespace-pre-wrap break-words">
         {post.content}
       </div>
 
@@ -241,7 +241,7 @@ export default function PostCard({
                 key={idx}
                 src={url}
                 alt="Post attachment"
-                className="w-full h-48 sm:h-56 object-cover hover:opacity-95 transition-opacity cursor-pointer bg-gray-100 dark:bg-gray-800 rounded-lg"
+                className="w-full h-48 sm:h-56 object-cover hover:opacity-95 transition-opacity cursor-pointer bg-stone-100 border border-stone-200/80 rounded-xl"
                 loading="lazy"
               />
             );
@@ -249,18 +249,18 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Interaction Bar */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 text-xs">
+      {/* Interaction Bar - High contrast text & icons */}
+      <div className="flex items-center justify-between pt-3 border-t border-stone-200/80 text-stone-700 text-xs font-bold">
         <div className="flex items-center gap-5 sm:gap-6">
           {/* Like Button */}
           <button
             type="button"
             onClick={handleLikeToggle}
-            className={`flex items-center gap-1.5 transition-colors group ${isLiked ? 'text-red-500 font-semibold' : 'hover:text-red-500'
+            className={`flex items-center gap-1.5 transition-colors group ${isLiked ? 'text-rose-600 font-black' : 'hover:text-rose-600'
               }`}
           >
             <Heart
-              className={`w-4 h-4 transition-transform group-hover:scale-115 ${isLiked ? 'fill-red-500 text-red-500 animate-bounce' : ''
+              className={`w-4 h-4 transition-transform group-hover:scale-115 ${isLiked ? 'fill-rose-500 text-rose-500 animate-bounce' : ''
                 }`}
             />
             <span>{formatCount(likesCount)}</span>
@@ -269,23 +269,23 @@ export default function PostCard({
           {/* Comment Count / Link */}
           <Link
             to={`/feed/${post.id}`}
-            className="flex items-center gap-1.5 hover:text-blue-500 transition-colors"
+            className="flex items-center gap-1.5 hover:text-stone-900 transition-colors"
           >
             <MessageSquare className="w-4 h-4" />
             <span>{formatCount(post.commentsCount || 0)}</span>
           </Link>
 
           {/* Views Count */}
-          <div className="flex items-center gap-1.5 text-stone-500" title="Verified Post Views">
-            <Eye className="w-4 h-4 text-stone-400" />
-            <span className="font-mono">{formatCount(viewsCount)}</span>
+          <div className="flex items-center gap-1.5 text-stone-700 font-bold" title="Verified Post Views">
+            <Eye className="w-4 h-4 text-stone-600" />
+            <span className="font-mono font-bold text-stone-800">{formatCount(viewsCount)}</span>
           </div>
 
           {/* Share Button */}
           <button
             type="button"
             onClick={handleShare}
-            className="flex items-center gap-1.5 hover:text-green-500 transition-colors"
+            className="flex items-center gap-1.5 hover:text-emerald-700 transition-colors"
           >
             <Share2 className="w-4 h-4" />
             <span>Share</span>
@@ -293,7 +293,7 @@ export default function PostCard({
         </div>
 
         {post.postType && (
-          <span className="text-[10px] uppercase font-bold tracking-wider text-gray-400">
+          <span className="text-[10px] uppercase font-black tracking-wider text-stone-700 bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
             {post.postType}
           </span>
         )}

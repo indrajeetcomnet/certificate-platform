@@ -81,13 +81,13 @@ export default function CommentSection({
   const totalComments = Math.max(comments.length, commentsCount);
 
   return (
-    <div className={`border-t border-gray-100 dark:border-gray-800 pt-3 ${className}`}>
+    <div className={`border-t border-stone-200/80 pt-3 ${className}`}>
       {/* Toggle button */}
       <div className="flex items-center justify-between px-1 mb-2">
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-bold text-stone-700 hover:text-stone-900 transition-colors"
         >
           <MessageSquare className="w-3.5 h-3.5" />
           <span>
@@ -116,11 +116,12 @@ export default function CommentSection({
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write a comment..."
-                className="flex-1 px-3 py-1.5 text-sm bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="flex-1 px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:border-amber-500"
               />
               <Button
                 type="submit"
                 size="sm"
+                variant="dark"
                 loading={submitting}
                 disabled={!content.trim()}
                 icon={Send}
@@ -132,9 +133,9 @@ export default function CommentSection({
 
           {/* Comments list */}
           {loading ? (
-            <div className="text-center py-3 text-xs text-gray-400">Loading comments...</div>
+            <div className="text-center py-3 text-xs font-semibold text-stone-500">Loading comments...</div>
           ) : comments.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-2">No comments yet. Be the first!</p>
+            <p className="text-xs text-stone-500 font-semibold text-center py-2">No comments yet. Be the first!</p>
           ) : (
             <div className="space-y-3 pt-1">
               {comments.map((comment) => {
@@ -144,7 +145,7 @@ export default function CommentSection({
                 return (
                   <div
                     key={comment.id}
-                    className="flex items-start gap-2.5 text-sm bg-gray-50/70 dark:bg-gray-800/40 p-2.5 rounded-lg"
+                    className="flex items-start gap-2.5 text-sm bg-stone-50 border border-stone-200/70 p-3 rounded-xl"
                   >
                     <Avatar
                       src={commentUser.avatarUrl}
@@ -154,10 +155,10 @@ export default function CommentSection({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-xs text-gray-900 dark:text-gray-100">
+                          <span className="font-black text-xs text-stone-900">
                             {commentUser.displayName || commentUser.username || 'Anonymous'}
                           </span>
-                          <span className="text-[11px] text-gray-400">
+                          <span className="text-[11px] font-semibold text-stone-600">
                             {timeAgo(comment.createdAt)}
                           </span>
                         </div>
@@ -168,17 +169,17 @@ export default function CommentSection({
                         )}
                       </div>
 
-                      <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 whitespace-pre-wrap">
+                      <p className="text-xs text-stone-800 mt-1 whitespace-pre-wrap leading-relaxed">
                         {comment.content}
                       </p>
 
-                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400">
+                      <div className="flex items-center gap-3 mt-1.5 text-xs font-bold text-stone-600">
                         <button
                           type="button"
                           onClick={() => handleLike(comment.id)}
-                          className="flex items-center gap-1 hover:text-red-500 transition-colors"
+                          className="flex items-center gap-1 hover:text-rose-600 transition-colors"
                         >
-                          <Heart className="w-3 h-3" />
+                          <Heart className="w-3.5 h-3.5" />
                           <span>{comment.likesCount || 0}</span>
                         </button>
                       </div>

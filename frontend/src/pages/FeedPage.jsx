@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { TrendingUp, Award, Sparkles, Flame, Users } from 'lucide-react';
+import { TrendingUp, Award, Flame, Users, Coins } from 'lucide-react';
 import Card from '../components/ui/Card';
 import CreatePost from '../components/feed/CreatePost';
 import FeedList from '../components/feed/FeedList';
@@ -104,9 +104,9 @@ export default function FeedPage({
         <CreatePost onPostCreated={handlePostCreated} />
 
         {searchQuery && (
-          <div className="flex items-center justify-between px-2 text-sm text-gray-500">
+          <div className="flex items-center justify-between px-2 text-sm text-stone-700 font-semibold">
             <span>
-              Showing search results for: <strong className="text-gray-900 dark:text-gray-100">"{searchQuery}"</strong>
+              Showing search results for: <strong className="text-stone-900 font-black">"{searchQuery}"</strong>
             </span>
           </div>
         )}
@@ -123,9 +123,9 @@ export default function FeedPage({
       {/* Right sidebar: Trending topics, Featured Badges, Sponsors */}
       <div className="hidden lg:block space-y-6">
         {/* Trending tags */}
-        <Card className="p-4">
-          <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-gray-100 mb-3">
-            <Flame className="w-4 h-4 text-orange-500" />
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center gap-2 font-black text-sm text-stone-900 mb-3.5">
+            <Flame className="w-4 h-4 text-amber-600" />
             <span>Trending Discussions</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -133,61 +133,65 @@ export default function FeedPage({
               displayTags.map((tag, i) => (
                 <span
                   key={i}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-bold rounded-xl bg-stone-100 border border-stone-200/80 text-stone-800 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-900 transition-colors cursor-pointer"
                 >
                   {tag}
                 </span>
               ))
             ) : (
-              <p className="text-xs text-gray-400 italic">No trending topics yet</p>
+              <p className="text-xs text-stone-500 font-medium italic">No trending topics yet</p>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Featured Badges */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 font-bold text-sm text-gray-900 dark:text-gray-100">
-              <Award className="w-4 h-4 text-amber-500" />
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center gap-2 font-black text-sm text-stone-900">
+              <Award className="w-4 h-4 text-amber-600" />
               <span>Top Badges</span>
             </div>
             <Link
               to="/badges/manage"
-              className="text-xs text-blue-600 hover:underline font-medium"
+              className="text-xs font-bold text-stone-900 hover:text-amber-700 hover:underline"
             >
               Explore
             </Link>
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {activeBadges.length > 0 ? (
               activeBadges.map((badge) => (
                 <div key={badge.id} className="flex items-center justify-between">
                   <BadgeDisplay badge={badge} />
-                  <span className="text-[11px] text-gray-400 font-mono">Rank #{badge.rank}</span>
+                  <span className="text-xs font-bold text-stone-700 font-mono bg-stone-100 px-2 py-0.5 rounded border border-stone-200">
+                    Rank #{badge.rank}
+                  </span>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-gray-400 italic">No active badges yet</p>
+              <p className="text-xs text-stone-500 font-medium italic">No active badges yet</p>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Monetization / Sponsor callout */}
-        <Card className="p-4 bg-gradient-to-br from-purple-500/10 via-white to-white dark:from-purple-950/20 dark:via-gray-800 dark:to-gray-800 border-purple-200 dark:border-purple-900/40">
-          <div className="flex items-center gap-2 font-bold text-sm text-purple-900 dark:text-purple-300 mb-2">
-            <Sparkles className="w-4 h-4 text-purple-600" />
+        <div className="p-5 bg-gradient-to-br from-amber-500/10 via-amber-50/60 to-white border border-amber-300/80 rounded-2xl shadow-xs">
+          <div className="flex items-center gap-2.5 font-black text-sm text-stone-900 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-400/50 text-amber-800 flex items-center justify-center font-bold shadow-2xs">
+              <Coins className="w-4 h-4 text-amber-700" />
+            </div>
             <span>Earn with Sponsor Badges</span>
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
+          <p className="text-xs text-stone-700 font-semibold mb-3.5 leading-relaxed">
             Attach sponsors to your earned badges. Every feed view earns revenue in Indian Rupees directly into your dashboard.
           </p>
           <Link
             to="/earnings"
-            className="inline-block text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-black text-amber-900 hover:text-amber-700 hover:underline"
           >
-            Check your balance →
+            <span>Check your balance →</span>
           </Link>
-        </Card>
+        </div>
       </div>
     </div>
   );
