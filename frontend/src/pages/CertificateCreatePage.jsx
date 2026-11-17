@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Award, 
   ArrowLeft, 
@@ -17,9 +17,18 @@ import { useToast } from '../context/ToastContext';
 
 export default function CertificateCreatePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
   const { currentUser, isInstitution } = useAuth();
   const institutionId = currentUser?.institutionId || currentUser?.id;
+
+  const recipient = location.state?.recipient;
+  const initialCertificate = recipient
+    ? {
+        recipientName: recipient.displayName || recipient.username,
+        recipientEmail: recipient.email || `${recipient.username}@arena.platform`,
+      }
+    : null;
 
   const handleCertificateIssued = (created) => {
     showToast(`Certificate "${created.title}" successfully created!`, 'success');
@@ -58,6 +67,7 @@ export default function CertificateCreatePage() {
     <div className="w-full h-full flex-1 flex flex-col overflow-hidden">
       <CertificateBoardDesigner
         institutionId={institutionId}
+        initialCertificate={initialCertificate}
         onCertificateIssued={handleCertificateIssued}
         className="w-full h-full flex-1 rounded-none border-none shadow-none"
       />

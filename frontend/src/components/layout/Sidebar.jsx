@@ -24,8 +24,9 @@ export default function Sidebar({ className = '' }) {
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Role-based navigation
-  const roleKey = currentUser?.role === 'INSTITUTION' ? 'INSTITUTION' : currentUser ? 'USER' : 'GUEST';
+  // Strict role-based navigation check
+  const isInstitutionUser = currentUser?.role === 'INSTITUTION';
+  const roleKey = isInstitutionUser ? 'INSTITUTION' : currentUser ? 'USER' : 'GUEST';
   const navItems = ROLE_NAV_ITEMS[roleKey] || ROLE_NAV_ITEMS.USER;
 
   return (
@@ -43,7 +44,7 @@ export default function Sidebar({ className = '' }) {
               CertPlatform
             </h1>
             <p className="text-[10px] font-bold text-stone-400 mt-1 uppercase tracking-wider">
-              {isInstitution ? 'Institution Workspace' : 'Athlete Arena'}
+              {isInstitutionUser ? 'Institution Workspace' : 'Athlete Arena'}
             </p>
           </div>
         </NavLink>
@@ -81,7 +82,7 @@ export default function Sidebar({ className = '' }) {
       {currentUser && (
         <div className="pt-4 border-t border-stone-200/70 space-y-2">
           <NavLink
-            to={isInstitution ? '/certificates' : `/profile/${currentUser.id}`}
+            to={isInstitutionUser ? '/certificates' : `/profile/${currentUser.id}`}
             className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-stone-100/80 transition-colors border border-stone-200/60 bg-stone-50/50"
           >
             <Avatar
@@ -94,7 +95,7 @@ export default function Sidebar({ className = '' }) {
                 {currentUser.displayName || currentUser.username}
               </p>
               <p className="text-[11px] text-stone-500 truncate">
-                {isInstitution ? 'Official Issuer' : `@${currentUser.username}`}
+                {isInstitutionUser ? 'Official Issuer' : `@${currentUser.username}`}
               </p>
             </div>
           </NavLink>

@@ -40,6 +40,7 @@ export function AuthProvider({ children }) {
               email: res.data.email,
               displayName: res.data.displayName || res.data.username,
               role: res.data.role,
+              institutionId: res.data.role === 'INSTITUTION' ? (res.data.institutionId || res.data.userId) : null,
               avatarUrl: res.data.avatarUrl || null,
             };
             setCurrentUser(verifiedUser);
@@ -79,6 +80,7 @@ export function AuthProvider({ children }) {
         email: data.email,
         displayName: data.displayName || data.username,
         role: data.role,
+        institutionId: data.institutionId || (data.role === 'INSTITUTION' ? data.userId : null),
         avatarUrl: data.avatarUrl || null,
       };
       persistSession(userObj, data.token);

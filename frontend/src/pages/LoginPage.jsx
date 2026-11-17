@@ -23,19 +23,19 @@ import { useToast } from '../context/ToastContext';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginUser, registerUser, loginInstitution, isAuthenticated, isInstitution } = useAuth();
+  const { loginUser, registerUser, loginInstitution, isAuthenticated, isInstitution, currentUser, logout } = useAuth();
   const { showToast } = useToast();
 
-  // If already authenticated, redirect to destination
+  // If already authenticated and arrived from a protected redirect, navigate to target
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && location.state?.from) {
       if (isInstitution) {
         navigate('/certificates', { replace: true });
       } else {
         navigate('/feed', { replace: true });
       }
     }
-  }, [isAuthenticated, isInstitution, navigate]);
+  }, [isAuthenticated, isInstitution, location.state, navigate]);
 
   // Active view: 'login' | 'register' | 'institution'
   const initialMode = location.state?.mode || 'login';
@@ -77,7 +77,7 @@ export default function LoginPage() {
   const strengthColor = passStrength <= 25 ? 'bg-rose-500' : passStrength <= 50 ? 'bg-amber-500' : passStrength <= 75 ? 'bg-blue-500' : 'bg-emerald-500';
   const strengthLabel = passStrength <= 25 ? 'Weak' : passStrength <= 50 ? 'Fair' : passStrength <= 75 ? 'Good' : 'Strong';
 
-  // Handle Standard User Login
+  // Handle Unified Login with Dynamic Role Routing
   const handleUserLogin = async (e) => {
     e.preventDefault();
     if (!usernameOrEmail.trim() || !password.trim()) {
@@ -88,14 +88,43 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await loginUser({
+      const res = await loginUser({
         usernameOrEmail: usernameOrEmail.trim(),
         password: password.trim(),
       });
-      showToast('Welcome back! Signed in successfully.', 'success');
-      navigate('/feed');
+      const user = res.user;
+      showToast(`Welcome back, ${user.displayName || user.username}!`, 'success');
+      if (user.role === 'INSTITUTION') {
+        navigate('/certificates');
+      } else {
+        navigate('/feed');
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // One-Click Quick Demo Login for Test Accounts
+  const handleQuickLogin = async (username, demoPassword) => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await loginUser({
+        usernameOrEmail: username,
+        password: demoPassword,
+      });
+      const user = res.user;
+      showToast(`Signed in as ${user.displayName || user.username} (${user.role})`, 'success');
+      if (user.role === 'INSTITUTION') {
+        navigate('/certificates');
+      } else {
+        navigate('/feed');
+      }
+    } catch (err) {
+      setError(err.message || 'Quick login failed.');
     } finally {
       setLoading(false);
     }
@@ -225,6 +254,41 @@ export default function LoginPage() {
           {/* Right Column: Secure Form */}
           <div className="md:col-span-7 p-6 sm:p-10 flex flex-col justify-between space-y-6">
             
+            {/* Active Session Warning / Switcher Banner */}
+            {isAuthenticated && currentUser && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500 text-stone-950 font-black flex items-center justify-center text-xs shadow-xs">
+                    {(currentUser.displayName || currentUser.username || 'U')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-stone-900 leading-none">
+                      Active Session: {currentUser.displayName || currentUser.username}
+                    </p>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">
+                      {currentUser.role === 'INSTITUTION' ? '🏛️ Accredited Institution' : '🏃 Registered Athlete'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => navigate(currentUser.role === 'INSTITUTION' ? '/certificates' : '/feed')}
+                    className="flex-1 sm:flex-initial px-3 py-1.5 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 transition-all shadow-xs"
+                  >
+                    Continue →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => logout()}
+                    className="px-3 py-1.5 rounded-xl border border-stone-300 hover:bg-stone-100 text-stone-700 text-xs font-bold transition-all"
+                  >
+                    Switch Account
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Mode Switcher Tabs */}
             <div className="space-y-4">
               <div className="flex bg-stone-100 p-1 rounded-2xl text-xs font-bold border border-stone-200">
@@ -267,12 +331,12 @@ export default function LoginPage() {
               {/* Title & Subtitle */}
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-                  {mode === 'login' && 'Sign in to Your Athlete Profile'}
+                  {mode === 'login' && 'Sign In to CertPlatform'}
                   {mode === 'register' && 'Join the Competitive Arena'}
                   {mode === 'institution' && 'Institution Accreditation Access'}
                 </h2>
                 <p className="text-xs sm:text-sm text-stone-500 mt-1">
-                  {mode === 'login' && 'Enter your credentials to access your feed, badges, and monetization.'}
+                  {mode === 'login' && 'Sign in with your Athlete profile or Institution credentials.'}
                   {mode === 'register' && 'Create your competitive social profile and start earning verified badges.'}
                   {mode === 'institution' && 'Reserved solely for sports federations, academies, and tournament issuers.'}
                 </p>
@@ -361,8 +425,56 @@ export default function LoginPage() {
                   iconPosition="right"
                   className="w-full shadow-lg"
                 >
-                  Sign In to Arena
+                  Sign In
                 </Button>
+
+                {/* One-Click Quick Demo Accounts */}
+                <div className="pt-3 border-t border-stone-200 space-y-2">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                    One-Click Quick Test Accounts
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleQuickLogin('indrajeet', 'userpass2026')}
+                      className="p-2.5 rounded-xl border border-stone-200 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/40 text-left transition-all group"
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded-full">
+                          🏃 Athlete
+                        </span>
+                        <span className="text-[10px] font-mono text-stone-400">@indrajeet</span>
+                      </div>
+                      <div className="text-xs font-bold text-stone-900 group-hover:text-amber-950">
+                        Indrajeet Sharma
+                      </div>
+                      <p className="text-[10px] text-stone-500 mt-0.5">
+                        Social Feed & Badges (USER)
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleQuickLogin('apex_academy', 'apexpass2026')}
+                      className="p-2.5 rounded-xl border border-stone-200 hover:border-amber-400 bg-stone-50 hover:bg-amber-50/40 text-left transition-all group"
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[9px] font-bold text-stone-800 bg-stone-200 px-1.5 py-0.2 rounded-full">
+                          🏛️ Institution
+                        </span>
+                        <span className="text-[10px] font-mono text-stone-400">@apex_academy</span>
+                      </div>
+                      <div className="text-xs font-bold text-stone-900 group-hover:text-amber-950">
+                        Apex Sports Academy
+                      </div>
+                      <p className="text-[10px] text-stone-500 mt-0.5">
+                        Certificate Studio & Hub (ISSUER)
+                      </p>
+                    </button>
+                  </div>
+                </div>
 
               </form>
             )}

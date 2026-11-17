@@ -34,10 +34,12 @@ export default function Header({ onSearch, title = 'CertPlatform', isStudio = fa
     }
   };
 
-  const userMenuItems = isInstitution
+  const isInstitutionUser = currentUser?.role === 'INSTITUTION' || (isInstitution && currentUser?.role !== 'USER');
+
+  const userMenuItems = isInstitutionUser
     ? [
       {
-        label: 'Certificate Hub',
+        label: 'Certificate Hub & Ledger',
         icon: Award,
         onClick: () => navigate('/certificates'),
       },
@@ -47,7 +49,7 @@ export default function Header({ onSearch, title = 'CertPlatform', isStudio = fa
         onClick: () => navigate('/certificates/create'),
       },
       {
-        label: 'Award Badges',
+        label: 'Award Competition Badges',
         icon: Shield,
         onClick: () => navigate('/badges/manage'),
       },
@@ -65,7 +67,7 @@ export default function Header({ onSearch, title = 'CertPlatform', isStudio = fa
     ]
     : [
       {
-        label: 'My Profile & Badges',
+        label: 'My Athlete Profile',
         icon: User,
         onClick: () => navigate(`/profile/${currentUser?.id || 1}`),
       },
@@ -117,39 +119,6 @@ export default function Header({ onSearch, title = 'CertPlatform', isStudio = fa
           </div>
         )}
       </div>
-
-      {/* Center navigation shortcuts when website sidebar is removed in studio mode */}
-      {isStudio && (
-        <div className="hidden md:flex items-center gap-1 bg-stone-100 border border-stone-200/80 rounded-xl p-1">
-          <Link
-            to="/certificates"
-            className="px-3 py-1 rounded-lg text-xs font-bold text-stone-700 hover:text-stone-950 hover:bg-white transition-all flex items-center gap-1.5"
-          >
-            <Award className="w-3.5 h-3.5 text-amber-600" />
-            <span>Certificates</span>
-          </Link>
-          <Link
-            to="/badges/manage"
-            className="px-3 py-1 rounded-lg text-xs font-bold text-stone-700 hover:text-stone-950 hover:bg-white transition-all flex items-center gap-1.5"
-          >
-            <Shield className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Badges</span>
-          </Link>
-          <Link
-            to="/feed"
-            className="px-3 py-1 rounded-lg text-xs font-bold text-stone-700 hover:text-stone-950 hover:bg-white transition-all flex items-center gap-1.5"
-          >
-            <span>Feed</span>
-          </Link>
-          <Link
-            to="/messages"
-            className="px-3 py-1 rounded-lg text-xs font-bold text-stone-700 hover:text-stone-950 hover:bg-white transition-all flex items-center gap-1.5"
-          >
-            <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
-            <span>Messages</span>
-          </Link>
-        </div>
-      )}
 
       {/* Right controls */}
       <div className="flex items-center gap-2 sm:gap-3">

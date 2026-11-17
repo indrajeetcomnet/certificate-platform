@@ -7,10 +7,12 @@ import Tabs from '../components/ui/Tabs';
 import Button from '../components/ui/Button';
 import FeedList from '../components/feed/FeedList';
 import BadgeList from '../components/badges/BadgeList';
+import CertificateCard from '../components/certificates/CertificateCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { getProfile } from '../api/usersApi';
 import { getUserBadges } from '../api/badgesApi';
 import { getUserPosts } from '../api/postsApi';
+import { listByInstitution } from '../api/certificatesApi';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils/formatters';
 
@@ -24,6 +26,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [userBadges, setUserBadges] = useState([]);
   const [userPosts, setUserPosts] = useState([]);
+  const [userCertificates, setUserCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,11 +35,15 @@ export default function ProfilePage() {
       getProfile(targetId).catch(() => null),
       getUserBadges(targetId).catch(() => null),
       getUserPosts(targetId).catch(() => null),
+      listByInstitution(1, 0).catch(() => null),
     ])
-      .then(([profRes, badgeRes, postsRes]) => {
+      .then(([profRes, badgeRes, postsRes, certRes]) => {
+        let activeProf = null;
         if (profRes?.data) {
+          activeProf = profRes.data;
           setProfile(profRes.data);
         } else if (isOwnProfile && currentUser) {
+          activeProf = currentUser;
           setProfile(currentUser);
         } else {
           setProfile(null);
@@ -55,6 +62,20 @@ export default function ProfilePage() {
           setUserPosts(userPostList);
         } else {
           setUserPosts([]);
+        }
+
+        if (certRes?.data) {
+          const allCerts = certRes.data.content || certRes.data || [];
+          const profileName = (activeProf?.displayName || activeProf?.username || '').toLowerCase();
+          const profileEmail = (activeProf?.email || '').toLowerCase();
+          const matched = allCerts.filter((c) => {
+            const certRecipient = (c.recipientName || '').toLowerCase();
+            const certEmail = (c.recipientEmail || '').toLowerCase();
+            return (profileName && certRecipient.includes(profileName)) || (profileEmail && certEmail === profileEmail);
+          });
+          setUserCertificates(matched);
+        } else {
+          setUserCertificates([]);
         }
       })
       .finally(() => setLoading(false));
@@ -82,6 +103,30 @@ export default function ProfilePage() {
           badges={userBadges}
           emptyMessage="No badges have been earned by this user yet."
         />
+      ),
+    },
+    {
+      label: `Certificates (${userCertificates.length})`,
+      content: userCertificates.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {userCertificates.map((cert) => (
+            <CertificateCard
+              key={cert.id}
+              certificate={cert}
+              canManage={false}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="py-12 px-4 text-center max-w-md mx-auto space-y-3 bg-white rounded-2xl border border-stone-200 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center mx-auto shadow-xs">
+            <Award className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-bold text-stone-900">No Verified Certificates Awarded Yet</h3>
+          <p className="text-xs text-stone-500 leading-relaxed">
+            Official tamper-proof certificates issued to this athlete by verified institutions and sports academies will appear here.
+          </p>
+        </div>
       ),
     },
   ];
@@ -127,6 +172,16 @@ export default function ProfilePage() {
               </Button>
             ) : (
               <div className="flex items-center gap-2">
+                {currentUser?.role === 'INSTITUTION' && (
+                  <Button
+                    variant="dark"
+                    size="sm"
+                    icon={Award}
+                    onClick={() => navigate('/certificates/create', { state: { recipient: profile } })}
+                  >
+                    Award Certificate in Studio
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   size="sm"
@@ -158,6 +213,10 @@ export default function ProfilePage() {
             <div className="flex items-center gap-1.5">
               <Shield className="w-4 h-4 text-amber-500" />
               <strong className="text-gray-900 dark:text-gray-100">{userBadges.length}</strong> Badges Earned
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Award className="w-4 h-4 text-amber-600" />
+              <strong className="text-gray-900 dark:text-gray-100">{userCertificates.length}</strong> Certificates
             </div>
             {profile?.joinedAt && (
               <div className="flex items-center gap-1.5">

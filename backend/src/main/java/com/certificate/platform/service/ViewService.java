@@ -128,6 +128,10 @@ public class ViewService {
                 }
             }
 
+            if (sponsor == null) {
+                sponsor = sponsorRepository.findAll().stream().findFirst().orElse(null);
+            }
+
             // Resolve user: preference for creator attribution or provided user
             User user = null;
             if (requestUserId != null) {
@@ -137,7 +141,11 @@ public class ViewService {
                 user = post.getUser();
             }
 
-            ViewEvent viewEvent = ViewEvent.builder()
+            if (sponsor == null) {
+            sponsor = sponsorRepository.findAll().stream().findFirst().orElse(null);
+        }
+
+        ViewEvent viewEvent = ViewEvent.builder()
                     .sponsor(sponsor)
                     .user(user)
                     .post(post)
@@ -188,6 +196,10 @@ public class ViewService {
         User user = null;
         if (requestUserId != null) {
             user = userRepository.findById(requestUserId).orElse(null);
+        }
+
+        if (sponsor == null) {
+            sponsor = sponsorRepository.findAll().stream().findFirst().orElse(null);
         }
 
         ViewEvent viewEvent = ViewEvent.builder()
