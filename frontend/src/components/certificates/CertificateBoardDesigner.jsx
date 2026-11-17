@@ -45,13 +45,21 @@ import {
   Pencil,
   PenTool,
   Sliders,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Download,
+  ChevronDown
 } from 'lucide-react';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import CertificateIdCustomizer from './CertificateIdCustomizer';
 import PaintColorPicker from '../ui/PaintColorPicker';
 import FontFamilySelector, { FONT_OPTIONS } from '../ui/FontFamilySelector';
+import {
+  printCertificate,
+  downloadCertificatePng,
+  downloadCertificateSvg,
+  downloadCertificateJson,
+} from '../../utils/certificateExport';
 import { useToast } from '../../context/ToastContext';
 import { create as createCertApi, update as updateCertApi } from '../../api/certificatesApi';
 import { getAllUsers } from '../../api/usersApi';
@@ -555,6 +563,21 @@ export default function CertificateBoardDesigner({
   const [activeRailTab, setActiveRailTab] = useState('design'); // 'design' | 'text' | 'elements' | 'recipient' | 'serial' | 'signatures' | 'layers'
   const [drawerOpen, setDrawerOpen] = useState(true);
 
+  // Download Menu & Progress state
+  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const downloadMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideDownload = (e) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target)) {
+        setDownloadMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideDownload);
+    return () => document.removeEventListener('mousedown', handleOutsideDownload);
+  }, []);
+
   // Custom Signature state
   const [customSignerName, setCustomSignerName] = useState('Alexander Vance');
   const [customSignerTitle, setCustomSignerTitle] = useState('Federation Director & Chief Official');
@@ -862,12 +885,68 @@ export default function CertificateBoardDesigner({
     showToast(`Added ${elementDef.type || 'element'}`, 'success');
   };
 
-  // Print certificate
+  // ── EXPORT ENGINES: PRINT & DOWNLOAD ──
+
+  // 1. Pixel-perfect A4 Printing (Isolated iframe, 0 margins, zero mislocation)
   const handlePrint = () => {
-    setPreviewMode(true);
-    setTimeout(() => {
-      window.print();
-    }, 300);
+    setSelectedId(null);
+    setIsInlineEditing(null);
+    setActiveColorPickerPopover(false);
+    const board = document.getElementById('printable-certificate-board');
+    printCertificate(board, orientation);
+  };
+
+  // 2. High-Res PNG Download
+  const handleDownloadPng = async () => {
+    setDownloading(true);
+    setDownloadMenuOpen(false);
+    setSelectedId(null);
+    setIsInlineEditing(null);
+    setActiveColorPickerPopover(false);
+    try {
+      const board = document.getElementById('printable-certificate-board');
+      const safeTitle = (competitionTitle || 'certificate').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeRecipient = (recipientName || 'honors').replace(/[^a-zA-Z0-9_-]/g, '_');
+      await downloadCertificatePng(board, `${safeTitle}_${safeRecipient}`, orientation);
+      showToast('High-Resolution PNG downloaded!', 'success');
+    } catch {
+      showToast('Export failed, please try vector SVG download', 'error');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  // 3. Vector SVG Download
+  const handleDownloadSvg = () => {
+    setDownloadMenuOpen(false);
+    setSelectedId(null);
+    setIsInlineEditing(null);
+    setActiveColorPickerPopover(false);
+    const board = document.getElementById('printable-certificate-board');
+    const safeTitle = (competitionTitle || 'certificate').replace(/[^a-zA-Z0-9_-]/g, '_');
+    downloadCertificateSvg(board, `${safeTitle}_vector`, orientation);
+    showToast('Vector SVG downloaded!', 'success');
+  };
+
+  // 4. Template JSON Export
+  const handleDownloadJson = () => {
+    setDownloadMenuOpen(false);
+    const templateData = {
+      elements,
+      bgClass,
+      borderStyle,
+      borderColor,
+      boardTheme,
+      orientation,
+      competitionTitle,
+      recipientName,
+      recipientEmail,
+      citationText,
+      activeUniqueCode,
+    };
+    const safeTitle = (competitionTitle || 'certificate-template').replace(/[^a-zA-Z0-9_-]/g, '_');
+    downloadCertificateJson(templateData, `${safeTitle}-design.json`);
+    showToast('Design JSON exported!', 'success');
   };
 
   // Save / Issue Certificate
@@ -1102,17 +1181,102 @@ export default function CertificateBoardDesigner({
           </button>
         </div>
 
-        {/* Right: Print & Primary Save/Issue Action (No distracting external links) */}
-        <div className="flex items-center gap-2">
+        {/* Right: Download Menu & Print & Primary Save/Issue Action */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          
+          {/* Download Dropdown */}
+          <div ref={downloadMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setDownloadMenuOpen(!downloadMenuOpen)}
+              disabled={downloading}
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+              title="Download Certificate"
+            >
+              <Download className="w-3.5 h-3.5 text-stone-600" />
+              <span className="hidden sm:inline">{downloading ? 'Exporting...' : 'Download'}</span>
+              <ChevronDown className="w-3 h-3 text-stone-400" />
+            </button>
+
+            {downloadMenuOpen && (
+              <div
+                className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-stone-200 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="px-2 py-1 text-[10px] font-black uppercase tracking-wider text-stone-400 border-b border-stone-100 mb-1">
+                  Export Options
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadPng}
+                  className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-amber-50 text-stone-800 flex items-center gap-2 transition-colors group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[10px]">
+                    PNG
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold group-hover:text-amber-900">High-Res PNG</div>
+                    <div className="text-[10px] text-stone-400">Crisp 300 DPI image</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-amber-50 text-stone-800 flex items-center gap-2 transition-colors group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[10px]">
+                    PDF
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold group-hover:text-emerald-900">Save as PDF / Print</div>
+                    <div className="text-[10px] text-stone-400">Direct A4 vector document</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadSvg}
+                  className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-amber-50 text-stone-800 flex items-center gap-2 transition-colors group"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-[10px]">
+                    SVG
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold group-hover:text-blue-900">Vector SVG</div>
+                    <div className="text-[10px] text-stone-400">Lossless vector artwork</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadJson}
+                  className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-stone-100 text-stone-800 flex items-center gap-2 transition-colors border-t border-stone-100 mt-1 pt-1.5"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-stone-100 text-stone-700 flex items-center justify-center font-bold text-[10px]">
+                    JSON
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold">Template Data</div>
+                    <div className="text-[10px] text-stone-400">Backup certificate layout</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Print Button (Zero Margins, Isolated A4) */}
           <button
             type="button"
             onClick={handlePrint}
             className="p-1.5 rounded-lg bg-stone-100 border border-stone-200 text-stone-600 hover:text-stone-900 hover:bg-stone-200 transition-colors"
-            title="Print Certificate"
+            title="Direct A4 Print (Zero Margins)"
           >
             <Printer className="w-4 h-4" />
           </button>
 
+          {/* Primary Save / Issue Certificate Action */}
           <Button
             size="sm"
             variant="primary"

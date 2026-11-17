@@ -76,20 +76,47 @@ html {
 
 /* Certificate Print Optimization */
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   body * {
-    visibility: hidden;
+    visibility: hidden !important;
   }
-  #printable-certificate-board, #printable-certificate-board * {
-    visibility: visible;
+
+  /* Reset any CSS transforms on all parent wrappers to prevent coordinate mislocation */
+  main, div, section, article {
+    transform: none !important;
   }
+
+  #printable-certificate-board,
+  #printable-certificate-board * {
+    visibility: visible !important;
+  }
+
   #printable-certificate-board {
     position: fixed !important;
     left: 0 !important;
     top: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    page-break-inside: avoid !important;
   }
 }
