@@ -4,6 +4,8 @@ export function getAll() {
   return axiosClient.get('/badges');
 }
 
+export const getAllBadges = getAll;
+
 export function create(data) {
   return axiosClient.post('/badges', data);
 }

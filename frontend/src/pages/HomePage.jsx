@@ -36,14 +36,23 @@ export default function HomePage() {
     // Fetch real post and sponsors from database
     getFeed(0)
       .then((res) => {
-        const posts = res.data?.content || res.data || [];
+        const posts = Array.isArray(res.data?.content)
+          ? res.data.content
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
         if (posts.length > 0) setFeaturedPost(posts[0]);
       })
       .catch(() => { });
 
     getAllSponsors()
       .then((res) => {
-        setActiveSponsors(res.data || []);
+        const sponsors = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.content)
+          ? res.data.content
+          : [];
+        setActiveSponsors(sponsors);
       })
       .catch(() => { });
 
@@ -225,7 +234,7 @@ export default function HomePage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center font-black text-sm shadow-xs uppercase">
-                      {(featuredPost?.user?.displayName || 'Apex Athletics Official').substring(0, 2)}
+                      {String(featuredPost?.user?.displayName || 'Apex Athletics Official').substring(0, 2)}
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
@@ -253,7 +262,7 @@ export default function HomePage() {
                       <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-950 font-black text-xs border border-emerald-300 shadow-xs animate-in fade-in zoom-in-95 duration-300">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-[10px] text-emerald-700 uppercase tracking-wider font-extrabold">Sponsor</span>
-                        <span>{activeSponsors.length > 0 ? activeSponsors[0].name : 'Nike Pro'}</span>
+                        <span>{activeSponsors?.length > 0 && activeSponsors[0]?.name ? activeSponsors[0].name : 'Nike Pro'}</span>
                         <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-emerald-200 text-emerald-900 border border-emerald-300">+₹</span>
                       </div>
                     )}
