@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Avatar from '../components/ui/Avatar';
+import Logo from '../components/ui/Logo';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -205,19 +206,7 @@ export default function LoginPage() {
 
       {/* Floating minimal top navbar */}
       <header className="px-6 py-4 max-w-7xl w-full mx-auto flex items-center justify-between z-10">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-2xl bg-stone-900 text-amber-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-all">
-            <Trophy className="w-5 h-5 text-amber-400" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-base font-black tracking-tight text-stone-900 leading-none">
-              CertPlatform
-            </span>
-            <span className="text-[10px] font-bold text-amber-700 tracking-wider uppercase mt-0.5">
-              Accredited Sports Arena
-            </span>
-          </div>
-        </Link>
+        <Logo size="md" subtitle="Accredited Sports Arena" />
 
         <div className="flex items-center gap-4">
           <Link
@@ -808,7 +797,7 @@ export default function LoginPage() {
 
       {/* Minimal Footer */}
       <footer className="py-4 text-center text-xs text-stone-500 font-medium">
-        CertPlatform · Secure Social Media & Credential Architecture
+        Athlos Arena · Secure Sports Network & Verified Credential Architecture
       </footer>
 
     </div>

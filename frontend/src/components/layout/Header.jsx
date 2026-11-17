@@ -3,12 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Award, User, LogOut, Shield, DollarSign, Trophy, MessageSquare } from 'lucide-react';
 import SearchBar from '../ui/SearchBar';
 import Avatar from '../ui/Avatar';
+import Logo from '../ui/Logo';
 import Dropdown from '../ui/Dropdown';
 import NotificationDropdown from './NotificationDropdown';
 import { useAuth } from '../../context/AuthContext';
 import { getUnreadCount } from '../../api/messagesApi';
 
-export default function Header({ onSearch, title = 'CertPlatform', isStudio = false, className = '' }) {
+export default function Header({ onSearch, title = 'Athlos', isStudio = false, className = '' }) {
   const { currentUser, isInstitution, logout } = useAuth();
   const navigate = useNavigate();
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -99,14 +100,9 @@ export default function Header({ onSearch, title = 'CertPlatform', isStudio = fa
     <header
       className={`h-14 sm:h-16 bg-white/95 backdrop-blur-md border-b border-stone-200/90 px-4 sm:px-6 flex items-center justify-between gap-4 sticky top-0 z-30 shrink-0 ${className}`}
     >
-      {/* Brand / Logo & Studio Route breadcrumbs */}
+      {/* Athlos Brand Logo & Studio Route breadcrumbs */}
       <div className="flex items-center gap-3">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-stone-950 font-bold shadow-xs group-hover:scale-105 transition-transform">
-            <Trophy className="w-4 h-4" />
-          </div>
-          <span className="font-extrabold text-sm text-stone-900 tracking-tight hidden sm:inline">{title}</span>
-        </Link>
+        <Logo size="sm" showText={true} subtitle="" />
 
         {isStudio && (
           <div className="flex items-center gap-2 pl-2 border-l border-stone-200">

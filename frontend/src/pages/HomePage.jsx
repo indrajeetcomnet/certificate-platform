@@ -18,6 +18,7 @@ import {
   Activity
 } from 'lucide-react';
 import Button from '../components/ui/Button';
+import Logo from '../components/ui/Logo';
 import { useAuth } from '../context/AuthContext';
 import { getFeed } from '../api/postsApi';
 import { getAll as getAllSponsors } from '../api/sponsorsApi';
@@ -89,20 +90,8 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#F8F8F5]/85 border-b border-stone-200/70 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-4">
 
-          {/* Logo with Trophy Badge */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 text-stone-950 flex items-center justify-center shadow-md group-hover:scale-105 group-hover:shadow-glow-gold transition-all duration-300">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-lg font-black tracking-tight text-stone-900 block leading-none">
-                CertPlatform
-              </span>
-              <span className="text-[10px] font-bold text-amber-600 tracking-wider uppercase">
-                Sports & Verified Honors
-              </span>
-            </div>
-          </Link>
+          {/* Athlos Brand Logo */}
+          <Logo size="md" subtitle="Sports & Verified Honors" />
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2.5">
@@ -274,12 +263,16 @@ export default function HomePage() {
                   {featuredPost?.content || 'Game City National Athletics Invitational is underway! Compete across verified brackets, claim podium rank badges, and monetize sponsor views in real time.'}
                 </p>
 
-                {/* High-Res Sports Image */}
-                <div className="relative rounded-2xl overflow-hidden shadow-inner h-52 sm:h-60 border border-stone-200/80 group">
+                {/* High-Res Sports Image (Verified 200 OK Floodlight Arena) */}
+                <div className="relative rounded-2xl overflow-hidden shadow-inner h-52 sm:h-60 border border-stone-200/80 group bg-stone-900">
                   <img
-                    src="https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1000&q=80"
+                    src={featuredPost?.imageUrl || 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1000&q=80'}
                     alt="Night Arena Floodlights and Electric Atmosphere"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1000&q=80';
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent" />
                   <div className="absolute bottom-3 left-4 text-xs font-bold text-white drop-shadow flex items-center gap-1.5">
@@ -328,6 +321,10 @@ export default function HomePage() {
                   src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80"
                   alt="Golden Championship Trophy"
                   className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 ease-out"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80';
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
                 <div className="relative z-10 space-y-1">
@@ -349,6 +346,10 @@ export default function HomePage() {
                   src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80"
                   alt="Sunrise Mountain Summit"
                   className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700 ease-out"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80';
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
                 <div className="relative z-10 space-y-1">
@@ -461,17 +462,12 @@ export default function HomePage() {
       <footer className="border-t border-stone-200/80 bg-white/70 backdrop-blur-md py-10 px-4 sm:px-6 lg:px-8 mt-16">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-stone-200/60">
 
-          {/* Brand & Mission Statement */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 text-stone-950 flex items-center justify-center shadow-xs">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-base font-black text-stone-900 tracking-tight block">
-                CertPlatform
-              </span>
-              <p className="text-xs text-stone-500">
-                Competitive athletics arena · Cryptographically verified credentials & honors
+          {/* Athlos Brand Logo & Mission Statement */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+            <Logo size="md" subtitle="Athletic Honors & Arena" />
+            <div className="sm:border-l sm:border-stone-200/80 sm:pl-4">
+              <p className="text-xs text-stone-500 max-w-sm">
+                Competitive athletics arena · Cryptographically verified credentials, podium honors & sponsor rewards
               </p>
             </div>
           </div>
@@ -490,7 +486,7 @@ export default function HomePage() {
 
         {/* Bottom copyright & legal trust links */}
         <div className="max-w-6xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-400 text-center sm:text-left">
-          <p>© {new Date().getFullYear()} CertPlatform Platform. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Athlos Arena. All rights reserved.</p>
           <div className="flex items-center gap-4 text-[11px]">
             <Link to="/certificates/verify" className="hover:text-stone-700 underline underline-offset-2">
               Public Verification

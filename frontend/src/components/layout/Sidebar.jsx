@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import Avatar from '../ui/Avatar';
+import Logo from '../ui/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { ROLE_NAV_ITEMS } from '../../utils/constants';
 import { getUnreadCount } from '../../api/messagesApi';
@@ -34,20 +35,13 @@ export default function Sidebar({ className = '' }) {
       className={`hidden md:flex flex-col w-64 bg-white/95 backdrop-blur-md border-r border-stone-200/80 min-h-screen p-5 sticky top-0 justify-between ${className}`}
     >
       <div className="space-y-6">
-        {/* Brand / Logo */}
-        <NavLink to="/" className="flex items-center gap-3 px-1 py-1 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 text-stone-950 flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:shadow-glow-gold transition-all duration-300">
-            <LucideIcons.Trophy className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-base font-extrabold text-stone-900 tracking-tight leading-none">
-              CertPlatform
-            </h1>
-            <p className="text-[10px] font-bold text-stone-400 mt-1 uppercase tracking-wider">
-              {isInstitutionUser ? 'Institution Workspace' : 'Athlete Arena'}
-            </p>
-          </div>
-        </NavLink>
+        {/* Athlos Brand Logo */}
+        <div className="px-1 py-1">
+          <Logo
+            size="md"
+            subtitle={isInstitutionUser ? 'Institution Workspace' : 'Athlete Arena'}
+          />
+        </div>
 
         {/* Navigation list */}
         <nav className="space-y-1.5 pt-2">
