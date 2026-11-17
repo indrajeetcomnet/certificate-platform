@@ -230,15 +230,15 @@ export default function ProfilePage() {
       {/* ── 1. ATHLETE SHOWCASE HERO CARD ── */}
       <div className="bg-white border border-stone-200/90 rounded-3xl shadow-xs overflow-hidden">
         
-        {/* Championship Executive Banner */}
-        <div className="h-44 sm:h-52 bg-gradient-to-r from-stone-900 via-stone-800 to-amber-950 relative overflow-hidden flex items-end justify-end p-4">
+        {/* Championship Executive Banner - Pure Light Theme */}
+        <div className="h-32 sm:h-40 bg-gradient-to-r from-amber-100/90 via-amber-50 to-stone-100 border-b border-stone-200/90 relative overflow-hidden flex items-start justify-end p-4">
           {/* Subtle athletic pattern overlay */}
-          <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(#fde68a_1px,transparent_1px)] [background-size:18px_18px]" />
+          <div className="absolute inset-0 opacity-25 pointer-events-none bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:18px_18px]" />
           
           {/* Top Right Accreditation Pill */}
-          <div className="absolute top-4 right-4 flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-stone-950/70 backdrop-blur-md text-amber-300 border border-amber-400/40 text-xs font-black tracking-wide flex items-center gap-1.5 shadow-sm">
-              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+          <div className="relative z-10 flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-amber-900 border border-amber-300 text-xs font-black tracking-wide flex items-center gap-1.5 shadow-xs">
+              <Trophy className="w-3.5 h-3.5 text-amber-600" />
               <span>{isAthlete ? 'Accredited Competitor' : 'Accredited Institution'}</span>
             </span>
           </div>
@@ -246,46 +246,26 @@ export default function ProfilePage() {
 
         {/* Profile Content Body */}
         <div className="px-6 pb-6 pt-0">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between -mt-16 sm:-mt-14 mb-4 gap-4">
+          
+          {/* Top Action & Avatar Bar */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 mb-4">
             
-            {/* Avatar & Display Name */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-              <div className="relative">
-                <Avatar
-                  src={profile?.avatarUrl}
-                  name={profile?.displayName || profile?.username}
-                  size="xl"
-                  className="ring-4 ring-white shadow-xl bg-white"
-                />
-                <span
-                  className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white"
-                  title="Active Athlete"
-                />
-              </div>
-
-              <div className="pt-2">
-                <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
-                  <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-                    {profile?.displayName || profile?.username}
-                  </h1>
-                  <CheckCircle2 className="w-5 h-5 text-amber-600 fill-amber-400/20" title="Officially Verified Athlete" />
-                  
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-900 border border-amber-500/30 text-[11px] font-black uppercase tracking-wider">
-                    {isAthlete ? '🏃 Athlete Arena' : '🏛️ Institution'}
-                  </span>
-                </div>
-
-                <p className="text-xs sm:text-sm font-semibold text-stone-600 mt-0.5">
-                  @{profile?.username}
-                  {profile?.email && (
-                    <span className="text-stone-500 font-normal ml-2">({profile.email})</span>
-                  )}
-                </p>
-              </div>
+            {/* Avatar only with negative margin - sits cleanly half on banner, half on white card */}
+            <div className="relative -mt-12 sm:-mt-16 shrink-0 z-10">
+              <Avatar
+                src={profile?.avatarUrl}
+                name={profile?.displayName || profile?.username}
+                size="xl"
+                className="w-24 h-24 text-2xl ring-4 ring-white shadow-xl bg-white"
+              />
+              <span
+                className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white shadow-xs"
+                title="Active Athlete"
+              />
             </div>
 
-            {/* Header Actions */}
-            <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-end">
+            {/* Header Actions - 100% on the white card background */}
+            <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-end pt-2 sm:pt-0">
               {isOwnProfile ? (
                 <>
                   <Button
@@ -340,6 +320,27 @@ export default function ProfilePage() {
                 </>
               )}
             </div>
+          </div>
+
+          {/* Athlete Identity & Credentials (Name, Username, Email, Role) - 100% on White Background */}
+          <div className="space-y-1 text-center sm:text-left">
+            <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
+              <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+                {profile?.displayName || profile?.username}
+              </h1>
+              <CheckCircle2 className="w-5 h-5 text-amber-600 fill-amber-400/20 shrink-0" title="Officially Verified Athlete" />
+              
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-900 border border-amber-500/30 text-xs font-black uppercase tracking-wider">
+                {isAthlete ? '🏃 Athlete Arena' : '🏛️ Institution'}
+              </span>
+            </div>
+
+            <p className="text-xs sm:text-sm font-semibold text-stone-600">
+              @{profile?.username}
+              {profile?.email && (
+                <span className="text-stone-500 font-normal ml-2">({profile.email})</span>
+              )}
+            </p>
           </div>
 
           {/* Athlete Bio */}
