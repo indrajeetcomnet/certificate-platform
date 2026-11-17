@@ -146,6 +146,16 @@ export function AuthProvider({ children }) {
     }
   }, [navigate]);
 
+  // Update current user in session and storage (e.g. after avatar/profile changes)
+  const updateCurrentUser = useCallback((partialUser) => {
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...partialUser };
+      persistSessionToStorage(localStorage, updated, token);
+      return updated;
+    });
+  }, [token]);
+
   const value = useMemo(
     () => ({
       currentUser,
@@ -157,8 +167,9 @@ export function AuthProvider({ children }) {
       registerUser,
       loginInstitution,
       logout,
+      updateCurrentUser,
     }),
-    [currentUser, token, isAuthenticated, isInstitution, isUser, loginUser, registerUser, loginInstitution, logout]
+    [currentUser, token, isAuthenticated, isInstitution, isUser, loginUser, registerUser, loginInstitution, logout, updateCurrentUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

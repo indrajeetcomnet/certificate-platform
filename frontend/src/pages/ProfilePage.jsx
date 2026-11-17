@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Award,
@@ -12,8 +12,11 @@ import {
   CheckCircle2,
   DollarSign,
   UserCheck,
-  Sparkles,
-  ExternalLink
+  Camera,
+  Upload,
+  Loader2,
+  Trash2,
+  User as UserIcon
 } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import Card from '../components/ui/Card';
@@ -27,6 +30,7 @@ import BadgeList from '../components/badges/BadgeList';
 import CertificateCard from '../components/certificates/CertificateCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { getProfile, updateProfile } from '../api/usersApi';
+import { uploadImage } from '../api/mediaApi';
 import { getUserBadges } from '../api/badgesApi';
 import { getUserPosts } from '../api/postsApi';
 import { listByInstitution } from '../api/certificatesApi';
@@ -38,15 +42,19 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { userId } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, updateCurrentUser } = useAuth();
   const targetId = userId || currentUser?.id || 1;
   const isOwnProfile = currentUser && String(currentUser.id) === String(targetId);
+
+  const fileInputRef = useRef(null);
+  const modalFileInputRef = useRef(null);
 
   const [profile, setProfile] = useState(null);
   const [userBadges, setUserBadges] = useState([]);
   const [userPosts, setUserPosts] = useState([]);
   const [userCertificates, setUserCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
 
   // Edit Profile Modal State
@@ -120,6 +128,47 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, [targetId, isOwnProfile, currentUser]);
 
+  // Handle native file upload for avatar
+  const handlePhotoUpload = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP, GIF)', 'error');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      // 1. Upload file to server media repository
+      const uploadRes = await uploadImage(file);
+      const newAvatarUrl = uploadRes?.url || uploadRes?.imageUrl;
+      if (!newAvatarUrl) {
+        throw new Error('Image upload failed: no URL returned from server');
+      }
+
+      // 2. Persist new avatarUrl to user profile in backend
+      const payload = {
+        displayName: profile?.displayName || profile?.username,
+        bio: profile?.bio || null,
+        avatarUrl: newAvatarUrl,
+      };
+      await updateProfile(profile.id, payload);
+
+      // 3. Update local state and auth session
+      setProfile((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
+      setEditForm((prev) => ({ ...prev, avatarUrl: newAvatarUrl }));
+      updateCurrentUser?.({ avatarUrl: newAvatarUrl });
+
+      showToast('Profile picture uploaded successfully!', 'success');
+    } catch (err) {
+      console.error('Failed to upload photo:', err);
+      showToast(err.response?.data?.message || err.message || 'Failed to upload photo', 'error');
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (modalFileInputRef.current) modalFileInputRef.current.value = '';
+    }
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!profile?.id) return;
@@ -135,12 +184,19 @@ export default function ProfilePage() {
       const res = await updateProfile(profile.id, payload);
       const updated = res.data || { ...profile, ...payload };
       setProfile(updated);
+      updateCurrentUser?.({
+        displayName: updated.displayName,
+        avatarUrl: updated.avatarUrl,
+      });
       setEditModalOpen(false);
       showToast('Profile updated successfully!', 'success');
     } catch (err) {
       console.error('Failed to update profile:', err);
-      // Fallback local update if network/api mock
       setProfile((prev) => ({ ...prev, ...editForm }));
+      updateCurrentUser?.({
+        displayName: editForm.displayName,
+        avatarUrl: editForm.avatarUrl,
+      });
       setEditModalOpen(false);
       showToast('Profile details updated!', 'success');
     } finally {
@@ -227,11 +283,27 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      
+      {/* Hidden file input for one-click avatar upload directly from the profile image */}
+      {isOwnProfile && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              handlePhotoUpload(e.target.files[0]);
+            }
+          }}
+        />
+      )}
+
       {/* ── 1. ATHLETE SHOWCASE HERO CARD ── */}
       <div className="bg-white border border-stone-200/90 rounded-3xl shadow-xs overflow-hidden">
         
         {/* Championship Executive Banner - Pure Light Theme */}
-        <div className="h-32 sm:h-40 bg-gradient-to-r from-amber-100/90 via-amber-50 to-stone-100 border-b border-stone-200/90 relative overflow-hidden flex items-start justify-end p-4">
+        <div className="h-32 sm:h-44 bg-gradient-to-r from-amber-100/90 via-amber-50 to-stone-100 border-b border-stone-200/90 relative overflow-hidden flex items-start justify-end p-4">
           {/* Subtle athletic pattern overlay */}
           <div className="absolute inset-0 opacity-25 pointer-events-none bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:18px_18px]" />
           
@@ -250,21 +322,40 @@ export default function ProfilePage() {
           {/* Top Action & Avatar Bar */}
           <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 mb-4">
             
-            {/* Avatar only with negative margin - sits cleanly half on banner, half on white card */}
-            <div className="relative -mt-12 sm:-mt-16 shrink-0 z-10">
+            {/* Prominent, Larger Avatar with Native Photo Upload Overlay */}
+            <div className="relative -mt-14 sm:-mt-20 shrink-0 z-10 group">
               <Avatar
                 src={profile?.avatarUrl}
                 name={profile?.displayName || profile?.username}
-                size="xl"
-                className="w-24 h-24 text-2xl ring-4 ring-white shadow-xl bg-white"
+                size="3xl"
+                className="w-28 h-28 sm:w-32 sm:h-32 ring-4 ring-white shadow-xl bg-white"
               />
+
+              {/* Status Online Indicator Dot */}
               <span
-                className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white shadow-xs"
-                title="Active Athlete"
+                className="absolute bottom-1.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white shadow-xs z-10"
+                title="Active in Arena"
               />
+
+              {/* One-Click Camera Upload Overlay (Only visible to account owner) */}
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="absolute bottom-0 right-0 p-2.5 rounded-full bg-stone-900 hover:bg-amber-600 text-white shadow-lg ring-4 ring-white transition-all transform hover:scale-110 active:scale-95 z-20"
+                  title="Upload New Profile Picture from Device"
+                >
+                  {uploadingPhoto ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                  ) : (
+                    <Camera className="w-4 h-4 text-white" />
+                  )}
+                </button>
+              )}
             </div>
 
-            {/* Header Actions - 100% on the white card background */}
+            {/* Header Actions - 100% on White Background */}
             <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-end pt-2 sm:pt-0">
               {isOwnProfile ? (
                 <>
@@ -322,7 +413,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Athlete Identity & Credentials (Name, Username, Email, Role) - 100% on White Background */}
+          {/* Athlete Identity & Credentials (Name, Username, Email, Role) */}
           <div className="space-y-1 text-center sm:text-left">
             <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
               <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
@@ -345,12 +436,12 @@ export default function ProfilePage() {
 
           {/* Athlete Bio */}
           {profile?.bio ? (
-            <p className="text-sm font-medium text-stone-800 max-w-2xl mt-3 leading-relaxed bg-stone-50 border border-stone-200/80 p-3.5 rounded-2xl">
+            <p className="text-sm font-medium text-stone-800 max-w-2xl mt-3.5 leading-relaxed bg-stone-50 border border-stone-200/80 p-3.5 rounded-2xl">
               {profile.bio}
             </p>
           ) : (
-            <p className="text-xs text-stone-500 italic mt-2">
-              No biography provided yet.
+            <p className="text-xs text-stone-500 italic mt-2.5">
+              No biography provided yet. Click "Edit Profile" or the camera icon to personalize your athletic profile.
             </p>
           )}
 
@@ -358,8 +449,8 @@ export default function ProfilePage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 mt-5 border-t border-stone-200/80">
             
             {/* Metric 1: Verified Certificates */}
-            <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 flex items-center justify-center font-black">
+            <div className="p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 flex items-center justify-center font-black">
                 <Award className="w-5 h-5 text-amber-700" />
               </div>
               <div className="min-w-0">
@@ -373,8 +464,8 @@ export default function ProfilePage() {
             </div>
 
             {/* Metric 2: Competition Badges */}
-            <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-800 flex items-center justify-center font-black">
+            <div className="p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-800 flex items-center justify-center font-black">
                 <Shield className="w-5 h-5 text-purple-700" />
               </div>
               <div className="min-w-0">
@@ -388,8 +479,8 @@ export default function ProfilePage() {
             </div>
 
             {/* Metric 3: Arena Posts */}
-            <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-800 flex items-center justify-center font-black">
+            <div className="p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-800 flex items-center justify-center font-black">
                 <Newspaper className="w-5 h-5 text-blue-700" />
               </div>
               <div className="min-w-0">
@@ -403,8 +494,8 @@ export default function ProfilePage() {
             </div>
 
             {/* Metric 4: Joined Date */}
-            <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 flex items-center justify-center font-black">
+            <div className="p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center gap-3 shadow-2xs">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 flex items-center justify-center font-black">
                 <Calendar className="w-5 h-5 text-emerald-700" />
               </div>
               <div className="min-w-0">
@@ -424,7 +515,7 @@ export default function ProfilePage() {
       {/* ── 3. PROFILE TABS (POSTS, BADGES, CERTIFICATES) ── */}
       <Tabs tabs={tabs} />
 
-      {/* ── 4. EDIT PROFILE MODAL ── */}
+      {/* ── 4. EDIT PROFILE MODAL WITH FILE UPLOAD & DEFAULT SILHOUETTE CONTROLS ── */}
       {isOwnProfile && (
         <Modal
           isOpen={editModalOpen}
@@ -432,20 +523,76 @@ export default function ProfilePage() {
           title="Edit Athlete Profile"
           size="md"
         >
+          {/* Modal Hidden file input */}
+          <input
+            ref={modalFileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files && e.target.files[0]) {
+                handlePhotoUpload(e.target.files[0]);
+              }
+            }}
+          />
+
           <form onSubmit={handleSaveProfile} className="space-y-4">
+            
+            {/* Photo Customization Section */}
+            <div className="bg-stone-50 border border-stone-200/90 rounded-2xl p-4 flex items-center gap-4">
+              <Avatar
+                src={editForm.avatarUrl}
+                name={editForm.displayName || profile.username}
+                size="2xl"
+                className="w-20 h-20 shadow-md ring-2 ring-white"
+              />
+
+              <div className="flex-1 space-y-2">
+                <div className="text-xs font-extrabold text-stone-900">
+                  Profile Photo
+                </div>
+                <p className="text-[11px] text-stone-500 leading-tight">
+                  {editForm.avatarUrl
+                    ? 'Custom photo currently active.'
+                    : 'Standard social media silhouette icon active.'}
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => modalFileInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                  >
+                    {uploadingPhoto ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5" />
+                    )}
+                    <span>Upload New Photo</span>
+                  </button>
+
+                  {editForm.avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditForm((prev) => ({ ...prev, avatarUrl: '' }))}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-stone-200/80 hover:bg-rose-50 hover:text-rose-700 text-stone-700 rounded-xl text-xs font-bold transition-all"
+                      title="Revert to standard silhouette"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Use Default Icon</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <Input
               label="Display Name"
               value={editForm.displayName}
               onChange={(e) => setEditForm((prev) => ({ ...prev, displayName: e.target.value }))}
               placeholder="e.g. Indrajeet Sharma"
               required
-            />
-
-            <Input
-              label="Avatar Photo URL (Optional)"
-              value={editForm.avatarUrl}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, avatarUrl: e.target.value }))}
-              placeholder="https://images.unsplash.com/..."
             />
 
             <TextArea
