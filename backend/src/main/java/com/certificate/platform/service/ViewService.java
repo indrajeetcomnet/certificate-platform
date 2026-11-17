@@ -157,6 +157,22 @@ public class ViewService {
                     .build();
             viewEventRepository.save(viewEvent);
 
+            // Update real-time sponsor campaign impressions & spend
+            if (sponsor != null) {
+                long impressions = sponsor.getTotalImpressions() != null ? sponsor.getTotalImpressions() + 1L : 1L;
+                sponsor.setTotalImpressions(impressions);
+                java.math.BigDecimal ratePerView = (sponsor.getCpmRate() != null ? sponsor.getCpmRate() : new java.math.BigDecimal("20.00"))
+                        .divide(new java.math.BigDecimal("1000"), 4, java.math.RoundingMode.HALF_UP);
+                java.math.BigDecimal currentSpent = sponsor.getSpentAmount() != null ? sponsor.getSpentAmount() : java.math.BigDecimal.ZERO;
+                java.math.BigDecimal newSpent = currentSpent.add(ratePerView);
+                sponsor.setSpentAmount(newSpent);
+                if (sponsor.getBudget() != null && sponsor.getBudget().compareTo(java.math.BigDecimal.ZERO) > 0
+                        && newSpent.compareTo(sponsor.getBudget()) >= 0) {
+                    sponsor.setStatus("COMPLETED");
+                }
+                sponsorRepository.save(sponsor);
+            }
+
             if (auditService != null) {
                 auditService.logEvent(user, "VIEW", "Recorded qualifying view on post ID " + post.getId() + " (duration: " + viewEvent.getDurationMs() + "ms)", ipHash);
             }

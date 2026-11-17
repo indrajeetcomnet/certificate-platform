@@ -118,17 +118,15 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        // Institutional write endpoints:
+        // Institutional write endpoints (Certificates, Badges, Tournament Setup):
         // POST /api/v1/badges
         // POST /api/v1/badges/assign
         // POST /api/v1/certificates/**
-        // POST /api/v1/sponsors/**
-        // PUT / DELETE on badges, sponsors, certificates
+        // (Note: Sponsorships are open to non-institutions: brands, fans, creators, and public sponsors)
         if ("POST".equals(method)) {
             if (path.equals("/api/v1/badges")
                     || path.equals("/api/v1/badges/assign")
                     || path.startsWith("/api/v1/certificates")
-                    || path.startsWith("/api/v1/sponsors")
                     || (path.startsWith("/api/v1/tournaments") && !path.contains("/participants"))) {
                 return true;
             }
@@ -136,7 +134,6 @@ public class AuthInterceptor implements HandlerInterceptor {
         if ("PUT".equals(method) || "DELETE".equals(method)) {
             if (path.startsWith("/api/v1/badges")
                     || path.startsWith("/api/v1/certificates")
-                    || path.startsWith("/api/v1/sponsors")
                     || path.startsWith("/api/v1/tournaments")) {
                 return true;
             }

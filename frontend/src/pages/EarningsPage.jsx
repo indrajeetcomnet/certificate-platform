@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { DollarSign, RefreshCw, Sparkles } from 'lucide-react';
 import EarningsDashboard from '../components/earnings/EarningsDashboard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import Button from '../components/ui/Button';
@@ -72,15 +73,25 @@ export default function EarningsPage() {
           </p>
         </div>
 
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={RefreshCw}
-          onClick={loadEarnings}
-          loading={loading}
-        >
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/sponsors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-xs font-bold text-amber-900 transition-all shadow-2xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <span>Sponsor Marketplace</span>
+          </Link>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
+            onClick={loadEarnings}
+            loading={loading}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {loading ? (

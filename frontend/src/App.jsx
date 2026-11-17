@@ -23,16 +23,18 @@ import BadgesManagePage from './pages/BadgesManagePage';
 import TournamentsPage from './pages/TournamentsPage';
 import TournamentCreatePage from './pages/TournamentCreatePage';
 import TournamentWorkspacePage from './pages/TournamentWorkspacePage';
+import SponsorsPage from './pages/SponsorsPage';
 
 export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
         <Routes>
-          {/* 1. Public Standalone Pages (Full-Width, NO side menubar) */}
+          {/* Public Standalone Pages (Full-Width, NO side menubar) */}
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<LoginPage />} />
+          <Route path="/sponsors" element={<AppLayout><SponsorsPage /></AppLayout>} />
 
           {/* Public Direct Verification Portal (Accessed strictly via footer link / direct link / QR code) */}
           <Route path="/certificates/verify" element={<CertificateVerifyPage />} />

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,16 +22,78 @@ public class SponsorService {
 
     @Transactional
     public SponsorResponse createSponsor(CreateSponsorRequest request) {
+        return createSponsor(request, null);
+    }
+
+    @Transactional
+    public SponsorResponse createSponsor(CreateSponsorRequest request, User currentUser) {
+        // Enforce user rule: institutions create certificates and tournament awards, not sponsorships
+        if (currentUser != null && currentUser.getRole() == User.Role.INSTITUTION) {
+            throw new IllegalArgumentException(
+                    "Institutions are accredited certificate and tournament award issuers. " +
+                    "Sponsorship campaigns must be created by brands, fans, creators, or commercial sponsors."
+            );
+        }
+
+        BigDecimal budget = request.getBudget() != null ? request.getBudget() : new BigDecimal("1000.00");
+        BigDecimal cpmRate = request.getCpmRate() != null ? request.getCpmRate() : new BigDecimal("20.00");
+
+        Long createdById = currentUser != null ? currentUser.getId() : null;
+        String createdByName = currentUser != null
+                ? (currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getUsername())
+                : (request.getName() != null ? request.getName() : "Independent Brand Sponsor");
+
         Sponsor sponsor = Sponsor.builder()
                 .name(request.getName())
-                .logoUrl(request.getLogoUrl())
-                .websiteUrl(request.getWebsiteUrl())
+                .tagline(request.getTagline() != null ? request.getTagline() : "Supporting competitive athletes & tournament champions")
+                .logoUrl(request.getLogoUrl() != null && !request.getLogoUrl().isBlank()
+                        ? request.getLogoUrl()
+                        : "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop")
+                .websiteUrl(request.getWebsiteUrl() != null && !request.getWebsiteUrl().isBlank()
+                        ? request.getWebsiteUrl()
+                        : "https://example.com/sponsor")
                 .bannerImageUrl(request.getBannerImageUrl())
+                .budget(budget)
+                .spentAmount(BigDecimal.ZERO)
+                .cpmRate(cpmRate)
+                .totalImpressions(0L)
+                .totalClicks(0L)
+                .targetCategory(request.getTargetCategory() != null ? request.getTargetCategory() : "ALL")
+                .sponsorType(request.getSponsorType() != null ? request.getSponsorType() : "BRAND")
+                .createdById(createdById)
+                .createdByName(createdByName)
+                .status("ACTIVE")
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .campaignStart(request.getCampaignStart())
                 .campaignEnd(request.getCampaignEnd())
                 .build();
+
         sponsor = sponsorRepository.save(sponsor);
+
+        // Auto-link to targeted badge if provided, or attach to existing active badges for immediate rotation
+        if (request.getTargetBadgeId() != null) {
+            Badge badge = badgeRepository.findById(request.getTargetBadgeId()).orElse(null);
+            if (badge != null) {
+                sponsorBadgeRepository.save(SponsorBadge.builder()
+                        .sponsor(sponsor)
+                        .badge(badge)
+                        .priority(10)
+                        .isActive(true)
+                        .build());
+            }
+        } else {
+            // Attach to existing badges so the new sponsor immediately participates in live feed rotation
+            List<Badge> existingBadges = badgeRepository.findAll();
+            for (Badge b : existingBadges) {
+                sponsorBadgeRepository.save(SponsorBadge.builder()
+                        .sponsor(sponsor)
+                        .badge(b)
+                        .priority(5)
+                        .isActive(true)
+                        .build());
+            }
+        }
+
         return mapToResponse(sponsor);
     }
 
@@ -41,9 +104,58 @@ public class SponsorService {
     }
 
     public List<SponsorResponse> getAllSponsors() {
-        return sponsorRepository.findAll().stream()
+        return sponsorRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    public List<SponsorResponse> getMySponsors(Long userId) {
+        return sponsorRepository.findByCreatedByIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public SponsorResponse recordClick(Long id) {
+        Sponsor sponsor = sponsorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sponsor", id));
+        long clicks = sponsor.getTotalClicks() != null ? sponsor.getTotalClicks() + 1L : 1L;
+        sponsor.setTotalClicks(clicks);
+        sponsor = sponsorRepository.save(sponsor);
+        return mapToResponse(sponsor);
+    }
+
+    @Transactional
+    public SponsorResponse toggleStatus(Long id, User currentUser) {
+        Sponsor sponsor = sponsorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sponsor", id));
+        
+        if ("ACTIVE".equalsIgnoreCase(sponsor.getStatus())) {
+            sponsor.setStatus("PAUSED");
+            sponsor.setIsActive(false);
+        } else {
+            sponsor.setStatus("ACTIVE");
+            sponsor.setIsActive(true);
+        }
+        sponsor = sponsorRepository.save(sponsor);
+        return mapToResponse(sponsor);
+    }
+
+    @Transactional
+    public SponsorResponse addBudget(Long id, BigDecimal amount) {
+        Sponsor sponsor = sponsorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sponsor", id));
+        
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal currentBudget = sponsor.getBudget() != null ? sponsor.getBudget() : BigDecimal.ZERO;
+            sponsor.setBudget(currentBudget.add(amount));
+            if ("COMPLETED".equalsIgnoreCase(sponsor.getStatus()) || "PAUSED".equalsIgnoreCase(sponsor.getStatus())) {
+                sponsor.setStatus("ACTIVE");
+                sponsor.setIsActive(true);
+            }
+            sponsor = sponsorRepository.save(sponsor);
+        }
+        return mapToResponse(sponsor);
     }
 
     @Transactional
@@ -52,9 +164,14 @@ public class SponsorService {
                 .orElseThrow(() -> new ResourceNotFoundException("Sponsor", id));
 
         sponsor.setName(request.getName());
+        if (request.getTagline() != null) sponsor.setTagline(request.getTagline());
         sponsor.setLogoUrl(request.getLogoUrl());
         sponsor.setWebsiteUrl(request.getWebsiteUrl());
         sponsor.setBannerImageUrl(request.getBannerImageUrl());
+        if (request.getBudget() != null) sponsor.setBudget(request.getBudget());
+        if (request.getCpmRate() != null) sponsor.setCpmRate(request.getCpmRate());
+        if (request.getTargetCategory() != null) sponsor.setTargetCategory(request.getTargetCategory());
+        if (request.getSponsorType() != null) sponsor.setSponsorType(request.getSponsorType());
         if (request.getIsActive() != null) sponsor.setIsActive(request.getIsActive());
         sponsor.setCampaignStart(request.getCampaignStart());
         sponsor.setCampaignEnd(request.getCampaignEnd());
@@ -119,9 +236,20 @@ public class SponsorService {
         return SponsorResponse.builder()
                 .id(sponsor.getId())
                 .name(sponsor.getName())
+                .tagline(sponsor.getTagline())
                 .logoUrl(sponsor.getLogoUrl())
                 .websiteUrl(sponsor.getWebsiteUrl())
                 .bannerImageUrl(sponsor.getBannerImageUrl())
+                .budget(sponsor.getBudget() != null ? sponsor.getBudget() : BigDecimal.ZERO)
+                .spentAmount(sponsor.getSpentAmount() != null ? sponsor.getSpentAmount() : BigDecimal.ZERO)
+                .cpmRate(sponsor.getCpmRate() != null ? sponsor.getCpmRate() : new BigDecimal("20.00"))
+                .totalImpressions(sponsor.getTotalImpressions() != null ? sponsor.getTotalImpressions() : 0L)
+                .totalClicks(sponsor.getTotalClicks() != null ? sponsor.getTotalClicks() : 0L)
+                .targetCategory(sponsor.getTargetCategory() != null ? sponsor.getTargetCategory() : "ALL")
+                .sponsorType(sponsor.getSponsorType() != null ? sponsor.getSponsorType() : "BRAND")
+                .createdById(sponsor.getCreatedById())
+                .createdByName(sponsor.getCreatedByName() != null ? sponsor.getCreatedByName() : "Brand Sponsor")
+                .status(sponsor.getStatus() != null ? sponsor.getStatus() : (Boolean.TRUE.equals(sponsor.getIsActive()) ? "ACTIVE" : "PAUSED"))
                 .isActive(sponsor.getIsActive())
                 .campaignStart(sponsor.getCampaignStart())
                 .campaignEnd(sponsor.getCampaignEnd())

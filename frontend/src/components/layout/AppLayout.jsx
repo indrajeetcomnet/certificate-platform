@@ -9,8 +9,10 @@ export default function AppLayout({ children, onSearch }) {
   const { isAuthenticated, currentUser } = useAuth();
   const location = useLocation();
 
-  // If not authenticated, immediately redirect away from internal workspace
-  if (!isAuthenticated || !currentUser) {
+  const isPublicWorkspace = location.pathname === '/sponsors';
+
+  // If not authenticated and not a public workspace route, redirect to login
+  if (!isAuthenticated && !isPublicWorkspace) {
     return <Navigate to="/login" replace />;
   }
 

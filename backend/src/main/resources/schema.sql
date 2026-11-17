@@ -120,6 +120,17 @@ CREATE TABLE IF NOT EXISTS sponsors (
     logo_url VARCHAR(500),
     website_url VARCHAR(500),
     banner_image_url VARCHAR(500),
+    tagline VARCHAR(500),
+    budget NUMERIC(12, 2) DEFAULT 0.00,
+    spent_amount NUMERIC(12, 2) DEFAULT 0.00,
+    cpm_rate NUMERIC(12, 2) DEFAULT 20.00,
+    total_impressions BIGINT DEFAULT 0,
+    total_clicks BIGINT DEFAULT 0,
+    target_category VARCHAR(100) DEFAULT 'ALL',
+    sponsor_type VARCHAR(100) DEFAULT 'BRAND',
+    created_by_id BIGINT,
+    created_by_name VARCHAR(200),
+    status VARCHAR(50) DEFAULT 'ACTIVE',
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     campaign_start TIMESTAMP WITHOUT TIME ZONE,
     campaign_end TIMESTAMP WITHOUT TIME ZONE,
@@ -201,3 +212,16 @@ CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(token);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type);
+
+-- Safe migrations for sponsors table columns
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS tagline VARCHAR(500);
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS budget NUMERIC(12, 2) DEFAULT 0.00;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS spent_amount NUMERIC(12, 2) DEFAULT 0.00;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS cpm_rate NUMERIC(12, 2) DEFAULT 20.00;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS total_impressions BIGINT DEFAULT 0;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS total_clicks BIGINT DEFAULT 0;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS target_category VARCHAR(100) DEFAULT 'ALL';
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS sponsor_type VARCHAR(100) DEFAULT 'BRAND';
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS created_by_id BIGINT;
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS created_by_name VARCHAR(200);
+ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'ACTIVE';

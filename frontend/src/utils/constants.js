@@ -3,6 +3,7 @@ export const ROLE_NAV_ITEMS = {
     { label: 'Social Feed', path: '/feed', icon: 'Newspaper' },
     { label: 'Direct Messages', path: '/messages', icon: 'MessageSquare' },
     { label: 'My Badges', path: '/profile', icon: 'Shield' },
+    { label: 'Sponsor Hub', path: '/sponsors', icon: 'Sparkles' },
     { label: 'Sponsor Earnings', path: '/earnings', icon: 'DollarSign' },
   ],
   INSTITUTION: [
@@ -15,6 +16,7 @@ export const ROLE_NAV_ITEMS = {
   GUEST: [
     { label: 'Home', path: '/', icon: 'Home' },
     { label: 'Social Feed', path: '/feed', icon: 'Newspaper' },
+    { label: 'Sponsor Hub', path: '/sponsors', icon: 'Sparkles' },
   ],
 };
 

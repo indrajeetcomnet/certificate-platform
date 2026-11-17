@@ -15,7 +15,8 @@ import {
   MessageSquare,
   Share2,
   CheckCircle2,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
@@ -95,6 +96,13 @@ export default function HomePage() {
 
           {/* Action CTAs */}
           <div className="flex items-center gap-2.5">
+            <Link
+              to="/sponsors"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300/80 bg-amber-50/80 hover:bg-amber-100 text-xs font-bold text-amber-900 transition-all hover:scale-105 shadow-2xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Sponsor Hub</span>
+            </Link>
             {!isAuthenticated ? (
               <>
                 <Button
@@ -186,6 +194,16 @@ export default function HomePage() {
               className="shadow-xl hover:scale-105"
             >
               Explore Social Feed
+            </Button>
+
+            <Button
+              size="xl"
+              variant="secondary"
+              icon={Sparkles}
+              onClick={() => navigate('/sponsors')}
+              className="shadow-sm hover:scale-105 border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-amber-950 font-bold"
+            >
+              Sponsor Champions (₹)
             </Button>
 
             <Button

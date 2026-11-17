@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Award, User, LogOut, Shield, DollarSign, Trophy, MessageSquare } from 'lucide-react';
+import { Award, User, LogOut, Shield, DollarSign, Trophy, MessageSquare, Sparkles } from 'lucide-react';
 import SearchBar from '../ui/SearchBar';
 import Avatar from '../ui/Avatar';
 import Logo from '../ui/Logo';
@@ -84,6 +84,11 @@ export default function Header({ onSearch, title = 'Athlos', isStudio = false, c
         onClick: () => navigate('/messages'),
       },
       {
+        label: 'Sponsor Hub & Market',
+        icon: Sparkles,
+        onClick: () => navigate('/sponsors'),
+      },
+      {
         label: 'Sponsor Earnings',
         icon: DollarSign,
         onClick: () => navigate('/earnings'),
@@ -124,6 +129,15 @@ export default function Header({ onSearch, title = 'Athlos', isStudio = false, c
 
       {/* Right controls */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Sponsor Hub Shortcut */}
+        <Link
+          to="/sponsors"
+          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300/80 bg-amber-50/70 hover:bg-amber-100 text-xs font-bold text-amber-900 transition-all hover:scale-105 shadow-2xs"
+          title="Sponsor Hub & Open Brand Campaigns"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <span>Sponsor Hub</span>
+        </Link>
         {/* Direct Messages Shortcut */}
         {currentUser && (
           <Link

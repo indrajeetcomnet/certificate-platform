@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface SponsorRepository extends JpaRepository<Sponsor, Long> {
     List<Sponsor> findByIsActiveTrue();
+    List<Sponsor> findByCreatedByIdOrderByCreatedAtDesc(Long createdById);
+    List<Sponsor> findAllByOrderByCreatedAtDesc();
 }

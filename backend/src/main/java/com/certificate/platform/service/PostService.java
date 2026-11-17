@@ -5,7 +5,7 @@ import com.certificate.platform.exception.BadRequestException;
 import com.certificate.platform.exception.ResourceNotFoundException;
 import com.certificate.platform.model.*;
 import com.certificate.platform.repository.*;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PostService {
 
     private final PostRepository postRepository;
@@ -30,6 +29,37 @@ public class PostService {
     private final LikeRepository likeRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final SponsorBadgeRepository sponsorBadgeRepository;
+    private final SponsorRepository sponsorRepository;
+
+    public PostService(PostRepository postRepository,
+                       PostMediaRepository postMediaRepository,
+                       CommentRepository commentRepository,
+                       UserRepository userRepository,
+                       LikeRepository likeRepository,
+                       UserBadgeRepository userBadgeRepository,
+                       SponsorBadgeRepository sponsorBadgeRepository) {
+        this(postRepository, postMediaRepository, commentRepository, userRepository,
+                likeRepository, userBadgeRepository, sponsorBadgeRepository, null);
+    }
+
+    @Autowired
+    public PostService(PostRepository postRepository,
+                       PostMediaRepository postMediaRepository,
+                       CommentRepository commentRepository,
+                       UserRepository userRepository,
+                       LikeRepository likeRepository,
+                       UserBadgeRepository userBadgeRepository,
+                       SponsorBadgeRepository sponsorBadgeRepository,
+                       @Autowired(required = false) SponsorRepository sponsorRepository) {
+        this.postRepository = postRepository;
+        this.postMediaRepository = postMediaRepository;
+        this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
+        this.likeRepository = likeRepository;
+        this.userBadgeRepository = userBadgeRepository;
+        this.sponsorBadgeRepository = sponsorBadgeRepository;
+        this.sponsorRepository = sponsorRepository;
+    }
 
     @Transactional
     public PostResponse createPost(CreatePostRequest request, Long userId) {
@@ -181,6 +211,14 @@ public class PostService {
                 .sorted(Comparator.comparingInt((SponsorBadge sb) -> sb.getPriority() != null ? sb.getPriority() : 0).reversed())
                 .forEach(sb -> distinctSponsors.putIfAbsent(sb.getSponsor().getId(), sb.getSponsor()));
 
+        // Fallback: If no badge-specific sponsor is linked, rotate all active platform sponsors
+        if (distinctSponsors.isEmpty() && sponsorRepository != null) {
+            List<Sponsor> activeSponsors = sponsorRepository.findByIsActiveTrue();
+            if (activeSponsors != null) {
+                activeSponsors.forEach(s -> distinctSponsors.putIfAbsent(s.getId(), s));
+            }
+        }
+
         List<SponsorResponse> sponsors = distinctSponsors.values().stream()
                 .map(this::mapToSponsorResponse)
                 .collect(Collectors.toList());
@@ -232,9 +270,20 @@ public class PostService {
         return SponsorResponse.builder()
                 .id(sponsor.getId())
                 .name(sponsor.getName())
+                .tagline(sponsor.getTagline())
                 .logoUrl(sponsor.getLogoUrl())
                 .websiteUrl(sponsor.getWebsiteUrl())
                 .bannerImageUrl(sponsor.getBannerImageUrl())
+                .budget(sponsor.getBudget())
+                .spentAmount(sponsor.getSpentAmount())
+                .cpmRate(sponsor.getCpmRate())
+                .totalImpressions(sponsor.getTotalImpressions())
+                .totalClicks(sponsor.getTotalClicks())
+                .targetCategory(sponsor.getTargetCategory())
+                .sponsorType(sponsor.getSponsorType())
+                .createdById(sponsor.getCreatedById())
+                .createdByName(sponsor.getCreatedByName())
+                .status(sponsor.getStatus())
                 .isActive(sponsor.getIsActive())
                 .campaignStart(sponsor.getCampaignStart())
                 .campaignEnd(sponsor.getCampaignEnd())
