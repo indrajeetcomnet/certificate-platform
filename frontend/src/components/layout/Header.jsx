@@ -40,6 +40,11 @@ export default function Header({ onSearch, title = 'CertPlatform', isStudio = fa
   const userMenuItems = isInstitutionUser
     ? [
       {
+        label: 'Organize Tournaments',
+        icon: Trophy,
+        onClick: () => navigate('/tournaments'),
+      },
+      {
         label: 'Certificate Hub & Ledger',
         icon: Award,
         onClick: () => navigate('/certificates'),

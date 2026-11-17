@@ -24,6 +24,9 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final PostRepository postRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final MessageRepository messageRepository;
+    private final TournamentRepository tournamentRepository;
+    private final TournamentParticipantRepository tournamentParticipantRepository;
+    private final TournamentMatchRepository tournamentMatchRepository;
 
     @Override
     @Transactional
@@ -320,6 +323,125 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .build());
 
             log.info("Initialized initial direct message threads in database.");
+        }
+
+        // 8. Seed Flagship Tournament with Google-Form custom schema and timetable if empty
+        if (tournamentRepository.count() == 0 && apexInstitution != null) {
+            String formSchema = "[" +
+                    "{\"id\":\"bib_number\",\"label\":\"Bib / Chest Number\",\"type\":\"text\",\"required\":true,\"placeholder\":\"e.g. 101\"}," +
+                    "{\"id\":\"age_category\",\"label\":\"Age Category\",\"type\":\"select\",\"required\":true,\"options\":[\"Under-18\",\"Senior Elite (18-29)\",\"Masters (30+)\"],\"placeholder\":\"Select Category\"}," +
+                    "{\"id\":\"personal_best\",\"label\":\"Official 100m Personal Best\",\"type\":\"text\",\"required\":false,\"placeholder\":\"e.g. 10.18s\"}," +
+                    "{\"id\":\"medical_clearance\",\"label\":\"Certified Medically Fit to Compete\",\"type\":\"checkbox\",\"required\":true,\"placeholder\":\"Certified\"}" +
+                    "]";
+
+            Tournament t = Tournament.builder()
+                    .title("Game City Athletics Championship 2026")
+                    .description("The premier regional track and field championship organized by Apex Sports Academy. Official medals and cryptographically verified credentials awarded to podium finishers.")
+                    .sport("Track & Field")
+                    .format("Single Elimination Sprint Heats")
+                    .venue("Apex National Athletic Stadium, Track 4")
+                    .startDate("2026-11-20")
+                    .endDate("2026-11-22")
+                    .registrationDeadline("2026-11-19")
+                    .status("LIVE")
+                    .maxParticipants(16)
+                    .institution(apexInstitution)
+                    .customFormSchema(formSchema)
+                    .linkedBadgeGoldId(goldBadge != null ? goldBadge.getId() : null)
+                    .linkedBadgeSilverId(silverBadge != null ? silverBadge.getId() : null)
+                    .linkedBadgeBronzeId(bronzeBadge != null ? bronzeBadge.getId() : null)
+                    .linkedCertificateTemplate("CHAMPIONSHIP_GOLD")
+                    .build();
+
+            t = tournamentRepository.save(t);
+
+            // Seed 4 participants with custom Google-Form responses
+            TournamentParticipant tp1 = tournamentParticipantRepository.save(TournamentParticipant.builder()
+                    .tournament(t)
+                    .user(indrajeet)
+                    .athleteName("Indrajeet Sharma")
+                    .email("indrajeet@athlete.org")
+                    .phone("+91 98765 43210")
+                    .status("CONFIRMED")
+                    .formResponses("{\"bib_number\":\"101\",\"age_category\":\"Senior Elite (18-29)\",\"personal_best\":\"10.18s\",\"medical_clearance\":\"true\"}")
+                    .build());
+
+            TournamentParticipant tp2 = tournamentParticipantRepository.save(TournamentParticipant.builder()
+                    .tournament(t)
+                    .user(marcus)
+                    .athleteName("Marcus Vance")
+                    .email("marcus@athlete.org")
+                    .phone("+91 98765 43211")
+                    .status("CONFIRMED")
+                    .formResponses("{\"bib_number\":\"104\",\"age_category\":\"Senior Elite (18-29)\",\"personal_best\":\"10.35s\",\"medical_clearance\":\"true\"}")
+                    .build());
+
+            TournamentParticipant tp3 = tournamentParticipantRepository.save(TournamentParticipant.builder()
+                    .tournament(t)
+                    .user(sarah)
+                    .athleteName("Sarah Chen")
+                    .email("sarah@athlete.org")
+                    .phone("+91 98765 43212")
+                    .status("CONFIRMED")
+                    .formResponses("{\"bib_number\":\"108\",\"age_category\":\"Senior Elite (18-29)\",\"personal_best\":\"10.42s\",\"medical_clearance\":\"true\"}")
+                    .build());
+
+            TournamentParticipant tp4 = tournamentParticipantRepository.save(TournamentParticipant.builder()
+                    .tournament(t)
+                    .user(rohit)
+                    .athleteName("Rohit Kumar")
+                    .email("rohit@athlete.org")
+                    .phone("+91 98765 43213")
+                    .status("CONFIRMED")
+                    .formResponses("{\"bib_number\":\"112\",\"age_category\":\"Senior Elite (18-29)\",\"personal_best\":\"10.55s\",\"medical_clearance\":\"true\"}")
+                    .build());
+
+            // Seed matches timetable: Semi-Finals completed, Grand Final LIVE
+            tournamentMatchRepository.save(TournamentMatch.builder()
+                    .tournament(t)
+                    .roundName("Semi-Final Heat 1")
+                    .matchNumber(1)
+                    .participant1(tp1)
+                    .participant2(tp4)
+                    .score1("10.18s")
+                    .score2("10.55s")
+                    .winnerParticipantId(tp1.getId())
+                    .scheduledDate("2026-11-20")
+                    .scheduledTime("10:00 AM")
+                    .courtVenue("Track 4 - Lane 3 & 4")
+                    .status("COMPLETED")
+                    .build());
+
+            tournamentMatchRepository.save(TournamentMatch.builder()
+                    .tournament(t)
+                    .roundName("Semi-Final Heat 2")
+                    .matchNumber(2)
+                    .participant1(tp2)
+                    .participant2(tp3)
+                    .score1("10.35s")
+                    .score2("10.42s")
+                    .winnerParticipantId(tp2.getId())
+                    .scheduledDate("2026-11-20")
+                    .scheduledTime("10:30 AM")
+                    .courtVenue("Track 4 - Lane 3 & 4")
+                    .status("COMPLETED")
+                    .build());
+
+            tournamentMatchRepository.save(TournamentMatch.builder()
+                    .tournament(t)
+                    .roundName("Grand Final Gold Sprint")
+                    .matchNumber(3)
+                    .participant1(tp1)
+                    .participant2(tp2)
+                    .score1("")
+                    .score2("")
+                    .scheduledDate("2026-11-20")
+                    .scheduledTime("04:30 PM")
+                    .courtVenue("Track 4 - Championship Center Lane")
+                    .status("LIVE")
+                    .build());
+
+            log.info("Initialized flagship tournament 'Game City Athletics Championship 2026' with Google-Form schema and live timetable.");
         }
     }
 }

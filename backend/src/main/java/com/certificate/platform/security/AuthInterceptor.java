@@ -128,14 +128,16 @@ public class AuthInterceptor implements HandlerInterceptor {
             if (path.equals("/api/v1/badges")
                     || path.equals("/api/v1/badges/assign")
                     || path.startsWith("/api/v1/certificates")
-                    || path.startsWith("/api/v1/sponsors")) {
+                    || path.startsWith("/api/v1/sponsors")
+                    || (path.startsWith("/api/v1/tournaments") && !path.contains("/participants"))) {
                 return true;
             }
         }
         if ("PUT".equals(method) || "DELETE".equals(method)) {
             if (path.startsWith("/api/v1/badges")
                     || path.startsWith("/api/v1/certificates")
-                    || path.startsWith("/api/v1/sponsors")) {
+                    || path.startsWith("/api/v1/sponsors")
+                    || path.startsWith("/api/v1/tournaments")) {
                 return true;
             }
         }
@@ -176,6 +178,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         // View recording
         if ("POST".equals(method) && path.equals("/api/v1/views/record")) {
+            return true;
+        }
+
+        // Tournament operations (viewing tournaments, participant registration)
+        if (path.startsWith("/api/v1/tournaments")) {
             return true;
         }
 

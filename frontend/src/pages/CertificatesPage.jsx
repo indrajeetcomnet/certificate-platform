@@ -18,7 +18,8 @@ import {
   Eye, 
   CheckCircle2, 
   Copy, 
-  Check 
+  Check,
+  Trophy 
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -153,6 +154,15 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
 
         {/* Separated Action Workflows: Each in its own dedicated page */}
         <div className="flex items-center gap-2.5 flex-wrap w-full lg:w-auto">
+          <Button
+            variant="gold"
+            icon={Trophy}
+            onClick={() => navigate('/tournaments')}
+            className="shadow-md hover:scale-105 font-bold"
+          >
+            Organize a Tournament
+          </Button>
+
           <Button
             variant="dark"
             icon={Palette}

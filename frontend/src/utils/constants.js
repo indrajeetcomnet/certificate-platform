@@ -6,6 +6,7 @@ export const ROLE_NAV_ITEMS = {
     { label: 'Sponsor Earnings', path: '/earnings', icon: 'DollarSign' },
   ],
   INSTITUTION: [
+    { label: 'Organize Tournaments', path: '/tournaments', icon: 'Trophy' },
     { label: 'Certificate Studio', path: '/certificates', icon: 'Award' },
     { label: 'Award Badges', path: '/badges/manage', icon: 'ShieldAlert' },
     { label: 'Direct Messages', path: '/messages', icon: 'MessageSquare' },

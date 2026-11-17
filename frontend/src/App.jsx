@@ -20,6 +20,9 @@ import BulkCertificatesPage from './pages/BulkCertificatesPage';
 import CertificateVerifyPage from './pages/CertificateVerifyPage';
 import EarningsPage from './pages/EarningsPage';
 import BadgesManagePage from './pages/BadgesManagePage';
+import TournamentsPage from './pages/TournamentsPage';
+import TournamentCreatePage from './pages/TournamentCreatePage';
+import TournamentWorkspacePage from './pages/TournamentWorkspacePage';
 
 export default function App() {
   return (
@@ -109,6 +112,18 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Tournament Management Workspace Pages */}
+            <Route path="tournaments" element={<TournamentsPage />} />
+            <Route
+              path="tournaments/create"
+              element={
+                <ProtectedRoute requireRole="INSTITUTION">
+                  <TournamentCreatePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="tournaments/:tournamentId" element={<TournamentWorkspacePage />} />
           </Route>
 
           {/* Fallback route */}
