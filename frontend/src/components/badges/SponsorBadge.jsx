@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { ExternalLink } from 'lucide-react';
 import { recordView } from '../../api/viewsApi';
 import { recordClick } from '../../api/sponsorsApi';
 
@@ -34,43 +33,43 @@ export default function SponsorBadge({ sponsor, postId = null, className = '' })
     }
   };
 
+  const brandColor = sponsor.brandColor || sponsor.color || '#1c1917';
+
   return (
-    <a
-      ref={badgeRef}
-      href={sponsor.websiteUrl || '#'}
-      target={sponsor.websiteUrl ? '_blank' : '_self'}
-      rel="noopener noreferrer"
-      onClick={handleClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50/95 text-stone-900 px-3 py-1 text-xs font-bold shadow-xs hover:border-emerald-500 hover:bg-emerald-100 transition-all duration-300 hover:scale-105 select-none ${className}`}
-      title={`Official Sponsor: ${sponsor.name} · View generates creator revenue`}
-    >
-      {/* Live pulsing indicator for monetized view */}
-      <span className="flex items-center justify-center w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+    <div className="inline-flex flex-col items-center justify-center select-none group">
+      {/* ── Compact Sponsor Badge Pill (Simple Logo + Brand Name in Brand Color) ── */}
+      <a
+        ref={badgeRef}
+        href={sponsor.websiteUrl || '#'}
+        target={sponsor.websiteUrl ? '_blank' : '_self'}
+        rel="noopener noreferrer"
+        onClick={handleClick}
+        className={`inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white hover:bg-stone-50/90 px-2.5 py-0.5 text-xs font-bold shadow-2xs hover:border-stone-300 hover:shadow-xs transition-all max-w-[130px] sm:max-w-[150px] ${className}`}
+        title={`Official Sponsor: ${sponsor.name}`}
+      >
+        {sponsor.logoUrl ? (
+          <img
+            src={sponsor.logoUrl}
+            alt={sponsor.name}
+            className="w-3.5 h-3.5 object-contain rounded-full shrink-0 border border-stone-100"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : null}
 
-      {sponsor.logoUrl ? (
-        <img
-          src={sponsor.logoUrl}
-          alt={sponsor.name}
-          className="w-3.5 h-3.5 object-contain rounded-full border border-emerald-200"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-      ) : null}
+        <span
+          className="truncate text-xs font-black tracking-tight"
+          style={{ color: brandColor }}
+        >
+          {sponsor.name}
+        </span>
+      </a>
 
-      <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">
+      {/* ── Sponsor Label Below the Badge in Light Grey ── */}
+      <span className="text-[10px] text-stone-400 font-medium tracking-wide mt-0.5 leading-none">
         Sponsor
       </span>
-
-      <span className="truncate max-w-[120px] font-black text-stone-900 tracking-tight">
-        {sponsor.name}
-      </span>
-
-      <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold border border-emerald-300">
-        +₹
-      </span>
-
-      <ExternalLink className="w-2.5 h-2.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
-    </a>
+    </div>
   );
 }

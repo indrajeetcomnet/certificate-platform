@@ -31,6 +31,9 @@ public class Sponsor {
     private String tagline;
 
     @Builder.Default
+    private String brandColor = "#E11D48";
+
+    @Builder.Default
     @Column(precision = 12, scale = 2)
     private BigDecimal budget = BigDecimal.ZERO;
 

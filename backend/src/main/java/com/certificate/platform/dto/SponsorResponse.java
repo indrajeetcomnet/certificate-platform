@@ -13,6 +13,7 @@ public class SponsorResponse {
     private Long id;
     private String name;
     private String tagline;
+    private String brandColor;
     private String logoUrl;
     private String websiteUrl;
     private String bannerImageUrl;

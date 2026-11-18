@@ -142,8 +142,8 @@ const TEMPLATE_PRESETS = {
     theme: 'gold',
     bgType: 'color',
     bgClass: '#FDFBF7',
-    bgPattern: 'guilloche',
-    bgPatternOpacity: 0.08,
+    bgPattern: 'none',
+    bgPatternOpacity: 0,
     borderStyle: 'double-gold',
     borderColor: '#B45309',
     elements: [
@@ -280,8 +280,8 @@ const TEMPLATE_PRESETS = {
     theme: 'silver',
     bgType: 'color',
     bgClass: '#FAF9F5',
-    bgPattern: 'grid',
-    bgPatternOpacity: 0.06,
+    bgPattern: 'none',
+    bgPatternOpacity: 0,
     borderStyle: 'double-silver',
     borderColor: '#64748B',
     elements: [
@@ -406,8 +406,8 @@ const TEMPLATE_PRESETS = {
     theme: 'emerald',
     bgType: 'color',
     bgClass: '#F8FAF7',
-    bgPattern: 'guilloche',
-    bgPatternOpacity: 0.07,
+    bgPattern: 'none',
+    bgPatternOpacity: 0,
     borderStyle: 'emerald-crest',
     borderColor: '#047857',
     elements: [
@@ -578,10 +578,10 @@ export default function CertificateBoardDesigner({
     parsedTemplate?.bgGradient || initialCertificate?.bgGradient || ''
   );
   const [bgPattern, setBgPattern] = useState(
-    parsedTemplate?.bgPattern || initialCertificate?.bgPattern || 'guilloche'
+    parsedTemplate?.bgPattern || initialCertificate?.bgPattern || 'none'
   );
   const [bgPatternOpacity, setBgPatternOpacity] = useState(
-    parsedTemplate?.bgPatternOpacity ?? initialCertificate?.bgPatternOpacity ?? 0.08
+    parsedTemplate?.bgPatternOpacity ?? initialCertificate?.bgPatternOpacity ?? 0
   );
   const [bgImageUrl, setBgImageUrl] = useState(
     parsedTemplate?.bgImageUrl || initialCertificate?.bgImageUrl || null

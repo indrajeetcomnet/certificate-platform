@@ -41,6 +41,11 @@ export default function MessagesPage() {
   const queryUserId = searchParams.get('user');
 
   const [conversations, setConversations] = useState([]);
+  const conversationsRef = useRef(conversations);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
   const [activePartnerId, setActivePartnerId] = useState(
     queryUserId ? Number(queryUserId) : null
   );
@@ -61,7 +66,6 @@ export default function MessagesPage() {
   const [sending, setSending] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const pollingRef = useRef(null);
 
   // Scroll to bottom of message thread
   const scrollToBottom = (smooth = true) => {
@@ -70,124 +74,131 @@ export default function MessagesPage() {
     });
   };
 
-  // Load all user conversations
-  const fetchConversations = useCallback(async (silent = false) => {
-    if (!silent) setConversationsLoading(true);
-    try {
-      const res = await getConversations();
-      const data = res.data || [];
-      setConversations(data);
-    } catch (err) {
-      console.warn('Conversations fetch notice:', err.message);
-    } finally {
-      if (!silent) setConversationsLoading(false);
-    }
+  // Initial load of conversations list
+  useEffect(() => {
+    let isCancelled = false;
+    setConversationsLoading(true);
+    getConversations()
+      .then((res) => {
+        if (!isCancelled) {
+          setConversations(res.data || []);
+        }
+      })
+      .catch((err) => {
+        console.warn('Conversations fetch notice:', err.message);
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setConversationsLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
-  // Load specific conversation thread
-  const fetchThread = useCallback(
-    async (partnerId, silent = false) => {
-      if (!partnerId) return;
-      if (!silent) setMessagesLoading(true);
-      try {
-        const res = await getConversation(partnerId);
-        const data = res.data || [];
-        setMessages(data);
+  // Synchronize partner ID from URL query (?user=123)
+  useEffect(() => {
+    const pId = queryUserId ? Number(queryUserId) : null;
+    if (pId !== activePartnerId) {
+      setActivePartnerId(pId);
+    }
+  }, [queryUserId, activePartnerId]);
 
-        // Mark as read in local unread count
+  // Load active partner details & message thread when activePartnerId changes
+  useEffect(() => {
+    if (!activePartnerId) {
+      setActivePartner(null);
+      setMessages([]);
+      return;
+    }
+
+    let isCancelled = false;
+    setMessagesLoading(true);
+
+    // 1. Resolve partner details from current conversations cache or user directory
+    const foundInCache = conversationsRef.current.find(
+      (c) => c.partnerId === activePartnerId
+    );
+    if (foundInCache) {
+      setActivePartner({
+        id: foundInCache.partnerId,
+        username: foundInCache.partnerUsername,
+        displayName: foundInCache.partnerDisplayName,
+        avatarUrl: foundInCache.partnerAvatarUrl,
+        role: foundInCache.partnerRole,
+        bio: foundInCache.partnerBio,
+      });
+    } else {
+      getAllUsers()
+        .then((res) => {
+          if (isCancelled) return;
+          const u = (res.data || []).find((item) => item.id === activePartnerId);
+          if (u) {
+            setActivePartner(u);
+          }
+        })
+        .catch(() => {});
+    }
+
+    // 2. Fetch thread messages
+    getConversation(activePartnerId)
+      .then((res) => {
+        if (isCancelled) return;
+        setMessages(res.data || []);
+        // Reset unread count locally for this partner
         setConversations((prev) =>
           prev.map((c) =>
-            c.partnerId === partnerId ? { ...c, unreadCount: 0 } : c
+            c.partnerId === activePartnerId ? { ...c, unreadCount: 0 } : c
           )
         );
-      } catch (err) {
+      })
+      .catch((err) => {
         console.warn('Thread fetch notice:', err.message);
-      } finally {
-        if (!silent) setMessagesLoading(false);
-      }
-    },
-    []
-  );
-
-  // Load active partner details
-  const resolveActivePartner = useCallback(
-    async (partnerId) => {
-      if (!partnerId) {
-        setActivePartner(null);
-        return;
-      }
-      // Check existing conversations
-      const found = conversations.find((c) => c.partnerId === partnerId);
-      if (found) {
-        setActivePartner({
-          id: found.partnerId,
-          username: found.partnerUsername,
-          displayName: found.partnerDisplayName,
-          avatarUrl: found.partnerAvatarUrl,
-          role: found.partnerRole,
-          bio: found.partnerBio,
-        });
-        return;
-      }
-
-      // Or fetch from all users directory
-      try {
-        const res = await getAllUsers();
-        const users = res.data || [];
-        const u = users.find((item) => item.id === partnerId);
-        if (u) {
-          setActivePartner(u);
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setMessagesLoading(false);
         }
-      } catch (e) {
-        console.warn('Could not resolve active partner', e);
-      }
-    },
-    [conversations]
-  );
+      });
 
-  // Initial load
-  useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
-
-  // Handle URL change or active partner change
-  useEffect(() => {
-    if (queryUserId) {
-      const pId = Number(queryUserId);
-      setActivePartnerId(pId);
-      fetchThread(pId);
-      resolveActivePartner(pId);
-    } else if (activePartnerId) {
-      fetchThread(activePartnerId);
-      resolveActivePartner(activePartnerId);
-    }
-  }, [queryUserId, activePartnerId, fetchThread, resolveActivePartner]);
+    return () => {
+      isCancelled = true;
+    };
+  }, [activePartnerId]);
 
   // Scroll to bottom whenever messages update
   useEffect(() => {
     scrollToBottom(false);
   }, [messages]);
 
-  // Real-time live polling (every 4 seconds for fresh messages and unread counts)
+  // Live polling: update conversations and current thread messages silently (no loading spinner)
   useEffect(() => {
-    pollingRef.current = setInterval(() => {
-      fetchConversations(true);
+    const interval = setInterval(() => {
+      getConversations()
+        .then((res) => {
+          const data = res.data || [];
+          setConversations(data);
+        })
+        .catch(() => {});
+
       if (activePartnerId) {
-        fetchThread(activePartnerId, true);
+        getConversation(activePartnerId)
+          .then((res) => {
+            setMessages(res.data || []);
+          })
+          .catch(() => {});
       }
     }, 4000);
 
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [activePartnerId, fetchConversations, fetchThread]);
+    return () => clearInterval(interval);
+  }, [activePartnerId]);
 
-  // Open conversation
+  // Open conversation from list
   const handleSelectConversation = (partnerId) => {
     setActivePartnerId(partnerId);
     setSearchParams({ user: String(partnerId) });
-    fetchThread(partnerId);
-    resolveActivePartner(partnerId);
   };
 
   // Send message
@@ -440,7 +451,7 @@ export default function MessagesPage() {
           className={`flex-1 flex flex-col bg-white ${!activePartnerId ? 'hidden md:flex' : 'flex'
             }`}
         >
-          {activePartnerId && activePartner ? (
+          {activePartnerId ? (
             <>
               {/* Partner Chat Header */}
               <div className="px-4 py-3 border-b border-stone-200 bg-white/95 backdrop-blur-md flex items-center justify-between gap-3 sticky top-0 z-10">
@@ -458,8 +469,8 @@ export default function MessagesPage() {
 
                   <div className="relative flex-shrink-0">
                     <Avatar
-                      src={activePartner.avatarUrl}
-                      name={activePartner.displayName || activePartner.username}
+                      src={activePartner?.avatarUrl}
+                      name={activePartner?.displayName || activePartner?.username || 'User'}
                       size="sm"
                     />
                     <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full" />
@@ -468,9 +479,9 @@ export default function MessagesPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h2 className="text-sm font-extrabold text-stone-900 leading-none">
-                        {activePartner.displayName || activePartner.username}
+                        {activePartner?.displayName || activePartner?.username || 'Chat'}
                       </h2>
-                      {activePartner.role === 'INSTITUTION' ? (
+                      {activePartner?.role === 'INSTITUTION' ? (
                         <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-800 text-[10px] font-extrabold uppercase">
                           Official Federation
                         </span>
@@ -481,20 +492,23 @@ export default function MessagesPage() {
                       )}
                     </div>
                     <p className="text-[11px] text-stone-400 mt-0.5 truncate max-w-xs sm:max-w-md">
-                      @{activePartner.username}
-                      {activePartner.bio ? ` • ${activePartner.bio}` : ''}
+                      {activePartner
+                        ? `@${activePartner.username}${activePartner.bio ? ` • ${activePartner.bio}` : ''}`
+                        : 'Loading profile...'}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Link
-                    to={`/profile/${activePartner.id}`}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-100 text-xs font-bold transition-colors"
-                  >
-                    <span>Profile</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
-                  </Link>
+                  {activePartner && (
+                    <Link
+                      to={`/profile/${activePartner.id}`}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 text-stone-700 hover:bg-stone-100 text-xs font-bold transition-colors"
+                    >
+                      <span>Profile</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
+                    </Link>
+                  )}
                 </div>
               </div>
 

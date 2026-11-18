@@ -46,6 +46,7 @@ public class SponsorService {
         Sponsor sponsor = Sponsor.builder()
                 .name(request.getName())
                 .tagline(request.getTagline() != null ? request.getTagline() : "Supporting competitive athletes & tournament champions")
+                .brandColor(request.getBrandColor() != null && !request.getBrandColor().isBlank() ? request.getBrandColor() : "#E11D48")
                 .logoUrl(request.getLogoUrl() != null && !request.getLogoUrl().isBlank()
                         ? request.getLogoUrl()
                         : "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop")
@@ -169,6 +170,7 @@ public class SponsorService {
 
         sponsor.setName(request.getName());
         if (request.getTagline() != null) sponsor.setTagline(request.getTagline());
+        if (request.getBrandColor() != null) sponsor.setBrandColor(request.getBrandColor());
         sponsor.setLogoUrl(request.getLogoUrl());
         sponsor.setWebsiteUrl(request.getWebsiteUrl());
         sponsor.setBannerImageUrl(request.getBannerImageUrl());
@@ -227,6 +229,7 @@ public class SponsorService {
                         .sponsorId(sb.getSponsor().getId())
                         .sponsorName(sb.getSponsor().getName())
                         .sponsorLogoUrl(sb.getSponsor().getLogoUrl())
+                        .brandColor(sb.getSponsor().getBrandColor() != null ? sb.getSponsor().getBrandColor() : "#E11D48")
                         .sponsorBannerImageUrl(sb.getSponsor().getBannerImageUrl())
                         .sponsorWebsiteUrl(sb.getSponsor().getWebsiteUrl())
                         .priority(sb.getPriority())
@@ -241,6 +244,7 @@ public class SponsorService {
                 .id(sponsor.getId())
                 .name(sponsor.getName())
                 .tagline(sponsor.getTagline())
+                .brandColor(sponsor.getBrandColor() != null ? sponsor.getBrandColor() : "#E11D48")
                 .logoUrl(sponsor.getLogoUrl())
                 .websiteUrl(sponsor.getWebsiteUrl())
                 .bannerImageUrl(sponsor.getBannerImageUrl())

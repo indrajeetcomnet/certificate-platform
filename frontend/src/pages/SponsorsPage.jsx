@@ -28,12 +28,15 @@ import Input from '../components/ui/Input';
 import Modal from '../components/ui/Modal';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import EmptyState from '../components/ui/EmptyState';
+import ColorPickerSquare from '../components/ui/ColorPickerSquare';
+import SponsorBadge from '../components/badges/SponsorBadge';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
   getAll as getAllSponsors,
   getMySponsors,
   create as createSponsorApi,
+  update as updateSponsorApi,
   toggleStatus as toggleStatusApi,
   addDeposit as addDepositApi,
   recordClick
@@ -41,11 +44,11 @@ import {
 
 // Quick logo presets for fast sponsor creation
 const PRESET_LOGOS = [
-  { name: 'Red Bull Racing', url: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=150&h=150&fit=crop' },
-  { name: 'Nike Athletic', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop' },
-  { name: 'Puma Speed', url: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=150&h=150&fit=crop' },
-  { name: 'Athlos Gear', url: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=150&h=150&fit=crop' },
-  { name: 'SpeedLab Tech', url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=150&h=150&fit=crop' },
+  { name: 'Red Bull Racing', url: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=150&h=150&fit=crop', color: '#1E3A8A' },
+  { name: 'Nike Athletic', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop', color: '#E11D48' },
+  { name: 'Puma Speed', url: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=150&h=150&fit=crop', color: '#D97706' },
+  { name: 'Athlos Gear', url: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=150&h=150&fit=crop', color: '#0D9488' },
+  { name: 'SpeedLab Tech', url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=150&h=150&fit=crop', color: '#7C3AED' },
 ];
 
 export default function SponsorsPage() {
@@ -61,7 +64,9 @@ export default function SponsorsPage() {
   // Modal controls
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedSponsor, setSelectedSponsor] = useState(null);
+  const [editSponsor, setEditSponsor] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Create Campaign Form State
@@ -69,6 +74,7 @@ export default function SponsorsPage() {
   const [tagline, setTagline] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [brandColor, setBrandColor] = useState('#E11D48');
   const [budget, setBudget] = useState('2000');
   const [targetCategory, setTargetCategory] = useState('ALL');
   const [sponsorType, setSponsorType] = useState('BRAND');
@@ -140,6 +146,7 @@ export default function SponsorsPage() {
         tagline: tagline.trim() || 'Supporting competitive athletes & tournament champions',
         websiteUrl: websiteUrl.trim() || 'https://example.com/sponsor',
         logoUrl: logoUrl.trim() || PRESET_LOGOS[0].url,
+        brandColor: brandColor || '#E11D48',
         budget: numBudget,
         cpmRate: 20.00,
         targetCategory,
@@ -165,9 +172,51 @@ export default function SponsorsPage() {
     setTagline('');
     setWebsiteUrl('');
     setLogoUrl('');
+    setBrandColor('#E11D48');
     setBudget('2000');
     setTargetCategory('ALL');
     setSponsorType('BRAND');
+  };
+
+  // Open Edit Modal
+  const handleEditOpen = (sponsor) => {
+    setEditSponsor({
+      ...sponsor,
+      brandColor: sponsor.brandColor || sponsor.color || '#E11D48',
+    });
+    setIsEditOpen(true);
+  };
+
+  // Submit Edit Modal
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editSponsor?.id) return;
+    if (!editSponsor.name?.trim()) {
+      showToast('Brand name is required', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await updateSponsorApi(editSponsor.id, {
+        name: editSponsor.name.trim(),
+        tagline: editSponsor.tagline?.trim(),
+        websiteUrl: editSponsor.websiteUrl?.trim(),
+        logoUrl: editSponsor.logoUrl?.trim(),
+        brandColor: editSponsor.brandColor || '#E11D48',
+        budget: editSponsor.budget,
+        targetCategory: editSponsor.targetCategory || 'ALL',
+        sponsorType: editSponsor.sponsorType || 'BRAND',
+      });
+      showToast('Sponsorship campaign updated successfully!', 'success');
+      setIsEditOpen(false);
+      setEditSponsor(null);
+      await loadData();
+    } catch (err) {
+      showToast(err.response?.data?.message || err.message || 'Failed to update sponsor', 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Toggle Campaign Active/Pause
@@ -401,7 +450,10 @@ export default function SponsorsPage() {
                         )}
                       </div>
                       <div>
-                        <h3 className="font-extrabold text-base text-stone-900 leading-snug">
+                        <h3
+                          className="font-extrabold text-base leading-snug"
+                          style={{ color: sponsor.brandColor || sponsor.color || '#1c1917' }}
+                        >
                           {sponsor.name}
                         </h3>
                         <span className="text-[11px] font-bold text-amber-700 tracking-wide uppercase">
@@ -484,6 +536,15 @@ export default function SponsorsPage() {
                         title={isLive ? 'Pause Campaign' : 'Resume Campaign'}
                       >
                         {isLive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-emerald-600" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleEditOpen(sponsor)}
+                        className="px-2.5 py-1 rounded-lg text-xs font-bold border border-stone-200 hover:bg-stone-100 text-stone-700 transition-colors"
+                        title="Edit Sponsor Badge & Brand Colors"
+                      >
+                        Edit
                       </button>
 
                       <Button
@@ -664,7 +725,10 @@ export default function SponsorsPage() {
                   <button
                     key={p.name}
                     type="button"
-                    onClick={() => setLogoUrl(p.url)}
+                    onClick={() => {
+                      setLogoUrl(p.url);
+                      if (p.color) setBrandColor(p.color);
+                    }}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${logoUrl === p.url
                         ? 'border-amber-500 bg-amber-50 text-amber-900 ring-2 ring-amber-400/30'
                         : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
@@ -679,6 +743,28 @@ export default function SponsorsPage() {
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
                 placeholder="Or paste custom image URL..."
+              />
+            </div>
+
+            {/* Microsoft Paint Style Color Square Picker */}
+            <ColorPickerSquare
+              color={brandColor}
+              onChange={setBrandColor}
+              label="Brand Name Color (Paint Style Color Square)"
+            />
+
+            {/* Live Sponsor Badge Preview */}
+            <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200 flex flex-col items-center justify-center gap-1.5">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                Live Sponsor Badge Preview
+              </span>
+              <SponsorBadge
+                sponsor={{
+                  id: 9999,
+                  name: brandName.trim() || 'Brand Name',
+                  logoUrl: logoUrl.trim() || PRESET_LOGOS[0].url,
+                  brandColor: brandColor,
+                }}
               />
             </div>
 
@@ -789,6 +875,95 @@ export default function SponsorsPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* ── 7. EDIT CAMPAIGN MODAL WITH PAINT-STYLE COLOR SQUARE ── */}
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false);
+          setEditSponsor(null);
+        }}
+        title="Edit Sponsorship Campaign"
+        size="lg"
+      >
+        {editSponsor && (
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
+                Brand Name *
+              </label>
+              <Input
+                value={editSponsor.name || ''}
+                onChange={(e) => setEditSponsor({ ...editSponsor, name: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
+                Campaign Tagline
+              </label>
+              <Input
+                value={editSponsor.tagline || ''}
+                onChange={(e) => setEditSponsor({ ...editSponsor, tagline: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
+                  Website URL
+                </label>
+                <Input
+                  value={editSponsor.websiteUrl || ''}
+                  onChange={(e) => setEditSponsor({ ...editSponsor, websiteUrl: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
+                  Logo Image URL
+                </label>
+                <Input
+                  value={editSponsor.logoUrl || ''}
+                  onChange={(e) => setEditSponsor({ ...editSponsor, logoUrl: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Microsoft Paint Style Color Square Picker */}
+            <ColorPickerSquare
+              color={editSponsor.brandColor || '#E11D48'}
+              onChange={(c) => setEditSponsor({ ...editSponsor, brandColor: c })}
+              label="Brand Name Color (Paint Style Color Square)"
+            />
+
+            {/* Live Badge Preview */}
+            <div className="p-3 rounded-2xl bg-stone-50 border border-stone-200 flex flex-col items-center justify-center gap-1.5">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                Live Badge Preview
+              </span>
+              <SponsorBadge
+                sponsor={{
+                  id: editSponsor.id,
+                  name: editSponsor.name || 'Brand Name',
+                  logoUrl: editSponsor.logoUrl,
+                  brandColor: editSponsor.brandColor || '#E11D48',
+                }}
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200">
+              <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="dark" loading={submitting}>
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
     </div>

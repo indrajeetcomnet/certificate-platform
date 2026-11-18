@@ -11,6 +11,7 @@ public class SponsorBadgeResponse {
     private Long sponsorId;
     private String sponsorName;
     private String sponsorLogoUrl;
+    private String brandColor;
     private String sponsorBannerImageUrl;
     private String sponsorWebsiteUrl;
     private Integer priority;
