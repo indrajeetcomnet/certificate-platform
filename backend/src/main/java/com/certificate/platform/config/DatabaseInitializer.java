@@ -66,8 +66,8 @@ public class DatabaseInitializer implements CommandLineRunner {
         // 2. Seed Real Brand Sponsors if empty
         if (sponsorRepository.count() == 0) {
             Sponsor nike = Sponsor.builder()
-                    .name("Nike Pro Performance")
-                    .tagline("Just Do It · Official Apparel & Track Sponsor")
+                    .name("Nike")
+                    .tagline("Just Do It · Official Athletic Apparel & Footwear")
                     .brandColor("#E11D48")
                     .logoUrl("https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop")
                     .websiteUrl("https://nike.com")
@@ -87,7 +87,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             sponsorRepository.save(nike);
 
             Sponsor redbull = Sponsor.builder()
-                    .name("Red Bull Racing Arena")
+                    .name("Red Bull")
                     .tagline("Gives You Wings · High-Octane Endurance & Podium Partner")
                     .brandColor("#1E3A8A")
                     .logoUrl("https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=150&h=150&fit=crop")
@@ -108,7 +108,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             sponsorRepository.save(redbull);
 
             Sponsor puma = Sponsor.builder()
-                    .name("Puma Nitro Series")
+                    .name("Puma")
                     .tagline("Forever Faster · Fast-Paced Track & Football Footwear")
                     .brandColor("#D97706")
                     .logoUrl("https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=150&h=150&fit=crop")
@@ -130,14 +130,23 @@ public class DatabaseInitializer implements CommandLineRunner {
             log.info("Initialized 3 active brand sponsors in database.");
         }
 
-        // Ensure all active sponsors have slot numbers assigned according to availability
+        // Ensure all active sponsors have clean brand names and slot numbers assigned according to availability
         List<Sponsor> allCurrentSponsors = sponsorRepository.findAll();
         for (int i = 0; i < allCurrentSponsors.size(); i++) {
             Sponsor s = allCurrentSponsors.get(i);
+            if (s.getName() != null) {
+                if (s.getName().toLowerCase().contains("nike")) {
+                    s.setName("Nike");
+                } else if (s.getName().toLowerCase().contains("red bull")) {
+                    s.setName("Red Bull");
+                } else if (s.getName().toLowerCase().contains("puma")) {
+                    s.setName("Puma");
+                }
+            }
             if (s.getSlotNumber() == null) {
                 s.setSlotNumber(i + 1);
-                sponsorRepository.save(s);
             }
+            sponsorRepository.save(s);
         }
 
         // 3. Seed Competition Badges if empty

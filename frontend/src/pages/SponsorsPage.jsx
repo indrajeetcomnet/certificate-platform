@@ -784,7 +784,7 @@ export default function SponsorsPage() {
               <Input
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
-                placeholder="e.g. SpeedLab Athletic Gear or Indrajeet Fan Club"
+                placeholder="e.g. Nike, Red Bull, Puma, SpeedLab"
                 required
               />
             </div>

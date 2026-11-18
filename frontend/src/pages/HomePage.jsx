@@ -281,7 +281,7 @@ export default function HomePage() {
                               ? activeSponsors[0]
                               : {
                                   id: 1,
-                                  name: 'Nike Pro',
+                                  name: 'Nike',
                                   logoUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop',
                                   brandColor: '#E11D48',
                                 }
