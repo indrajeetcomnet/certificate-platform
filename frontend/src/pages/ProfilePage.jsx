@@ -105,9 +105,9 @@ export default function ProfilePage() {
           activeProf = currentUser;
           setProfile(currentUser);
           setEditForm({
-            displayName: currentUser.displayName || currentUser.username || '',
-            avatarUrl: currentUser.avatarUrl || '',
-            bio: currentUser.bio || '',
+            displayName: currentUser?.displayName || currentUser?.username || '',
+            avatarUrl: currentUser?.avatarUrl || '',
+            bio: currentUser?.bio || '',
           });
         } else {
           setProfile(null);
@@ -270,7 +270,7 @@ export default function ProfilePage() {
     setSelectedMentor(profile?.creditedMentor ? {
       id: profile.creditedMentor.id,
       username: profile.creditedMentor.username,
-      displayName: profile.creditedMentor.displayName,
+      displayName: profile.creditedMentor?.displayName || profile.creditedMentor?.username,
       avatarUrl: profile.creditedMentor.avatarUrl
     } : null);
     setCoachRoleTitle(profile?.creditedMentor?.roleTitle || 'Strength & Performance Coach');
@@ -315,8 +315,8 @@ export default function ProfilePage() {
           creditedMentor: {
             id: selectedMentor.id,
             username: selectedMentor.username,
-            displayName: selectedMentor.displayName || selectedMentor.username,
-            avatarUrl: selectedMentor.avatarUrl,
+            displayName: selectedMentor?.displayName || selectedMentor?.username || 'Mentor',
+            avatarUrl: selectedMentor?.avatarUrl,
             roleTitle: coachRoleTitle.trim() || 'Coach / Mentor'
           }
         }));
@@ -363,7 +363,8 @@ export default function ProfilePage() {
     }
   };
 
-  const filteredCandidates = candidateUsers.filter((u) => {
+  const filteredCandidates = (candidateUsers || []).filter((u) => {
+    if (!u) return false;
     if (!candidateSearch.trim()) return true;
     const q = candidateSearch.toLowerCase();
     return (
@@ -401,7 +402,7 @@ export default function ProfilePage() {
         <FeedList
           posts={userPosts}
           emptyTitle="No Arena Posts Yet"
-          emptyDescription={`${profile.displayName || profile.username} hasn't published any tournament updates or training posts yet.`}
+          emptyDescription={`${profile?.displayName || profile?.username || 'User'} hasn't published any tournament updates or training posts yet.`}
         />
       ),
     },
@@ -410,7 +411,7 @@ export default function ProfilePage() {
       content: (
         <BadgeList
           badges={userBadges}
-          emptyMessage={`${profile.displayName || profile.username} has not been awarded any verified competition badges yet.`}
+          emptyMessage={`${profile?.displayName || profile?.username || 'User'} has not been awarded any verified competition badges yet.`}
         />
       ),
     },
@@ -611,8 +612,8 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative shrink-0">
                     <Avatar
-                      src={profile.creditedMentor.avatarUrl}
-                      name={profile.creditedMentor.displayName || profile.creditedMentor.username}
+                      src={profile?.creditedMentor?.avatarUrl}
+                      name={profile?.creditedMentor?.displayName || profile?.creditedMentor?.username || 'Mentor'}
                       size="md"
                       className="ring-2 ring-amber-400 bg-white shadow-xs"
                     />
@@ -623,21 +624,21 @@ export default function ProfilePage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                        {profile.creditedMentor.roleTitle || 'Coach / Mentor'}
+                        {profile?.creditedMentor?.roleTitle || 'Coach / Mentor'}
                       </span>
                       <span className="text-[10px] font-bold text-stone-600">
                         Credited Coach
                       </span>
                     </div>
                     <Link
-                      to={`/profile/${profile.creditedMentor.id}`}
+                      to={`/profile/${profile?.creditedMentor?.id}`}
                       className="group inline-flex items-center gap-1.5 mt-0.5 hover:underline"
                     >
                       <span className="text-sm font-black text-stone-900 group-hover:text-amber-800 transition-colors">
-                        {profile.creditedMentor.displayName || profile.creditedMentor.username}
+                        {profile?.creditedMentor?.displayName || profile?.creditedMentor?.username || 'Mentor'}
                       </span>
                       <span className="text-xs font-semibold text-stone-600">
-                        @{profile.creditedMentor.username}
+                        @{profile?.creditedMentor?.username}
                       </span>
                       <ExternalLink className="w-3.5 h-3.5 text-stone-500 group-hover:text-amber-800" />
                     </Link>
@@ -793,17 +794,17 @@ export default function ProfilePage() {
                 className="p-3.5 rounded-2xl bg-stone-50 hover:bg-amber-50/60 border border-stone-200/80 hover:border-amber-300 transition-all flex items-center gap-3 group shadow-2xs"
               >
                 <Avatar
-                  src={student.avatarUrl}
-                  name={student.displayName || student.username}
+                  src={student?.avatarUrl}
+                  name={student?.displayName || student?.username || 'Student'}
                   size="md"
                   className="ring-2 ring-white shadow-xs shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="text-xs font-black text-stone-900 truncate group-hover:text-amber-900">
-                    {student.displayName || student.username}
+                    {student?.displayName || student?.username || 'Student'}
                   </div>
                   <div className="text-[11px] font-semibold text-stone-600 truncate">
-                    @{student.username}
+                    @{student?.username}
                   </div>
                   {student.roleTitle && (
                     <span className="inline-block mt-1 text-[10px] font-bold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-md truncate max-w-full">
@@ -847,8 +848,8 @@ export default function ProfilePage() {
             {/* Photo Customization Section */}
             <div className="bg-stone-50 border border-stone-200/90 rounded-2xl p-4 flex items-center gap-4">
               <Avatar
-                src={editForm.avatarUrl}
-                name={editForm.displayName || profile.username}
+                src={editForm?.avatarUrl || profile?.avatarUrl}
+                name={editForm?.displayName || profile?.username || 'User'}
                 size="2xl"
                 className="w-20 h-20 shadow-md ring-2 ring-white"
               />
@@ -1033,17 +1034,17 @@ export default function ProfilePage() {
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Avatar
-                            src={user.avatarUrl}
-                            name={user.displayName || user.username}
+                            src={user?.avatarUrl}
+                            name={user?.displayName || user?.username || 'User'}
                             size="sm"
                             className="shrink-0"
                           />
                           <div className="min-w-0">
                             <div className="text-xs font-extrabold text-stone-900 truncate">
-                              {user.displayName || user.username}
+                              {user?.displayName || user?.username || 'User'}
                             </div>
                             <div className="text-[10px] font-semibold text-stone-500 truncate">
-                              @{user.username}
+                              @{user?.username}
                             </div>
                           </div>
                         </div>

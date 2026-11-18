@@ -62,11 +62,11 @@ export default function CertificateIssuePage() {
       setFormData((prev) => ({ ...prev, recipientName: '', recipientEmail: '' }));
       return;
     }
-    const found = athletes.find((u) => String(u.id) === val);
+    const found = (athletes || []).find((u) => u && String(u.id) === val);
     if (found) {
       setFormData((prev) => ({
         ...prev,
-        recipientName: found.displayName || found.username,
+        recipientName: found.displayName || found.username || '',
         recipientEmail: found.email || `${found.username}@arena.platform`,
       }));
     }
@@ -272,9 +272,9 @@ export default function CertificateIssuePage() {
                       className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
                     >
                       <option value="">-- Choose an athlete from directory or type custom --</option>
-                      {athletes.map((u) => (
+                      {(athletes || []).filter(Boolean).map((u) => (
                         <option key={u.id} value={u.id}>
-                          {u.displayName || u.username} (@{u.username})
+                          {u.displayName || u.username || 'User'} (@{u.username || 'user'})
                         </option>
                       ))}
                     </select>

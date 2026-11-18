@@ -228,11 +228,10 @@ export default function NotificationDropdown({ className = '' }) {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Notifications"
         aria-expanded={isOpen}
-        className={`p-2 rounded-xl transition-colors relative flex items-center justify-center ${
-          isOpen
+        className={`p-2 rounded-xl transition-colors relative flex items-center justify-center ${isOpen
             ? 'bg-stone-200/80 text-stone-900 shadow-xs'
             : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-        }`}
+          }`}
         title="Notifications & Activity"
       >
         <Bell className="w-4 h-4" />
@@ -246,7 +245,7 @@ export default function NotificationDropdown({ className = '' }) {
       {/* Notifications Popover Dropdown */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-stone-200/90 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-          
+
           {/* Header */}
           <div className="p-3.5 bg-stone-50 border-b border-stone-200/90">
             <div className="flex items-center justify-between gap-2 mb-2">
@@ -285,22 +284,20 @@ export default function NotificationDropdown({ className = '' }) {
               <button
                 type="button"
                 onClick={() => setFilter('all')}
-                className={`flex-1 py-1 rounded-lg font-bold transition-all text-center ${
-                  filter === 'all'
+                className={`flex-1 py-1 rounded-lg font-bold transition-all text-center ${filter === 'all'
                     ? 'bg-white text-stone-900 shadow-xs'
                     : 'text-stone-600 hover:text-stone-900'
-                }`}
+                  }`}
               >
                 All ({notifications.length})
               </button>
               <button
                 type="button"
                 onClick={() => setFilter('unread')}
-                className={`flex-1 py-1 rounded-lg font-bold transition-all text-center ${
-                  filter === 'unread'
+                className={`flex-1 py-1 rounded-lg font-bold transition-all text-center ${filter === 'unread'
                     ? 'bg-white text-stone-900 shadow-xs'
                     : 'text-stone-600 hover:text-stone-900'
-                }`}
+                  }`}
               >
                 Unread ({unreadCount})
               </button>
@@ -326,18 +323,16 @@ export default function NotificationDropdown({ className = '' }) {
                 <div
                   key={item.id}
                   onClick={() => handleItemClick(item)}
-                  className={`p-3.5 flex items-start gap-3 hover:bg-stone-50 cursor-pointer transition-colors group relative ${
-                    !item.read ? 'bg-amber-50/40' : 'bg-white'
-                  }`}
+                  className={`p-3.5 flex items-start gap-3 hover:bg-stone-50 cursor-pointer transition-colors group relative ${!item.read ? 'bg-amber-50/40' : 'bg-white'
+                    }`}
                 >
                   {renderIcon(item.type)}
 
                   <div className="flex-1 min-w-0 pr-2">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
                       <h4
-                        className={`text-xs truncate ${
-                          !item.read ? 'font-black text-stone-950' : 'font-bold text-stone-800'
-                        }`}
+                        className={`text-xs truncate ${!item.read ? 'font-black text-stone-950' : 'font-bold text-stone-800'
+                          }`}
                       >
                         {item.title}
                       </h4>

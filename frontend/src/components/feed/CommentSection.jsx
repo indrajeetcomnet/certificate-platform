@@ -148,15 +148,15 @@ export default function CommentSection({
                     className="flex items-start gap-2.5 text-sm bg-stone-50 border border-stone-200/70 p-3 rounded-xl"
                   >
                     <Avatar
-                      src={commentUser.avatarUrl}
-                      name={commentUser.displayName || commentUser.username}
+                      src={commentUser?.avatarUrl}
+                      name={commentUser?.displayName || commentUser?.username}
                       size="sm"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="font-black text-xs text-stone-900">
-                            {commentUser.displayName || commentUser.username || 'Anonymous'}
+                            {commentUser?.displayName || commentUser?.username || 'Anonymous'}
                           </span>
                           <span className="text-[11px] font-semibold text-stone-600">
                             {timeAgo(comment.createdAt)}

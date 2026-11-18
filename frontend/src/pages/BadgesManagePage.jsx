@@ -253,9 +253,9 @@ export default function BadgesManagePage({ institutionId: propInstitutionId }) {
                   required
                 >
                   <option value="">-- Choose an athlete --</option>
-                  {users.map((u) => (
+                  {(users || []).filter(Boolean).map((u) => (
                     <option key={u.id} value={u.id}>
-                      {u.displayName || u.username} (@{u.username}) — Athlete #{u.id}
+                      {u.displayName || u.username || 'User'} (@{u.username || 'user'}) — Athlete #{u.id}
                     </option>
                   ))}
                 </select>

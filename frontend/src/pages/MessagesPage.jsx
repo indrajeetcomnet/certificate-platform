@@ -525,7 +525,7 @@ export default function MessagesPage() {
                     </div>
                     <div>
                       <p className="text-sm font-bold text-stone-800">
-                        Start the conversation with {activePartner.displayName || activePartner.username}
+                        Start the conversation with {activePartner?.displayName || activePartner?.username || 'this user'}
                       </p>
                       <p className="text-xs text-stone-400 mt-1 max-w-sm mx-auto">
                         Congratulate on recent tournament badges, discuss sponsor campaigns, or schedule training.
@@ -617,7 +617,7 @@ export default function MessagesPage() {
                         handleSendMessage();
                       }
                     }}
-                    placeholder={`Message ${activePartner.displayName || activePartner.username}... (Press Enter to send)`}
+                    placeholder={`Message ${activePartner?.displayName || activePartner?.username || 'user'}... (Press Enter to send)`}
                     className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-stone-900 placeholder-stone-400 resize-none focus:outline-none max-h-32"
                   />
 
@@ -719,14 +719,14 @@ export default function MessagesPage() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <Avatar
-                        src={user.avatarUrl}
-                        name={user.displayName || user.username}
+                        src={user?.avatarUrl}
+                        name={user?.displayName || user?.username}
                         size="md"
                       />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs font-bold text-stone-900 truncate">
-                            {user.displayName || user.username}
+                            {user?.displayName || user?.username}
                           </p>
                           {user.role === 'INSTITUTION' ? (
                             <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-800 text-[9px] font-extrabold uppercase">

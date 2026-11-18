@@ -55,8 +55,8 @@ export default function TournamentRegistrationPage() {
 
         // Pre-fill if user logged in
         if (currentUser) {
-          setAthleteName(currentUser.displayName || currentUser.username || '');
-          setEmail(currentUser.email || '');
+          setAthleteName(currentUser?.displayName || currentUser?.username || '');
+          setEmail(currentUser?.email || '');
         }
       })
       .catch((err) => {

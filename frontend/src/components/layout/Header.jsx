@@ -185,8 +185,8 @@ export default function Header({ onSearch, title = 'Athlos', isStudio = false, c
             trigger={
               <button className="flex items-center gap-2 p-1 rounded-xl hover:bg-stone-100 transition-colors">
                 <Avatar
-                  src={currentUser.avatarUrl}
-                  name={currentUser.displayName || currentUser.username}
+                  src={currentUser?.avatarUrl}
+                  name={currentUser?.displayName || currentUser?.username}
                   size="sm"
                 />
               </button>

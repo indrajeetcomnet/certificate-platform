@@ -96,7 +96,7 @@ export default function LoginPage() {
         password: password.trim(),
       });
       const user = res.user;
-      showToast(`Welcome back, ${user.displayName || user.username}!`, 'success');
+      showToast(`Welcome back, ${user?.displayName || user?.username || 'User'}!`, 'success');
       if (user.role === 'INSTITUTION') {
         navigate('/certificates');
       } else {
@@ -214,12 +214,12 @@ export default function LoginPage() {
           <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2.5">
               <Avatar
-                src={currentUser.avatarUrl}
-                name={currentUser.displayName || currentUser.username}
+                src={currentUser?.avatarUrl}
+                name={currentUser?.displayName || currentUser?.username || 'User'}
                 size="sm"
               />
               <span className="font-bold text-stone-900">
-                {currentUser.displayName || currentUser.username}
+                {currentUser?.displayName || currentUser?.username || 'User'}
               </span>
             </div>
             <div className="flex items-center gap-2">

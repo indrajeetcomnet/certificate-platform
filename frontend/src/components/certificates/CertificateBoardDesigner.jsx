@@ -2054,19 +2054,19 @@ export default function CertificateBoardDesigner({
                       </label>
                       <select
                         onChange={(e) => {
-                          const athlete = registeredAthletes.find((u) => u.id === e.target.value);
+                          const athlete = (registeredAthletes || []).find((u) => u && u.id === e.target.value);
                           if (athlete) {
-                            setRecipientName(athlete.displayName || athlete.username);
-                            setRecipientEmail(athlete.email || `${athlete.username}@arena.platform`);
-                            showToast(`Selected ${athlete.displayName || athlete.username}`, 'info');
+                            setRecipientName(athlete?.displayName || athlete?.username || '');
+                            setRecipientEmail(athlete?.email || `${athlete?.username || 'user'}@arena.platform`);
+                            showToast(`Selected ${athlete?.displayName || athlete?.username}`, 'info');
                           }
                         }}
                         className="w-full text-xs font-semibold px-2 py-1.5 rounded-lg border border-stone-200 bg-stone-50"
                       >
                         <option value="">-- Choose Athlete --</option>
-                        {registeredAthletes.map((a) => (
+                        {(registeredAthletes || []).filter(Boolean).map((a) => (
                           <option key={a.id} value={a.id}>
-                            {a.displayName || a.username} ({a.email || 'No Email'})
+                            {a?.displayName || a?.username || 'Athlete'} ({a?.email || 'No Email'})
                           </option>
                         ))}
                       </select>

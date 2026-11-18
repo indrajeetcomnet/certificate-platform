@@ -1118,18 +1118,18 @@ export default function TournamentWorkspacePage() {
               onChange={(e) => {
                 const uid = e.target.value;
                 setNewSelectedUserId(uid);
-                const found = allUsers.find((u) => String(u.id) === String(uid));
+                const found = (allUsers || []).find((u) => u && String(u.id) === String(uid));
                 if (found) {
-                  setNewAthleteName(found.displayName || found.username);
+                  setNewAthleteName(found.displayName || found.username || '');
                   setNewAthleteEmail(found.email || '');
                 }
               }}
               className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-stone-300 bg-white"
             >
               <option value="">-- Manual Athlete Entry (Not Linked) --</option>
-              {allUsers.map((u) => (
+              {(allUsers || []).filter(Boolean).map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.displayName || u.username} (@{u.username})
+                  {u.displayName || u.username || 'User'} (@{u.username || 'user'})
                 </option>
               ))}
             </select>

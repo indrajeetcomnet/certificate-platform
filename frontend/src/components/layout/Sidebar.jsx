@@ -80,16 +80,16 @@ export default function Sidebar({ className = '' }) {
             className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-stone-100/80 transition-colors border border-stone-200/60 bg-stone-50/50"
           >
             <Avatar
-              src={currentUser.avatarUrl}
-              name={currentUser.displayName || currentUser.username}
+              src={currentUser?.avatarUrl}
+              name={currentUser?.displayName || currentUser?.username}
               size="sm"
             />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-stone-900 truncate">
-                {currentUser.displayName || currentUser.username}
+                {currentUser?.displayName || currentUser?.username}
               </p>
               <p className="text-[11px] text-stone-500 truncate">
-                {isInstitutionUser ? 'Official Issuer' : `@${currentUser.username}`}
+                {isInstitutionUser ? 'Official Issuer' : `@${currentUser?.username}`}
               </p>
             </div>
           </NavLink>

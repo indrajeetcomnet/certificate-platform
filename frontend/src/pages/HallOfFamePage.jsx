@@ -54,7 +54,7 @@ export default function HallOfFamePage() {
   }, []);
 
   // Filter applauded mentors (users who have been credited by at least 1 student)
-  const masterMentors = users.filter((u) => (u.applaudedByCount > 0 || (u.applaudedBy && u.applaudedBy.length > 0)));
+  const masterMentors = (users || []).filter((u) => u && ((u.applaudedByCount || 0) > 0 || (u.applaudedBy && u.applaudedBy.length > 0)));
 
   // Filter podium champions (athletes with awarded badges)
   const filteredAwarded = awardedBadges.filter((item) => {
@@ -472,20 +472,20 @@ export default function HallOfFamePage() {
                       <div>
                         <div className="flex items-center gap-3 mb-3">
                           <Avatar
-                            src={mentor.avatarUrl}
-                            name={mentor.displayName || mentor.username}
+                            src={mentor?.avatarUrl}
+                            name={mentor?.displayName || mentor?.username || 'Mentor'}
                             size="md"
                             className="ring-2 ring-white shadow-xs"
                           />
                           <div className="min-w-0">
                             <Link
-                              to={`/profile/${mentor.id}`}
+                              to={`/profile/${mentor?.id}`}
                               className="text-xs font-black text-stone-900 group-hover:text-amber-800 transition-colors truncate block"
                             >
-                              {mentor.displayName || mentor.username}
+                              {mentor?.displayName || mentor?.username || 'Mentor'}
                             </Link>
                             <p className="text-[11px] font-semibold text-stone-500">
-                              @{mentor.username}
+                              @{mentor?.username}
                             </p>
                           </div>
                         </div>

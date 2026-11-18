@@ -144,7 +144,7 @@ export default function PostCard({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Post by ${user.displayName || user.username}`,
+          title: `Post by ${user?.displayName || user?.username || 'User'}`,
           text: post.content,
           url: shareUrl,
         });
@@ -184,8 +184,8 @@ export default function PostCard({
         <div className="flex items-center gap-3 min-w-0">
           <Link to={`/profile/${user.id || 1}`} className="flex-shrink-0 relative group">
             <Avatar
-              src={user.avatarUrl}
-              name={user.displayName || user.username}
+              src={user?.avatarUrl}
+              name={user?.displayName || user?.username}
               size="md"
               className="ring-2 ring-stone-200 group-hover:ring-amber-400 transition-all"
             />
@@ -193,10 +193,10 @@ export default function PostCard({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <Link
-                to={`/profile/${user.id || 1}`}
+                to={`/profile/${user?.id || 1}`}
                 className="font-black text-sm text-stone-900 hover:text-amber-800 hover:underline truncate"
               >
-                {user.displayName || user.username || 'User'}
+                {user?.displayName || user?.username || 'User'}
               </Link>
               <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 fill-amber-400/20 flex-shrink-0" title="Ranked Competitor" />
               <span className="text-xs font-semibold text-stone-600 truncate">

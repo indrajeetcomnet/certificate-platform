@@ -25,8 +25,8 @@ export default function CertificateCreatePage() {
   const recipient = location.state?.recipient;
   const initialCertificate = recipient
     ? {
-        recipientName: recipient.displayName || recipient.username,
-        recipientEmail: recipient.email || `${recipient.username}@arena.platform`,
+        recipientName: recipient?.displayName || recipient?.username || '',
+        recipientEmail: recipient?.email || `${recipient?.username || 'user'}@arena.platform`,
       }
     : null;
 
