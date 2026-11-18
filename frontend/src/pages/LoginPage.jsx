@@ -267,7 +267,7 @@ export default function LoginPage() {
                         Athletics Gold Medal
                       </h4>
                       <p className="text-[10px] font-semibold text-stone-500">
-                        Apex Sports Academy · Verified
+                        Athlos Sports Academy · Verified
                       </p>
                     </div>
                   </div>
@@ -552,11 +552,11 @@ export default function LoginPage() {
                       </p>
                     </button>
 
-                    {/* Demo 2: Apex Academy */}
+                    {/* Demo 2: Athlos Academy */}
                     <button
                       type="button"
                       disabled={loading}
-                      onClick={() => handleQuickLogin('apex_academy', 'apexpass2026')}
+                      onClick={() => handleQuickLogin('athlos_academy', 'athlos2026')}
                       className="p-3 rounded-2xl border border-stone-200 hover:border-amber-400 bg-stone-50/70 hover:bg-amber-50/50 text-left transition-all group shadow-2xs hover:shadow-xs"
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -564,11 +564,11 @@ export default function LoginPage() {
                           🏛️ Institution
                         </span>
                         <span className="text-[10px] font-mono text-stone-400 group-hover:text-amber-800">
-                          @apex_academy
+                          @athlos_academy
                         </span>
                       </div>
                       <div className="text-xs font-black text-stone-900 group-hover:text-amber-950">
-                        Apex Sports Academy
+                        Athlos Sports Academy
                       </div>
                       <p className="text-[10px] text-stone-500 mt-0.5 font-medium">
                         Certificate Studio & Hub (ISSUER)
@@ -603,7 +603,7 @@ export default function LoginPage() {
                   <div className="relative">
                     <input 
                       type="text"
-                      placeholder="e.g. apex_academy or INST-APEX-2026"
+                      placeholder="e.g. athlos_academy or INST-ATHLOS-2026"
                       value={instCode}
                       onChange={(e) => setInstCode(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-stone-300 bg-stone-50/60 text-stone-900 text-sm font-medium focus:outline-none focus:bg-white focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all shadow-2xs"
@@ -652,7 +652,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     disabled={loading}
-                    onClick={() => handleQuickLogin('apex_academy', 'apexpass2026')}
+                    onClick={() => handleQuickLogin('athlos_academy', 'athlos2026')}
                     className="w-full p-3 rounded-2xl border border-stone-200 hover:border-amber-400 bg-stone-50/70 hover:bg-amber-50/50 text-left transition-all group flex items-center justify-between"
                   >
                     <div>
@@ -660,7 +660,7 @@ export default function LoginPage() {
                         🏛️ Demo Academy
                       </span>
                       <span className="text-xs font-black text-stone-900 group-hover:text-amber-950">
-                        Apex Sports Academy (INSTITUTION)
+                        Athlos Sports Academy (INSTITUTION)
                       </span>
                     </div>
                     <span className="text-xs font-bold text-amber-700 group-hover:translate-x-0.5 transition-transform">

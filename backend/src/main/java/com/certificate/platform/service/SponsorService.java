@@ -104,7 +104,11 @@ public class SponsorService {
     }
 
     public List<SponsorResponse> getAllSponsors() {
-        return sponsorRepository.findAllByOrderByCreatedAtDesc().stream()
+        List<Sponsor> list = sponsorRepository.findAllByOrderByCreatedAtDesc();
+        if (list == null || list.isEmpty()) {
+            list = sponsorRepository.findAll();
+        }
+        return list.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }

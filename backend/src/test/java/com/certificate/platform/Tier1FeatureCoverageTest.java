@@ -117,16 +117,16 @@ public class Tier1FeatureCoverageTest {
 
         sampleInstitutionUser = User.builder()
                 .id(2L)
-                .username("apex_academy")
-                .email("admin@apexacademy.org")
-                .passwordHash(PasswordEncoderUtil.hash("apexpass2026"))
-                .displayName("Apex Academy")
+                .username("athlos_academy")
+                .email("admin@athlosacademy.org")
+                .passwordHash(PasswordEncoderUtil.hash("athlos2026"))
+                .displayName("Athlos Academy")
                 .role(User.Role.INSTITUTION)
                 .build();
 
         sampleInstitution = Institution.builder()
                 .id(10L)
-                .name("Apex Sports Academy")
+                .name("Athlos Sports Academy")
                 .description("Accredited Sports Academy")
                 .verified(true)
                 .user(sampleInstitutionUser)
@@ -198,7 +198,7 @@ public class Tier1FeatureCoverageTest {
         assertThat(response.getRank()).isEqualTo(1);
         assertThat(response.getRankDisplay()).isEqualTo("Gold");
         assertThat(response.getCategory()).isEqualTo("Track & Field");
-        assertThat(response.getInstitutionName()).isEqualTo("Apex Sports Academy");
+        assertThat(response.getInstitutionName()).isEqualTo("Athlos Sports Academy");
         verify(badgeRepository, times(1)).save(any(Badge.class));
     }
 
@@ -225,7 +225,7 @@ public class Tier1FeatureCoverageTest {
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo(50L);
         assertThat(response.getBadge().getName()).isEqualTo("Game City Champion");
-        assertThat(response.getAwardedByInstitutionName()).isEqualTo("Apex Sports Academy");
+        assertThat(response.getAwardedByInstitutionName()).isEqualTo("Athlos Sports Academy");
         assertThat(response.getAwardedAt()).isNotNull();
         verify(userBadgeRepository, times(1)).save(any(UserBadge.class));
     }
@@ -757,7 +757,7 @@ public class Tier1FeatureCoverageTest {
     @Test
     @DisplayName("F5.3: Session decodability validates token integrity and signature part")
     void f5_3_sessionDecodability_validatesTokenStructureAndClaims() {
-        String token = TokenProvider.generateToken(2L, "apex_academy", "INSTITUTION");
+        String token = TokenProvider.generateToken(2L, "athlos_academy", "INSTITUTION");
         String[] parts = TokenProvider.decodeClaims(token);
 
         assertThat(parts).isNotNull();
@@ -862,7 +862,7 @@ public class Tier1FeatureCoverageTest {
     @Test
     @DisplayName("F6.3: Institution user role allowed for institutional operations")
     void f6_3_institutionUserRole_permittedForInstitutionalOperations() throws Exception {
-        String token = TokenProvider.generateToken(2L, "apex_academy", "INSTITUTION");
+        String token = TokenProvider.generateToken(2L, "athlos_academy", "INSTITUTION");
         Session session = Session.builder().id(2L).token(token).user(sampleInstitutionUser).isActive(true).expiresAt(LocalDateTime.now().plusDays(7)).build();
         when(sessionRepository.findByToken(token)).thenReturn(Optional.of(session));
         when(sessionRepository.findByTokenAndIsActiveTrue(token)).thenReturn(Optional.of(session));
@@ -881,7 +881,7 @@ public class Tier1FeatureCoverageTest {
     @Test
     @DisplayName("F6.4: Valid bearer token accepted and decodes authorized user context")
     void f6_4_validBearerToken_acceptedAndAuthorizesRequest() throws Exception {
-        String token = TokenProvider.generateToken(2L, "apex_academy", "INSTITUTION");
+        String token = TokenProvider.generateToken(2L, "athlos_academy", "INSTITUTION");
         Session session = Session.builder().id(2L).token(token).user(sampleInstitutionUser).isActive(true).expiresAt(LocalDateTime.now().plusDays(7)).build();
         when(sessionRepository.findByToken(token)).thenReturn(Optional.of(session));
         when(sessionRepository.findByTokenAndIsActiveTrue(token)).thenReturn(Optional.of(session));
@@ -912,12 +912,12 @@ public class Tier1FeatureCoverageTest {
     @Test
     @DisplayName("F6.6: Institution login request returns INSTITUTION role in response")
     void f6_6_institutionLogin_grantsInstitutionRoleAndId() {
-        when(userRepository.findByUsername("apex_academy")).thenReturn(Optional.of(sampleInstitutionUser));
+        when(userRepository.findByUsername("athlos_academy")).thenReturn(Optional.of(sampleInstitutionUser));
         when(institutionRepository.findByUserId(2L)).thenReturn(Optional.of(sampleInstitution));
 
         InstitutionLoginRequest req = InstitutionLoginRequest.builder()
-                .institutionCodeOrEmail("apex_academy")
-                .password("apexpass2026")
+                .institutionCodeOrEmail("athlos_academy")
+                .password("athlos2026")
                 .build();
 
         AuthResponse response = authService.loginInstitution(req);
@@ -1062,7 +1062,7 @@ public class Tier1FeatureCoverageTest {
 
         assertThat(badges).hasSize(1);
         assertThat(badges.get(0).getName()).isEqualTo("Game City Champion");
-        assertThat(badges.get(0).getInstitutionName()).isEqualTo("Apex Sports Academy");
+        assertThat(badges.get(0).getInstitutionName()).isEqualTo("Athlos Sports Academy");
     }
 
     @Test

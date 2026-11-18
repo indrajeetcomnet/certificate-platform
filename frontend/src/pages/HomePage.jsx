@@ -241,16 +241,16 @@ export default function HomePage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center font-black text-sm shadow-xs uppercase">
-                      {String(featuredPost?.user?.displayName || 'Apex Athletics Official').substring(0, 2)}
+                      {String(featuredPost?.user?.displayName || 'Athlos Athletics Official').substring(0, 2)}
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="font-extrabold text-sm sm:text-base text-stone-900">
-                          {featuredPost?.user?.displayName || 'Apex Athletics Federation'}
+                          {featuredPost?.user?.displayName || 'Athlos Athletics Federation'}
                         </span>
                         <CheckCircle2 className="w-4 h-4 text-amber-500 fill-amber-400/20" />
                         <span className="text-xs text-stone-400">
-                          @{featuredPost?.user?.username || 'apex_academy'}
+                          @{featuredPost?.user?.username || 'athlos_academy'}
                         </span>
                       </div>
                       <span className="text-[11px] font-medium text-stone-400">Verified Tournament Announcement</span>
@@ -418,7 +418,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-stone-900">Game City Champion</h3>
-                  <p className="text-xs text-stone-500 mt-1">1st Place Trophy Award · Apex Sports Federation</p>
+                  <p className="text-xs text-stone-500 mt-1">1st Place Trophy Award · Athlos Sports Federation</p>
                 </div>
               </div>
               <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-stone-900 flex items-center justify-between text-xs font-bold">
@@ -440,7 +440,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-stone-900">Game City Runner-Up</h3>
-                  <p className="text-xs text-stone-500 mt-1">2nd Place Medal Award · Apex Sports Federation</p>
+                  <p className="text-xs text-stone-500 mt-1">2nd Place Medal Award · Athlos Sports Federation</p>
                 </div>
               </div>
               <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-stone-900 flex items-center justify-between text-xs font-bold">
@@ -462,7 +462,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-stone-900">Game City Finalist</h3>
-                  <p className="text-xs text-stone-500 mt-1">3rd Place Podium Award · Apex Sports Federation</p>
+                  <p className="text-xs text-stone-500 mt-1">3rd Place Podium Award · Athlos Sports Federation</p>
                 </div>
               </div>
               <div className="p-3 rounded-2xl bg-orange-50/90 border border-orange-200 text-stone-900 flex items-center justify-between text-xs font-bold">

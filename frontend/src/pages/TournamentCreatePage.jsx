@@ -41,7 +41,7 @@ const PRESET_TEMPLATES = {
   FOOTBALL: [
     { id: 'jersey_number', label: 'Jersey Number', type: 'number', required: true, placeholder: 'e.g. 9' },
     { id: 'preferred_position', label: 'Preferred Position', type: 'select', required: true, options: ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'], placeholder: 'Select Position' },
-    { id: 'team_name', label: 'Club / Academy Name', type: 'text', required: true, placeholder: 'e.g. Apex FC' },
+    { id: 'team_name', label: 'Club / Academy Name', type: 'text', required: true, placeholder: 'e.g. Athlos FC' },
     { id: 'captain_status', label: 'Team Captain / Vice Captain', type: 'checkbox', required: false, placeholder: 'Yes, Captain' },
   ],
   ESPORTS: [
@@ -71,7 +71,7 @@ export default function TournamentCreatePage() {
   const [sport, setSport] = useState('Track & Field');
   const [format, setFormat] = useState('Single Elimination Knockout');
   const [description, setDescription] = useState('');
-  const [venue, setVenue] = useState('Apex National Athletic Arena');
+  const [venue, setVenue] = useState('National Athletic Arena');
   const [startDate, setStartDate] = useState('2026-11-20');
   const [endDate, setEndDate] = useState('2026-11-22');
   const [registrationDeadline, setRegistrationDeadline] = useState('2026-11-19');
@@ -219,7 +219,7 @@ export default function TournamentCreatePage() {
               <span>Organize a Tournament</span>
             </h1>
             <p className="text-xs text-stone-500 font-medium">
-              Create an official competitive event, configure custom registration fields, and link verified credentials.
+              Event details, registration fields, and verified awards.
             </p>
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function TournamentCreatePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Input
                 label="Venue / Arena / Court"
-                placeholder="e.g. Apex National Stadium, Track 4"
+                placeholder="e.g. National Athletic Stadium, Track 4"
                 value={venue}
                 onChange={(e) => setVenue(e.target.value)}
                 required
@@ -374,11 +374,8 @@ export default function TournamentCreatePage() {
               </div>
               <div>
                 <h2 className="text-base font-black text-stone-900">
-                  2. Custom Registration Form (Google Forms Style)
+                  2. Custom Registration Form
                 </h2>
-                <p className="text-xs text-stone-500 font-medium">
-                  Customize the exact fields, questions, and input types required from participating athletes.
-                </p>
               </div>
             </div>
 
@@ -410,11 +407,9 @@ export default function TournamentCreatePage() {
           </div>
 
           {/* Standard Fields Reminder Note */}
-          <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/80 text-xs text-stone-600 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>
-              <strong>Standard Included Fields:</strong> Athlete Name, Email Address, and Phone Number are automatically captured for all entries.
-            </span>
+          <div className="py-1 px-2 text-xs text-stone-500 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>Athlete Name, Email, and Phone captured by default.</span>
           </div>
 
           {/* Dynamic Question Cards List */}
@@ -541,9 +536,6 @@ export default function TournamentCreatePage() {
               <h2 className="text-base font-black text-stone-900">
                 3. Link Official Badges & Certificates
               </h2>
-              <p className="text-xs text-stone-500 font-medium">
-                Accredited awards will be ready to issue with 1 click to winners when the tournament concludes.
-              </p>
             </div>
           </div>
 

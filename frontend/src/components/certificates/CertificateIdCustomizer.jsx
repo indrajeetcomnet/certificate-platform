@@ -174,7 +174,7 @@ export default function CertificateIdCustomizer({
                   const val = e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
                   setPrefix(val);
                 }}
-                placeholder="e.g. APEX, GC, CERT"
+                placeholder="e.g. ATHLOS, GC, CERT"
                 className="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
               />
             </div>
@@ -192,7 +192,7 @@ export default function CertificateIdCustomizer({
                 className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
               >
                 <option value="STANDARD">Standard Cryptographic (CERT-XXXX-XXXX-XXXX)</option>
-                <option value="BRANDED">Academy Year (APEX-2026-XXXX)</option>
+                <option value="BRANDED">Academy Year (ATHLOS-2026-XXXX)</option>
                 <option value="SERIAL">Sequential Series (GC-SERIES-XXXXXX)</option>
               </select>
             </div>

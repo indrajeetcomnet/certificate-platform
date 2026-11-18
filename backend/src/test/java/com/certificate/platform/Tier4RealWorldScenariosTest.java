@@ -73,7 +73,7 @@ public class Tier4RealWorldScenariosTest {
 
     private User athleteUser;
     private User institutionUser;
-    private Institution apexInstitution;
+    private Institution athlosInstitution;
 
     @BeforeEach
     void setUp() {
@@ -106,14 +106,14 @@ public class Tier4RealWorldScenariosTest {
 
         institutionUser = User.builder()
                 .id(200L)
-                .username("apex_academy")
-                .displayName("Apex Sports Academy")
+                .username("athlos_academy")
+                .displayName("Athlos Sports Academy")
                 .role(User.Role.INSTITUTION)
                 .build();
 
-        apexInstitution = Institution.builder()
+        athlosInstitution = Institution.builder()
                 .id(10L)
-                .name("Apex Sports Academy")
+                .name("Athlos Sports Academy")
                 .description("Accredited Sports Academy")
                 .user(institutionUser)
                 .verified(true)
@@ -140,18 +140,18 @@ public class Tier4RealWorldScenariosTest {
                 .category(createBadgeReq.getCategory())
                 .iconUrl(createBadgeReq.getIconUrl())
                 .description(createBadgeReq.getDescription())
-                .institution(apexInstitution)
+                .institution(athlosInstitution)
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        when(institutionRepository.findById(10L)).thenReturn(Optional.of(apexInstitution));
+        when(institutionRepository.findById(10L)).thenReturn(Optional.of(athlosInstitution));
         when(badgeRepository.save(any(Badge.class))).thenReturn(persistedBadge);
 
         BadgeResponse createdBadge = badgeService.createBadge(createBadgeReq);
         assertThat(createdBadge).isNotNull();
         assertThat(createdBadge.getName()).isEqualTo("National Athletics Gold");
         assertThat(createdBadge.getRankDisplay()).isEqualTo("Gold");
-        assertThat(createdBadge.getInstitutionName()).isEqualTo("Apex Sports Academy");
+        assertThat(createdBadge.getInstitutionName()).isEqualTo("Athlos Sports Academy");
 
         // Step 2: Institution assigns badge to athlete
         AssignBadgeRequest assignReq = AssignBadgeRequest.builder()
@@ -164,7 +164,7 @@ public class Tier4RealWorldScenariosTest {
                 .id(10L)
                 .user(athleteUser)
                 .badge(persistedBadge)
-                .awardedBy(apexInstitution)
+                .awardedBy(athlosInstitution)
                 .awardedAt(LocalDateTime.now())
                 .build();
 
@@ -175,7 +175,7 @@ public class Tier4RealWorldScenariosTest {
         UserBadgeResponse assignedResponse = badgeService.assignBadgeToUser(assignReq);
         assertThat(assignedResponse).isNotNull();
         assertThat(assignedResponse.getBadge().getName()).isEqualTo("National Athletics Gold");
-        assertThat(assignedResponse.getAwardedByInstitutionName()).isEqualTo("Apex Sports Academy");
+        assertThat(assignedResponse.getAwardedByInstitutionName()).isEqualTo("Athlos Sports Academy");
 
         // Step 3: Recipient athlete retrieves profile badges
         when(userBadgeRepository.findByUserId(100L)).thenReturn(List.of(userBadge));
@@ -184,7 +184,7 @@ public class Tier4RealWorldScenariosTest {
         assertThat(profileBadges).hasSize(1);
         assertThat(profileBadges.get(0).getBadge().getName()).isEqualTo("National Athletics Gold");
         assertThat(profileBadges.get(0).getBadge().getRankDisplay()).isEqualTo("Gold");
-        assertThat(profileBadges.get(0).getAwardedByInstitutionName()).isEqualTo("Apex Sports Academy");
+        assertThat(profileBadges.get(0).getAwardedByInstitutionName()).isEqualTo("Athlos Sports Academy");
     }
 
     @Test
@@ -327,13 +327,13 @@ public class Tier4RealWorldScenariosTest {
     @DisplayName("Scenario 5: Full Institutional End-to-End Workflow (Badge -> Post -> Sponsor -> View -> Earnings -> Session Wipe)")
     void scenario5_fullInstitutionalEndToEndWorkflow() throws Exception {
         // Step 1: Institution authentication & session generation
-        String instToken = TokenProvider.generateToken(200L, "apex_academy", "INSTITUTION");
+        String instToken = TokenProvider.generateToken(200L, "athlos_academy", "INSTITUTION");
         assertThat(instToken).isNotBlank();
         String role = new String(Base64.getUrlDecoder().decode(instToken)).split(":")[2];
         assertThat(role).isEqualTo("INSTITUTION");
 
         // Step 2: Competition badge creation & brand sponsor linking
-        Badge tournamentBadge = Badge.builder().id(99L).name("All-Star Gold").rank(1).institution(apexInstitution).build();
+        Badge tournamentBadge = Badge.builder().id(99L).name("All-Star Gold").rank(1).institution(athlosInstitution).build();
         Sponsor sponsor = Sponsor.builder().id(33L).name("Puma Nitro").isActive(true).build();
         SponsorBadge link = SponsorBadge.builder().sponsor(sponsor).badge(tournamentBadge).priority(10).isActive(true).build();
 
@@ -341,7 +341,7 @@ public class Tier4RealWorldScenariosTest {
         when(sponsorBadgeRepository.findByBadgeIdAndIsActiveTrue(99L)).thenReturn(List.of(link));
 
         // Step 3: Badge assignment to athlete user
-        UserBadge userBadge = UserBadge.builder().user(athleteUser).badge(tournamentBadge).awardedBy(apexInstitution).build();
+        UserBadge userBadge = UserBadge.builder().user(athleteUser).badge(tournamentBadge).awardedBy(athlosInstitution).build();
         when(userBadgeRepository.findByUserId(100L)).thenReturn(List.of(userBadge));
 
         // Step 4: Athlete creates tournament post
@@ -370,7 +370,7 @@ public class Tier4RealWorldScenariosTest {
         Session instSession = Session.builder()
                 .id(99L)
                 .token(instToken)
-                .user(apexInstitution.getUser())
+                .user(athlosInstitution.getUser())
                 .isActive(true)
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build();

@@ -6,12 +6,12 @@ import com.certificate.platform.util.PasswordEncoderUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-@Configuration
+@Component
 @RequiredArgsConstructor
 @Slf4j
 public class DatabaseInitializer implements CommandLineRunner {
@@ -34,13 +34,13 @@ public class DatabaseInitializer implements CommandLineRunner {
         log.info("Checking database seed state...");
 
         // 1. Seed Institution User and Institution Entity if missing
-        Institution apexInstitution = institutionRepository.findAll().stream().findFirst().orElseGet(() -> {
-            User instUser = userRepository.findByUsername("apex_academy").orElseGet(() -> {
+        Institution athlosInstitution = institutionRepository.findAll().stream().findFirst().orElseGet(() -> {
+            User instUser = userRepository.findByUsername("athlos_academy").orElseGet(() -> {
                 User u = User.builder()
-                        .username("apex_academy")
-                        .email("admin@apexacademy.org")
-                        .displayName("Apex Sports Academy")
-                        .passwordHash(PasswordEncoderUtil.hash("apexpass2026"))
+                        .username("athlos_academy")
+                        .email("admin@athlosacademy.org")
+                        .displayName("Athlos Sports Academy")
+                        .passwordHash(PasswordEncoderUtil.hash("athlos2026"))
                         .role(User.Role.INSTITUTION)
                         .bio("Official Accredited Sports Academy & Tournament Federation")
                         .avatarUrl("https://images.unsplash.com/photo-1546519638-68e109498ffc?w=150&h=150&fit=crop&crop=faces")
@@ -49,7 +49,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             });
 
             Institution inst = Institution.builder()
-                    .name("Apex Sports Academy")
+                    .name("Athlos Sports Academy")
                     .description("Official Accredited Sports Academy & Tournament Federation")
                     .verified(true)
                     .user(instUser)
@@ -129,7 +129,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .rank(1)
                     .category("Sports Championship")
                     .description("1st Place Gold Medalist - Game City Tournament")
-                    .institution(apexInstitution)
+                    .institution(athlosInstitution)
                     .build();
             goldBadge = badgeRepository.save(goldBadge);
 
@@ -138,7 +138,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .rank(2)
                     .category("Sports Championship")
                     .description("2nd Place Silver Medalist - Game City Tournament")
-                    .institution(apexInstitution)
+                    .institution(athlosInstitution)
                     .build();
             silverBadge = badgeRepository.save(silverBadge);
 
@@ -147,7 +147,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .rank(3)
                     .category("Sports Championship")
                     .description("3rd Place Bronze Medalist - Game City Tournament")
-                    .institution(apexInstitution)
+                    .institution(athlosInstitution)
                     .build();
             bronzeBadge = badgeRepository.save(bronzeBadge);
 
@@ -248,7 +248,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             userBadgeRepository.save(UserBadge.builder()
                     .user(indrajeet)
                     .badge(goldBadge)
-                    .awardedBy(apexInstitution)
+                    .awardedBy(athlosInstitution)
                     .awardedAt(LocalDateTime.now().minusDays(3))
                     .build());
 
@@ -256,7 +256,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                 userBadgeRepository.save(UserBadge.builder()
                         .user(marcus)
                         .badge(silverBadge)
-                        .awardedBy(apexInstitution)
+                        .awardedBy(athlosInstitution)
                         .awardedAt(LocalDateTime.now().minusDays(3))
                         .build());
             }
@@ -265,7 +265,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                 userBadgeRepository.save(UserBadge.builder()
                         .user(sarah)
                         .badge(bronzeBadge)
-                        .awardedBy(apexInstitution)
+                        .awardedBy(athlosInstitution)
                         .awardedAt(LocalDateTime.now().minusDays(3))
                         .build());
             }
@@ -274,7 +274,7 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         // 6. Seed Diverse Activity Posts if empty or only 1 announcement
         if (postRepository.count() <= 1) {
-            User officialIssuer = userRepository.findByUsername("apex_academy").orElse(null);
+            User officialIssuer = userRepository.findByUsername("athlos_academy").orElse(null);
             if (officialIssuer != null && postRepository.count() == 0) {
                 postRepository.save(Post.builder()
                         .user(officialIssuer)
@@ -288,7 +288,7 @@ public class DatabaseInitializer implements CommandLineRunner {
 
             postRepository.save(Post.builder()
                     .user(indrajeet)
-                    .content("Broke my personal record in the 100m sprint finals today with 10.18s! Massive thanks to Apex Sports Academy for the verified Gold Badge honor. Big things coming for the 2026 season!")
+                    .content("Broke my personal record in the 100m sprint finals today with 10.18s! Massive thanks to Athlos Sports Academy for the verified Gold Badge honor. Big things coming for the 2026 season!")
                     .postType(Post.PostType.ORIGINAL)
                     .likesCount(48)
                     .commentsCount(9)
@@ -318,7 +318,7 @@ public class DatabaseInitializer implements CommandLineRunner {
 
         // 7. Seed Initial Direct Messages if empty
         if (messageRepository.count() == 0) {
-            User officialIssuer = userRepository.findByUsername("apex_academy").orElse(null);
+            User officialIssuer = userRepository.findByUsername("athlos_academy").orElse(null);
 
             if (officialIssuer != null) {
                 messageRepository.save(Message.builder()
@@ -332,7 +332,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                 messageRepository.save(Message.builder()
                         .sender(indrajeet)
                         .recipient(officialIssuer)
-                        .content("Thank you Apex Sports Academy! Honored to represent in the finals. Looking forward to the tournament showcase.")
+                        .content("Thank you Athlos Sports Academy! Honored to represent in the finals. Looking forward to the tournament showcase.")
                         .isRead(true)
                         .readAt(LocalDateTime.now().minusHours(3))
                         .build());
@@ -356,7 +356,7 @@ public class DatabaseInitializer implements CommandLineRunner {
         }
 
         // 8. Seed Flagship Tournament with Google-Form custom schema and timetable if empty
-        if (tournamentRepository.count() == 0 && apexInstitution != null) {
+        if (tournamentRepository.count() == 0 && athlosInstitution != null) {
             String formSchema = "[" +
                     "{\"id\":\"bib_number\",\"label\":\"Bib / Chest Number\",\"type\":\"text\",\"required\":true,\"placeholder\":\"e.g. 101\"}," +
                     "{\"id\":\"age_category\",\"label\":\"Age Category\",\"type\":\"select\",\"required\":true,\"options\":[\"Under-18\",\"Senior Elite (18-29)\",\"Masters (30+)\"],\"placeholder\":\"Select Category\"}," +
@@ -366,16 +366,16 @@ public class DatabaseInitializer implements CommandLineRunner {
 
             Tournament t = Tournament.builder()
                     .title("Game City Athletics Championship 2026")
-                    .description("The premier regional track and field championship organized by Apex Sports Academy. Official medals and cryptographically verified credentials awarded to podium finishers.")
+                    .description("The premier regional track and field championship organized by Athlos Sports Academy. Official medals and cryptographically verified credentials awarded to podium finishers.")
                     .sport("Track & Field")
                     .format("Single Elimination Sprint Heats")
-                    .venue("Apex National Athletic Stadium, Track 4")
+                    .venue("National Athletic Stadium, Track 4")
                     .startDate("2026-11-20")
                     .endDate("2026-11-22")
                     .registrationDeadline("2026-11-19")
                     .status("LIVE")
                     .maxParticipants(16)
-                    .institution(apexInstitution)
+                    .institution(athlosInstitution)
                     .customFormSchema(formSchema)
                     .linkedBadgeGoldId(goldBadge != null ? goldBadge.getId() : null)
                     .linkedBadgeSilverId(silverBadge != null ? silverBadge.getId() : null)

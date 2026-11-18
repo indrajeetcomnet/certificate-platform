@@ -29,7 +29,7 @@ export default function BulkCertificatesPage() {
 
   const [batchTitle, setBatchTitle] = useState('Game City Tournament Certificate 2026');
   const [batchDescription, setBatchDescription] = useState('Official award conferred for tournament participation and excellence.');
-  const [idPrefix, setIdPrefix] = useState('APEX-2026');
+  const [idPrefix, setIdPrefix] = useState('ATHLOS-2026');
   
   const [recipients, setRecipients] = useState([
     { recipientName: 'Indrajeet Sharma', recipientEmail: 'indrajeet@example.com' },
@@ -301,7 +301,7 @@ export default function BulkCertificatesPage() {
                   type="text"
                   value={idPrefix}
                   onChange={(e) => setIdPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
-                  placeholder="e.g. APEX-2026, GC-SERIES"
+                  placeholder="e.g. ATHLOS-2026, GC-SERIES"
                   className="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
                 />
               </div>

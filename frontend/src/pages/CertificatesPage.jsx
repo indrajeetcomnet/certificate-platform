@@ -229,7 +229,7 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
               Accredited Organization
             </span>
             <span className="text-sm font-bold text-stone-800 line-clamp-1">
-              {currentUser?.displayName || 'Apex Sports Academy'}
+              {currentUser?.displayName || 'Athlos Sports Academy'}
             </span>
           </div>
         </Card>

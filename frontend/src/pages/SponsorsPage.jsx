@@ -44,7 +44,7 @@ const PRESET_LOGOS = [
   { name: 'Red Bull Racing', url: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=150&h=150&fit=crop' },
   { name: 'Nike Athletic', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop' },
   { name: 'Puma Speed', url: 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=150&h=150&fit=crop' },
-  { name: 'Apex Gear', url: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=150&h=150&fit=crop' },
+  { name: 'Athlos Gear', url: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=150&h=150&fit=crop' },
   { name: 'SpeedLab Tech', url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=150&h=150&fit=crop' },
 ];
 

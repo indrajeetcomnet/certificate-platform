@@ -225,7 +225,7 @@ describe('Tier 1: Core Functional Contracts & Features', () => {
         { id: 2, name: 'Badge Beta', rank: 2 },
       ];
       const sponsors = [
-        { id: 10, name: 'Sponsor Apex', logoUrl: '/apex.png' },
+        { id: 10, name: 'Sponsor Athlos', logoUrl: '/athlos.png' },
         { id: 20, name: 'Sponsor Bolt', logoUrl: '/bolt.png' },
       ];
 
@@ -235,7 +235,7 @@ describe('Tier 1: Core Functional Contracts & Features', () => {
       assert.equal(items[0].type, 'badge');
       assert.equal(items[0].data.name, 'Badge Alpha');
       assert.equal(items[1].type, 'sponsor');
-      assert.equal(items[1].data.name, 'Sponsor Apex');
+      assert.equal(items[1].data.name, 'Sponsor Athlos');
       assert.equal(items[2].type, 'badge');
       assert.equal(items[2].data.name, 'Badge Beta');
       assert.equal(items[3].type, 'sponsor');

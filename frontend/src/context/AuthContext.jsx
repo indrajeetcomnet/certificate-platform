@@ -120,7 +120,7 @@ export function AuthProvider({ children }) {
       const institutionObj = {
         id: data.userId,
         username: data.username,
-        displayName: data.displayName || 'Apex Sports Academy',
+        displayName: data.displayName || 'Athlos Sports Academy',
         role: 'INSTITUTION',
         institutionId: data.institutionId || data.userId,
       };

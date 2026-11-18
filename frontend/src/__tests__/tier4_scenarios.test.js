@@ -203,8 +203,8 @@ describe('Tier 4: Real-World End-to-End Application Scenarios', () => {
     // 1. Institution logs in and session persists
     const institutionUser = {
       id: 101,
-      username: 'apex_admin',
-      displayName: 'Apex Sports Academy',
+      username: 'athlos_admin',
+      displayName: 'Athlos Sports Academy',
       role: 'INSTITUTION',
       institutionId: 1,
     };

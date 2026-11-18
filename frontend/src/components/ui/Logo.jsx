@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 /**
  * Athlos Brand Logo
- * Features a modern, geometric victory flame, podium crest, and athletic apex wings.
+ * Features a modern, geometric victory flame, podium crest, and athletic crest wings.
  */
 export function AthlosIcon({ size = 36, className = '' }) {
   return (
@@ -80,7 +80,7 @@ export function AthlosIcon({ size = 36, className = '' }) {
         fillOpacity="0.9"
       />
 
-      {/* Center Pinnacle / Podium #1 Apex Torch (Gold / Victory) */}
+      {/* Center Pinnacle / Podium #1 Athlos Torch (Gold / Victory) */}
       <path
         d="M21 31V16L24 13L27 16V31H21Z"
         fill="url(#athlosGoldGrad)"

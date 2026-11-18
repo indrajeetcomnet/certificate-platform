@@ -110,15 +110,12 @@ export default function TournamentsPage() {
       {/* ── 1. HEADER & ACTIONS ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-200 pb-5">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-900 border border-amber-300/60 text-xs font-black tracking-wide mb-1.5 shadow-2xs">
-            <Trophy className="w-3.5 h-3.5 text-amber-600" />
-            <span>Tournament Operations & Organizer Workspace</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight flex items-center gap-2">
-            <span>Competitive Tournament Hub</span>
+          <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight flex items-center gap-2.5">
+            <Trophy className="w-7 h-7 text-amber-600" />
+            <span>Tournaments</span>
           </h1>
-          <p className="text-xs sm:text-sm text-stone-600 font-medium mt-1">
-            Build custom registration forms, manage rosters, schedule match timetables, and issue verified credentials.
+          <p className="text-xs sm:text-sm text-stone-500 font-medium mt-1">
+            Active competitions, fixtures & verified honors.
           </p>
         </div>
 
@@ -358,7 +355,7 @@ export default function TournamentsPage() {
                     onClick={() => navigate(`/tournaments/${t.id}`)}
                     className="w-full font-bold shadow-xs justify-center"
                   >
-                    Open Tournament Hub & Fixtures
+                    Open Tournament Hub
                   </Button>
                 </div>
 

@@ -37,7 +37,7 @@ public class UniqueCodeGenerator {
     /**
      * Generates formatted code according to custom user-chosen style:
      * - STANDARD: PREFIX-XXXX-XXXX-XXXX (e.g. CERT-8492-9912-3841)
-     * - BRANDED: PREFIX-YYYY-XXXX (e.g. APEX-2026-9A4B)
+     * - BRANDED: PREFIX-YYYY-XXXX (e.g. ATHLOS-2026-9A4B)
      * - SERIAL: PREFIX-SERIES-XXXXXX (e.g. GC-SERIES-394821)
      */
     public static String generateFormatted(String prefix, String style) {

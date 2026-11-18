@@ -460,9 +460,6 @@ export default function TournamentWorkspacePage() {
               <h2 className="text-lg font-black text-stone-900">
                 Match Fixtures & Live Timetable
               </h2>
-              <p className="text-xs text-stone-500 font-medium">
-                Update scores, track sprint times, and set round winners in real-time.
-              </p>
             </div>
 
             {isInstitution && (
@@ -661,9 +658,6 @@ export default function TournamentWorkspacePage() {
               <h2 className="text-lg font-black text-stone-900">
                 Registered Athletes Roster
               </h2>
-              <p className="text-xs text-stone-500 font-medium">
-                Click any participant to view their exact Google-Form custom responses (Bib #, Age category, PB).
-              </p>
             </div>
 
             {isInstitution && (
@@ -774,11 +768,8 @@ export default function TournamentWorkspacePage() {
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h2 className="text-lg font-black text-stone-900">
-                Google-Forms Style Custom Questions Builder
+                Custom Registration Form
               </h2>
-              <p className="text-xs text-stone-500 font-medium">
-                Add, customize, or re-title questions required for athlete tournament registration.
-              </p>
             </div>
 
             {isInstitution && (
@@ -893,11 +884,8 @@ export default function TournamentWorkspacePage() {
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h2 className="text-lg font-black text-stone-900">
-                Official Podium & 1-Click Award Issuance
+                Podium & Award Ceremony
               </h2>
-              <p className="text-xs text-stone-500 font-medium">
-                Conclude tournament and automatically award linked verified badges & tamper-proof certificates.
-              </p>
             </div>
 
             {tournament.status === 'COMPLETED' ? (
@@ -1292,7 +1280,7 @@ export default function TournamentWorkspacePage() {
               <span>Automated Credential Issuance</span>
             </p>
             <p className="text-stone-600">
-              Confirm podium winners below. Clicking Confirm will automatically issue official cryptographically verified certificates and assign competition badges to athletes' profiles.
+              Select podium winners to issue verified certificates and badges.
             </p>
           </div>
 

@@ -381,7 +381,7 @@ export default function CertificateIssuePage() {
                   description: formData.description || 'Achievement citation statement...',
                   uniqueCode: formData.uniqueCode || 'CERT-PREVIEW-2026',
                   issuedAt: new Date().toISOString(),
-                  institutionName: currentUser?.displayName || 'Apex Sports Academy',
+                  institutionName: currentUser?.displayName || 'Athlos Sports Academy',
                   verified: true,
                 }}
               />
