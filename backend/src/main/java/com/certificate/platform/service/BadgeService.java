@@ -80,15 +80,36 @@ public class BadgeService {
 
     @Transactional
     public UserBadgeResponse assignBadgeToUser(AssignBadgeRequest request) {
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", request.getUserId()));
+        User user = null;
+        if (request.getUserId() != null) {
+            user = userRepository.findById(request.getUserId()).orElse(null);
+        }
+        if (user == null && request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            String clean = request.getUsername().trim().replaceFirst("^@", "");
+            user = userRepository.findByUsername(clean).orElse(null);
+        }
+        if (user == null && request.getUserEmail() != null && !request.getUserEmail().trim().isEmpty()) {
+            user = userRepository.findByEmail(request.getUserEmail().trim()).orElse(null);
+        }
+
+        if (user == null) {
+            String identifier = request.getUserId() != null ? String.valueOf(request.getUserId())
+                    : (request.getUsername() != null ? request.getUsername() : request.getUserEmail());
+            throw new ResourceNotFoundException("User not found with identifier: " + identifier);
+        }
+
         Badge badge = badgeRepository.findById(request.getBadgeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Badge", request.getBadgeId()));
 
+        // Return existing badge if already awarded to prevent duplicate inflation
+        java.util.Optional<UserBadge> existing = userBadgeRepository.findByUserIdAndBadgeId(user.getId(), badge.getId());
+        if (existing.isPresent()) {
+            return mapToUserBadgeResponse(existing.get());
+        }
+
         Institution awardedBy = null;
         if (request.getInstitutionId() != null) {
-            awardedBy = institutionRepository.findById(request.getInstitutionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Institution", request.getInstitutionId()));
+            awardedBy = institutionRepository.findById(request.getInstitutionId()).orElse(null);
         }
 
         UserBadge userBadge = UserBadge.builder()
@@ -106,6 +127,87 @@ public class BadgeService {
         }
 
         return mapToUserBadgeResponse(userBadge);
+    }
+
+    @Transactional
+    public BulkAssignBadgeResponse assignBadgeBulk(BulkAssignBadgeRequest request) {
+        Badge badge = badgeRepository.findById(request.getBadgeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Badge", request.getBadgeId()));
+
+        Institution awardedBy = null;
+        if (request.getInstitutionId() != null) {
+            awardedBy = institutionRepository.findById(request.getInstitutionId()).orElse(null);
+        }
+
+        java.util.Set<User> targetUsers = new java.util.LinkedHashSet<>();
+        java.util.List<String> notFound = new java.util.ArrayList<>();
+
+        if (request.getUserIds() != null) {
+            for (Long uid : request.getUserIds()) {
+                if (uid != null) {
+                    userRepository.findById(uid).ifPresentOrElse(targetUsers::add, () -> notFound.add("ID:" + uid));
+                }
+            }
+        }
+        if (request.getUsernames() != null) {
+            for (String un : request.getUsernames()) {
+                if (un != null && !un.trim().isEmpty()) {
+                    String clean = un.trim().replaceFirst("^@", "");
+                    userRepository.findByUsername(clean).ifPresentOrElse(targetUsers::add, () -> notFound.add("@" + clean));
+                }
+            }
+        }
+        if (request.getEmails() != null) {
+            for (String em : request.getEmails()) {
+                if (em != null && !em.trim().isEmpty()) {
+                    userRepository.findByEmail(em.trim()).ifPresentOrElse(targetUsers::add, () -> notFound.add(em.trim()));
+                }
+            }
+        }
+
+        int assignedCount = 0;
+        int skippedCount = 0;
+        java.util.List<String> assignedNames = new java.util.ArrayList<>();
+
+        for (User u : targetUsers) {
+            if (userBadgeRepository.existsByUserIdAndBadgeId(u.getId(), badge.getId())) {
+                skippedCount++;
+            } else {
+                UserBadge ub = UserBadge.builder()
+                        .user(u)
+                        .badge(badge)
+                        .awardedAt(LocalDateTime.now())
+                        .awardedBy(awardedBy)
+                        .build();
+                userBadgeRepository.save(ub);
+                assignedCount++;
+                assignedNames.add(u.getDisplayName() != null ? u.getDisplayName() : u.getUsername());
+            }
+        }
+
+        return BulkAssignBadgeResponse.builder()
+                .badgeId(badge.getId())
+                .badgeName(badge.getName())
+                .assignedCount(assignedCount)
+                .skippedCount(skippedCount)
+                .assignedUsers(assignedNames)
+                .notFoundIdentifiers(notFound)
+                .build();
+    }
+
+    @Transactional
+    public void revokeBadge(Long userBadgeId) {
+        UserBadge ub = userBadgeRepository.findById(userBadgeId)
+                .orElseThrow(() -> new ResourceNotFoundException("UserBadge", userBadgeId));
+        userBadgeRepository.delete(ub);
+        if (auditService != null) {
+            auditService.logEvent(null, "BADGE_REVOKE", "Revoked badge assignment ID: " + userBadgeId, null);
+        }
+    }
+
+    @Transactional
+    public void revokeUserBadge(Long userId, Long badgeId) {
+        userBadgeRepository.deleteByUserIdAndBadgeId(userId, badgeId);
     }
 
     public List<UserBadgeResponse> getUserBadges(Long userId) {

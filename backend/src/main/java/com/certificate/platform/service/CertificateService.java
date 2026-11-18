@@ -12,21 +12,47 @@ import com.certificate.platform.repository.UserRepository;
 import com.certificate.platform.util.UniqueCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.certificate.platform.model.Badge;
+import com.certificate.platform.model.UserBadge;
+import com.certificate.platform.repository.BadgeRepository;
+import com.certificate.platform.repository.UserBadgeRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class CertificateService {
 
     private final CertificateRepository certificateRepository;
     private final InstitutionRepository institutionRepository;
     private final UserRepository userRepository;
+    private final BadgeRepository badgeRepository;
+    private final UserBadgeRepository userBadgeRepository;
+
+    public CertificateService(CertificateRepository certificateRepository,
+                              InstitutionRepository institutionRepository,
+                              UserRepository userRepository) {
+        this(certificateRepository, institutionRepository, userRepository, null, null);
+    }
+
+    @Autowired
+    public CertificateService(CertificateRepository certificateRepository,
+                              InstitutionRepository institutionRepository,
+                              UserRepository userRepository,
+                              @Autowired(required = false) BadgeRepository badgeRepository,
+                              @Autowired(required = false) UserBadgeRepository userBadgeRepository) {
+        this.certificateRepository = certificateRepository;
+        this.institutionRepository = institutionRepository;
+        this.userRepository = userRepository;
+        this.badgeRepository = badgeRepository;
+        this.userBadgeRepository = userBadgeRepository;
+    }
 
     @Transactional
     public CertificateResponse createCertificate(CreateCertificateRequest request) {
@@ -76,6 +102,30 @@ public class CertificateService {
                 .build();
 
         certificate = certificateRepository.save(certificate);
+
+        // Optional: Award linked honor badge if specified
+        if (request.getAwardBadgeId() != null && badgeRepository != null && userBadgeRepository != null) {
+            final Institution certInst = certificate.getInstitution();
+            badgeRepository.findById(request.getAwardBadgeId()).ifPresent(badge -> {
+                User recipientUser = null;
+                if (request.getRecipientEmail() != null && !request.getRecipientEmail().isBlank()) {
+                    recipientUser = userRepository.findByEmail(request.getRecipientEmail().trim()).orElse(null);
+                }
+                if (recipientUser == null && request.getRecipientName() != null && !request.getRecipientName().isBlank()) {
+                    String cleanName = request.getRecipientName().trim();
+                    recipientUser = userRepository.findByUsername(cleanName.toLowerCase()).orElse(null);
+                }
+                if (recipientUser != null && !userBadgeRepository.existsByUserIdAndBadgeId(recipientUser.getId(), badge.getId())) {
+                    userBadgeRepository.save(UserBadge.builder()
+                            .user(recipientUser)
+                            .badge(badge)
+                            .awardedAt(LocalDateTime.now())
+                            .awardedBy(certInst)
+                            .build());
+                }
+            });
+        }
+
         return mapToResponse(certificate);
     }
 
@@ -144,6 +194,30 @@ public class CertificateService {
         certificate.setExpiresAt(request.getExpiresAt());
 
         certificate = certificateRepository.save(certificate);
+
+        // Optional: Award linked honor badge if specified
+        if (request.getAwardBadgeId() != null && badgeRepository != null && userBadgeRepository != null) {
+            final Institution certInst = certificate.getInstitution();
+            badgeRepository.findById(request.getAwardBadgeId()).ifPresent(badge -> {
+                User recipientUser = null;
+                if (request.getRecipientEmail() != null && !request.getRecipientEmail().isBlank()) {
+                    recipientUser = userRepository.findByEmail(request.getRecipientEmail().trim()).orElse(null);
+                }
+                if (recipientUser == null && request.getRecipientName() != null && !request.getRecipientName().isBlank()) {
+                    String cleanName = request.getRecipientName().trim();
+                    recipientUser = userRepository.findByUsername(cleanName.toLowerCase()).orElse(null);
+                }
+                if (recipientUser != null && !userBadgeRepository.existsByUserIdAndBadgeId(recipientUser.getId(), badge.getId())) {
+                    userBadgeRepository.save(UserBadge.builder()
+                            .user(recipientUser)
+                            .badge(badge)
+                            .awardedAt(LocalDateTime.now())
+                            .awardedBy(certInst)
+                            .build());
+                }
+            });
+        }
+
         return mapToResponse(certificate);
     }
 

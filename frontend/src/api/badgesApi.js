@@ -14,6 +14,18 @@ export function assignToUser(data) {
   return axiosClient.post('/badges/assign', data);
 }
 
+export function assignBulk(data) {
+  return axiosClient.post('/badges/assign-bulk', data);
+}
+
+export function revokeBadge(userBadgeId) {
+  return axiosClient.delete(`/badges/awarded/${userBadgeId}`);
+}
+
+export function revokeUserBadge(userId, badgeId) {
+  return axiosClient.delete(`/badges/user/${userId}/badge/${badgeId}`);
+}
+
 export function getUserBadges(userId) {
   return axiosClient.get(`/badges/user/${userId}`);
 }
@@ -25,3 +37,16 @@ export function getAllAwardedBadges() {
 export function getBadgeSponsors(badgeId) {
   return axiosClient.get(`/badges/${badgeId}/sponsors`);
 }
+
+export default {
+  getAll,
+  getAllBadges,
+  create,
+  assignToUser,
+  assignBulk,
+  revokeBadge,
+  revokeUserBadge,
+  getUserBadges,
+  getAllAwardedBadges,
+  getBadgeSponsors,
+};

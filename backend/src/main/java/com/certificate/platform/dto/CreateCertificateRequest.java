@@ -33,4 +33,6 @@ public class CreateCertificateRequest {
     private String customPrefix;
 
     private String codeFormat;
+
+    private Long awardBadgeId;
 }

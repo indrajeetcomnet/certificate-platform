@@ -1,10 +1,6 @@
 package com.certificate.platform.controller;
 
-import com.certificate.platform.dto.AssignBadgeRequest;
-import com.certificate.platform.dto.BadgeResponse;
-import com.certificate.platform.dto.CreateBadgeRequest;
-import com.certificate.platform.dto.SponsorBadgeResponse;
-import com.certificate.platform.dto.UserBadgeResponse;
+import com.certificate.platform.dto.*;
 import com.certificate.platform.service.BadgeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +37,24 @@ public class BadgeController {
     public ResponseEntity<UserBadgeResponse> assignBadgeToUser(@Valid @RequestBody AssignBadgeRequest request) {
         UserBadgeResponse assigned = badgeService.assignBadgeToUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(assigned);
+    }
+
+    @PostMapping("/assign-bulk")
+    public ResponseEntity<BulkAssignBadgeResponse> assignBadgeBulk(@Valid @RequestBody BulkAssignBadgeRequest request) {
+        BulkAssignBadgeResponse response = badgeService.assignBadgeBulk(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/awarded/{userBadgeId}")
+    public ResponseEntity<Void> revokeBadge(@PathVariable Long userBadgeId) {
+        badgeService.revokeBadge(userBadgeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/user/{userId}/badge/{badgeId}")
+    public ResponseEntity<Void> revokeUserBadge(@PathVariable Long userId, @PathVariable Long badgeId) {
+        badgeService.revokeUserBadge(userId, badgeId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/user/{userId}")

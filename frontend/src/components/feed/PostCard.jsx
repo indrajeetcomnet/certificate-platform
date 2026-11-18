@@ -235,10 +235,10 @@ export default function PostCard({
       {mediaList.length > 0 && (
         <div
           className={`grid gap-2 mb-4 rounded-xl overflow-hidden ${mediaList.length === 1
-              ? 'grid-cols-1'
-              : mediaList.length === 2
-                ? 'grid-cols-2'
-                : 'grid-cols-2 sm:grid-cols-3'
+            ? 'grid-cols-1'
+            : mediaList.length === 2
+              ? 'grid-cols-2'
+              : 'grid-cols-2 sm:grid-cols-3'
             }`}
         >
           {mediaList.map((media, idx) => {

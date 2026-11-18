@@ -141,9 +141,9 @@ public class DatabaseInitializer implements CommandLineRunner {
         }
 
         // 3. Seed Competition Badges if empty
-        Badge goldBadge = badgeRepository.findByRank(1).orElse(null);
-        Badge silverBadge = badgeRepository.findByRank(2).orElse(null);
-        Badge bronzeBadge = badgeRepository.findByRank(3).orElse(null);
+        Badge goldBadge = badgeRepository.findFirstByRank(1).orElse(null);
+        Badge silverBadge = badgeRepository.findFirstByRank(2).orElse(null);
+        Badge bronzeBadge = badgeRepository.findFirstByRank(3).orElse(null);
 
         if (goldBadge == null || silverBadge == null || bronzeBadge == null) {
             goldBadge = Badge.builder()

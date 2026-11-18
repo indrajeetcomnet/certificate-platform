@@ -7,7 +7,7 @@ export default function BadgeDisplay({ badge, size = 'md', className = '' }) {
 
   const rank = Number(badge.rank) || 1;
 
-  // Premium Metallic Rank Themes (Gold #1, Silver #2, Bronze #3)
+  // Premium Metallic Rank Themes (Gold #1, Silver #2, Bronze #3, or dynamic Honor rank)
   const rankThemes = {
     1: {
       container: 'bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 text-stone-950 border-amber-300 shadow-[0_2px_14px_rgba(245,158,11,0.35)]',
@@ -29,7 +29,14 @@ export default function BadgeDisplay({ badge, size = 'md', className = '' }) {
     },
   };
 
-  const theme = rankThemes[rank] || rankThemes[1];
+  const defaultHonorTheme = {
+    container: 'bg-gradient-to-r from-sky-100 via-indigo-50 to-blue-100 text-blue-950 border-blue-300 shadow-[0_2px_10px_rgba(59,130,246,0.2)]',
+    pill: 'bg-blue-900 text-blue-100 border border-blue-400/50',
+    icon: Sparkles,
+    label: `Rank #${rank} Honor`,
+  };
+
+  const theme = rankThemes[rank] || defaultHonorTheme;
   const Icon = theme.icon;
   const isSmall = size === 'sm';
 
@@ -45,7 +52,7 @@ export default function BadgeDisplay({ badge, size = 'md', className = '' }) {
 
       {/* Badge Name */}
       <span className="font-extrabold tracking-tight truncate max-w-[130px]">
-        {badge.name || 'Game City'}
+        {badge.name || badge.title || 'Verified Honor'}
       </span>
 
       {/* Rank Shield Pill */}

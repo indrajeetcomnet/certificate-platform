@@ -164,15 +164,42 @@ public class UserService {
             users = userRepository.findAll().stream()
                     .filter(u -> (u.getUsername() != null && u.getUsername().toLowerCase().contains(filterQuery))
                             || (u.getDisplayName() != null && u.getDisplayName().toLowerCase().contains(filterQuery))
+                            || (u.getEmail() != null && u.getEmail().toLowerCase().contains(filterQuery))
                             || (u.getBio() != null && u.getBio().toLowerCase().contains(filterQuery)))
+                    .limit(50)
                     .collect(Collectors.toList());
         } else {
-            users = userRepository.findAll();
+            users = userRepository.findAll().stream()
+                    .limit(100)
+                    .collect(Collectors.toList());
         }
 
-        // Zero-leakage: public user directory returns email as null
+        // Return streamlined profiles for directory search and autocomplete
         return users.stream()
-                .map(u -> getUserProfile(u.getId(), null))
+                .map(u -> UserProfileResponse.builder()
+                        .id(u.getId())
+                        .username(u.getUsername())
+                        .displayName(u.getDisplayName() != null ? u.getDisplayName() : u.getUsername())
+                        .avatarUrl(u.getAvatarUrl())
+                        .bio(u.getBio())
+                        .role(u.getRole() != null ? u.getRole() : User.Role.USER)
+                        .badges(userBadgeRepository.findByUserId(u.getId()).stream()
+                                .map(ub -> UserBadgeResponse.builder()
+                                        .id(ub.getId())
+                                        .badge(ub.getBadge() != null ? BadgeResponse.builder()
+                                                .id(ub.getBadge().getId())
+                                                .name(ub.getBadge().getName())
+                                                .rank(ub.getBadge().getRank())
+                                                .category(ub.getBadge().getCategory())
+                                                .iconUrl(ub.getBadge().getIconUrl())
+                                                .build() : null)
+                                        .awardedAt(ub.getAwardedAt())
+                                        .userId(u.getId())
+                                        .username(u.getUsername())
+                                        .userDisplayName(u.getDisplayName())
+                                        .build())
+                                .collect(Collectors.toList()))
+                        .build())
                 .collect(Collectors.toList());
     }
 

@@ -8,8 +8,12 @@ import lombok.*;
 @Builder
 public class AssignBadgeRequest {
 
-    @NotNull(message = "User ID is required")
+    // Can identify user by numeric ID, username, or email
     private Long userId;
+
+    private String username;
+
+    private String userEmail;
 
     @NotNull(message = "Badge ID is required")
     private Long badgeId;

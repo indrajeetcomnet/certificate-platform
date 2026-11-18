@@ -19,6 +19,7 @@ import TextArea from '../components/ui/TextArea';
 import CertificateIdCustomizer from '../components/certificates/CertificateIdCustomizer';
 import CertificateTemplate from '../components/certificates/CertificateTemplate';
 import { create } from '../api/certificatesApi';
+import { getAll as getAllBadges } from '../api/badgesApi';
 import { getAllUsers } from '../api/usersApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -30,6 +31,8 @@ export default function CertificateIssuePage() {
   const institutionId = currentUser?.institutionId || currentUser?.id;
 
   const [athletes, setAthletes] = useState([]);
+  const [badges, setBadges] = useState([]);
+  const [awardBadgeId, setAwardBadgeId] = useState('');
   const [loadingAthletes, setLoadingAthletes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [issuedResult, setIssuedResult] = useState(null);
@@ -54,6 +57,10 @@ export default function CertificateIssuePage() {
       })
       .catch(() => setAthletes([]))
       .finally(() => setLoadingAthletes(false));
+
+    getAllBadges()
+      .then((res) => setBadges(res.data || []))
+      .catch(() => setBadges([]));
   }, []);
 
   const handleSelectAthlete = (e) => {
@@ -87,6 +94,7 @@ export default function CertificateIssuePage() {
         recipientEmail: formData.recipientEmail.trim() || null,
         description: formData.description.trim() || null,
         institutionId: institutionId,
+        awardBadgeId: awardBadgeId ? Number(awardBadgeId) : null,
         uniqueCode: formData.uniqueCode.trim() || null,
         templateData: JSON.stringify({ template: formData.template }),
         expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : null,
@@ -338,6 +346,30 @@ export default function CertificateIssuePage() {
                     onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
                   />
                 </div>
+
+                {/* Optional Honor Badge Award */}
+                {badges.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Award Verified Badge with Certificate (Optional)
+                    </label>
+                    <select
+                      value={awardBadgeId}
+                      onChange={(e) => setAwardBadgeId(e.target.value)}
+                      className="w-full text-xs font-semibold px-3 py-2.5 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                    >
+                      <option value="">-- No Badge (Certificate Only) --</option>
+                      {badges.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name} (Rank #{b.rank} - {b.category || 'General'})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-stone-400 mt-1">
+                      If awarded, recipient automatically receives this verified badge on their profile and feed rotator.
+                    </p>
+                  </div>
+                )}
 
                 <div className="pt-2">
                   <Button
