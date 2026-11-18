@@ -161,30 +161,6 @@ export default function LoginPage() {
     }
   };
 
-  // One-Click Quick Demo Login
-  const handleQuickLogin = async (username, demoPassword) => {
-    setError(null);
-    setLoading(true);
-
-    try {
-      const res = await loginUser({
-        usernameOrEmail: username,
-        password: demoPassword,
-      });
-      const user = res.user;
-      showToast(`Signed in as ${user.displayName || user.username}`, 'success');
-      if (user.role === 'INSTITUTION') {
-        navigate('/certificates');
-      } else {
-        navigate('/feed');
-      }
-    } catch (err) {
-      setError(err.message || 'Quick login failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#FBFBF9] flex flex-col items-center justify-center p-4 selection:bg-amber-500/20 font-sans">
       
@@ -352,29 +328,6 @@ export default function LoginPage() {
             >
               Sign In
             </Button>
-
-            {/* Quick Demo Access */}
-            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-              <span className="text-stone-400 font-medium">Demo login:</span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleQuickLogin('indrajeet', 'userpass2026')}
-                  className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-amber-100 text-stone-700 text-xs font-bold transition-colors"
-                >
-                  Athlete
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleQuickLogin('athlos_academy', 'athlos2026')}
-                  className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-amber-100 text-stone-700 text-xs font-bold transition-colors"
-                >
-                  Institution
-                </button>
-              </div>
-            </div>
           </form>
         )}
 
@@ -388,7 +341,7 @@ export default function LoginPage() {
               <div className="relative">
                 <input 
                   type="text"
-                  placeholder="e.g. athlos_academy"
+                  placeholder="Institution code or email"
                   value={instCode}
                   onChange={(e) => setInstCode(e.target.value)}
                   className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-stone-300 bg-white text-stone-900 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
@@ -431,19 +384,6 @@ export default function LoginPage() {
             >
               Sign In as Institution
             </Button>
-
-            {/* Quick Demo Access */}
-            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-              <span className="text-stone-400 font-medium">Demo login:</span>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => handleQuickLogin('athlos_academy', 'athlos2026')}
-                className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-amber-100 text-stone-700 text-xs font-bold transition-colors"
-              >
-                Athlos Academy
-              </button>
-            </div>
           </form>
         )}
 
