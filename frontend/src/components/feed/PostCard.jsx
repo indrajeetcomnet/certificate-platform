@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, MessageSquare, Share2, CornerDownRight, CheckCircle2, Eye } from 'lucide-react';
 import Card from '../ui/Card';

@@ -74,10 +74,22 @@ export default function MessagesPage() {
     });
   };
 
+  // Fetch conversations list
+  const fetchConversations = useCallback(async (silent = false) => {
+    if (!silent) setConversationsLoading(true);
+    try {
+      const res = await getConversations();
+      setConversations(res.data || []);
+    } catch (err) {
+      console.warn('Conversations fetch notice:', err.message);
+    } finally {
+      if (!silent) setConversationsLoading(false);
+    }
+  }, []);
+
   // Initial load of conversations list
   useEffect(() => {
     let isCancelled = false;
-    setConversationsLoading(true);
     getConversations()
       .then((res) => {
         if (!isCancelled) {
