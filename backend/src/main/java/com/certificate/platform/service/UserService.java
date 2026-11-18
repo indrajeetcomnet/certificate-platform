@@ -17,6 +17,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserBadgeRepository userBadgeRepository;
+    private final MentorCreditRepository mentorCreditRepository;
 
     public UserProfileResponse getUserProfile(Long userId) {
         return getUserProfile(userId, null);
@@ -27,6 +28,35 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
         List<UserBadge> userBadges = userBadgeRepository.findByUserId(userId);
+
+        // Fetch credited mentors for this athlete
+        List<MentorCredit> mentorCredits = mentorCreditRepository.findByAthleteId(userId);
+        List<MentorSummaryResponse> creditedMentors = mentorCredits.stream()
+                .map(mc -> MentorSummaryResponse.builder()
+                        .id(mc.getMentor().getId())
+                        .username(mc.getMentor().getUsername())
+                        .displayName(mc.getMentor().getDisplayName() != null ? mc.getMentor().getDisplayName() : mc.getMentor().getUsername())
+                        .avatarUrl(mc.getMentor().getAvatarUrl())
+                        .bio(mc.getMentor().getBio())
+                        .roleTitle(mc.getRoleTitle() != null ? mc.getRoleTitle() : "Coach / Mentor")
+                        .creditedAt(mc.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+        MentorSummaryResponse creditedMentor = creditedMentors.isEmpty() ? null : creditedMentors.get(0);
+
+        // Fetch athletes who credited this user as their teacher/coach ("Applauded by")
+        List<MentorCredit> applaudedCredits = mentorCreditRepository.findByMentorId(userId);
+        List<MentorSummaryResponse> applaudedBy = applaudedCredits.stream()
+                .map(mc -> MentorSummaryResponse.builder()
+                        .id(mc.getAthlete().getId())
+                        .username(mc.getAthlete().getUsername())
+                        .displayName(mc.getAthlete().getDisplayName() != null ? mc.getAthlete().getDisplayName() : mc.getAthlete().getUsername())
+                        .avatarUrl(mc.getAthlete().getAvatarUrl())
+                        .bio(mc.getAthlete().getBio())
+                        .roleTitle(mc.getRoleTitle() != null ? mc.getRoleTitle() : "Student Athlete")
+                        .creditedAt(mc.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
 
         // Privacy protection: email is only visible to the user themselves or an admin
         String visibleEmail = (requesterUserId != null && requesterUserId.equals(userId)) ? user.getEmail() : null;
@@ -42,8 +72,61 @@ public class UserService {
                 .badges(userBadges.stream()
                         .map(this::mapToUserBadgeResponse)
                         .collect(Collectors.toList()))
+                .creditedMentor(creditedMentor)
+                .creditedMentors(creditedMentors)
+                .applaudedBy(applaudedBy)
+                .applaudedByCount(applaudedBy.size())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    @Transactional
+    public UserProfileResponse addMentorCredit(Long athleteId, AddMentorCreditRequest request) {
+        User athlete = userRepository.findById(athleteId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", athleteId));
+
+        User mentor = null;
+        if (request.getMentorId() != null) {
+            mentor = userRepository.findById(request.getMentorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Mentor User", request.getMentorId()));
+        } else if (request.getMentorUsername() != null && !request.getMentorUsername().trim().isEmpty()) {
+            String uName = request.getMentorUsername().trim().replace("@", "");
+            mentor = userRepository.findByUsername(uName)
+                    .orElseThrow(() -> new ResourceNotFoundException("Mentor User @" + uName, 0L));
+        } else {
+            throw new IllegalArgumentException("Either mentorId or mentorUsername must be provided.");
+        }
+
+        if (athlete.getId().equals(mentor.getId())) {
+            throw new IllegalArgumentException("You cannot credit yourself as your own teacher or coach.");
+        }
+
+        String roleTitle = (request.getRoleTitle() != null && !request.getRoleTitle().trim().isEmpty())
+                ? sanitizeText(request.getRoleTitle().trim())
+                : "Coach / Mentor";
+
+        // As per requirement: "in my profile user can add a credit like ( small section ) in which name n username of the teacher / coache would be displayed"
+        // Replace or update existing mentor credit for this athlete
+        mentorCreditRepository.deleteByAthleteId(athlete.getId());
+
+        MentorCredit credit = MentorCredit.builder()
+                .athlete(athlete)
+                .mentor(mentor)
+                .roleTitle(roleTitle)
+                .build();
+        mentorCreditRepository.save(credit);
+
+        return getUserProfile(athlete.getId(), athlete.getId());
+    }
+
+    @Transactional
+    public UserProfileResponse removeMentorCredit(Long athleteId, Long mentorId) {
+        if (mentorId != null) {
+            mentorCreditRepository.deleteByAthleteIdAndMentorId(athleteId, mentorId);
+        } else {
+            mentorCreditRepository.deleteByAthleteId(athleteId);
+        }
+        return getUserProfile(athleteId, athleteId);
     }
 
     @Transactional

@@ -53,4 +53,40 @@ public class UserController {
 
         return ResponseEntity.ok(userService.updateProfile(id, request));
     }
+
+    @PostMapping("/{id}/mentor-credits")
+    public ResponseEntity<UserProfileResponse> addMentorCredit(
+            @PathVariable Long id,
+            @RequestBody com.certificate.platform.dto.AddMentorCreditRequest request,
+            HttpServletRequest httpRequest) {
+        Long requesterId = httpRequest != null ? (Long) httpRequest.getAttribute("currentUserId") : null;
+        String requesterRole = httpRequest != null ? (String) httpRequest.getAttribute("currentUserRole") : null;
+
+        if (requesterId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (!requesterId.equals(id) && !"ADMIN".equalsIgnoreCase(requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(userService.addMentorCredit(id, request));
+    }
+
+    @DeleteMapping("/{id}/mentor-credits")
+    public ResponseEntity<UserProfileResponse> removeMentorCredit(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long mentorId,
+            HttpServletRequest httpRequest) {
+        Long requesterId = httpRequest != null ? (Long) httpRequest.getAttribute("currentUserId") : null;
+        String requesterRole = httpRequest != null ? (String) httpRequest.getAttribute("currentUserRole") : null;
+
+        if (requesterId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (!requesterId.equals(id) && !"ADMIN".equalsIgnoreCase(requesterRole)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        return ResponseEntity.ok(userService.removeMentorCredit(id, mentorId));
+    }
 }

@@ -27,6 +27,7 @@ public class DatabaseInitializer implements CommandLineRunner {
     private final TournamentRepository tournamentRepository;
     private final TournamentParticipantRepository tournamentParticipantRepository;
     private final TournamentMatchRepository tournamentMatchRepository;
+    private final MentorCreditRepository mentorCreditRepository;
 
     @Override
     @Transactional
@@ -472,6 +473,16 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .build());
 
             log.info("Initialized flagship tournament 'Game City Athletics Championship 2026' with Google-Form schema and live timetable.");
+        }
+
+        // 9. Seed Initial Teacher/Coach Credit if empty
+        if (mentorCreditRepository.count() == 0 && indrajeet != null && rohit != null) {
+            mentorCreditRepository.save(MentorCredit.builder()
+                    .athlete(indrajeet)
+                    .mentor(rohit)
+                    .roleTitle("Strength & Performance Coach")
+                    .build());
+            log.info("Initialized initial mentor credit: Indrajeet Sharma credited Rohit Kumar as coach.");
         }
     }
 }

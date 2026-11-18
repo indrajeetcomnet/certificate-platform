@@ -19,5 +19,10 @@ public class UserProfileResponse {
     private String bio;
     private User.Role role;
     private List<UserBadgeResponse> badges;
+    private MentorSummaryResponse creditedMentor;
+    private List<MentorSummaryResponse> creditedMentors;
+    private List<MentorSummaryResponse> applaudedBy;
+    @Builder.Default
+    private int applaudedByCount = 0;
     private LocalDateTime createdAt;
 }

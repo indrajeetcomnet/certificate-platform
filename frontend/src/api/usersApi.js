@@ -13,4 +13,13 @@ export function updateProfile(id, data) {
   return axiosClient.put(`/users/${id}/profile`, data);
 }
 
+export function addMentorCredit(userId, data) {
+  return axiosClient.post(`/users/${userId}/mentor-credits`, data);
+}
+
+export function removeMentorCredit(userId, mentorId) {
+  const query = mentorId ? `?mentorId=${mentorId}` : '';
+  return axiosClient.delete(`/users/${userId}/mentor-credits${query}`);
+}
+
 

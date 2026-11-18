@@ -41,8 +41,8 @@ export default function HomePage() {
         const posts = Array.isArray(res.data?.content)
           ? res.data.content
           : Array.isArray(res.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
         if (posts.length > 0) setFeaturedPost(posts[0]);
       })
       .catch(() => { });
@@ -52,8 +52,8 @@ export default function HomePage() {
         const sponsors = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data?.content)
-          ? res.data.content
-          : [];
+            ? res.data.content
+            : [];
         setActiveSponsors(sponsors);
       })
       .catch(() => { });
