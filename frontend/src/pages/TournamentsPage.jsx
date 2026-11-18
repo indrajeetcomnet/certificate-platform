@@ -17,7 +17,11 @@ import {
   Zap, 
   ExternalLink,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Gamepad2,
+  GraduationCap,
+  Palette,
+  Briefcase
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -52,7 +56,11 @@ const formatDateRange = (start, end) => {
   }
 };
 
-const getSportEmoji = (sport) => {
+const getSportEmoji = (sport, category) => {
+  if (category === 'ESPORTS') return '🎮';
+  if (category === 'ACADEMICS') return '🎓';
+  if (category === 'ARTS') return '🎭';
+  if (category === 'CORPORATE') return '💼';
   if (!sport) return '🏆';
   const s = sport.toLowerCase();
   if (s.includes('track') || s.includes('athletic') || s.includes('run')) return '🏃';
@@ -75,7 +83,8 @@ export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, LIVE, REGISTRATION_OPEN, COMPLETED
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
 
   const loadTournaments = async () => {
     setLoading(true);
@@ -96,6 +105,7 @@ export default function TournamentsPage() {
 
   const filteredTournaments = tournaments.filter((t) => {
     if (statusFilter !== 'ALL' && t.status !== statusFilter) return false;
+    if (categoryFilter !== 'ALL' && (t.category || 'SPORTS') !== categoryFilter) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -151,10 +161,10 @@ export default function TournamentsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight flex items-center gap-2.5">
             <Trophy className="w-7 h-7 text-amber-600" />
-            <span>Tournaments</span>
+            <span>Tournaments & Competitions</span>
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 font-medium mt-1">
-            Active competitions, fixtures & verified credentials.
+            Official tournaments across sports, esports, academics and creative championships.
           </p>
         </div>
 
@@ -184,7 +194,7 @@ export default function TournamentsPage() {
               {tournaments.length}
             </div>
             <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mt-1">
-              Tournaments
+              Competitions
             </div>
           </div>
         </Card>
@@ -229,20 +239,46 @@ export default function TournamentsPage() {
               {totalAthletes}
             </div>
             <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mt-1">
-              Athletes Roster
+              Competitor Roster
             </div>
           </div>
         </Card>
 
       </div>
 
-      {/* ── 3. FILTER & SEARCH TOOLBAR ── */}
+      {/* ── 3. CATEGORY PILLS ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
+        {[
+          { key: 'ALL', label: 'All Disciplines', emoji: '🏆' },
+          { key: 'SPORTS', label: 'Sports & Athletics', emoji: '🏃' },
+          { key: 'ESPORTS', label: 'Esports & Gaming', emoji: '🎮' },
+          { key: 'ACADEMICS', label: 'Academics & Debates', emoji: '🎓' },
+          { key: 'ARTS', label: 'Arts & Cultural', emoji: '🎭' },
+          { key: 'CORPORATE', label: 'Corporate & Other', emoji: '💼' },
+        ].map((cat) => (
+          <button
+            key={cat.key}
+            type="button"
+            onClick={() => setCategoryFilter(cat.key)}
+            className={`px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              categoryFilter === cat.key
+                ? 'bg-stone-900 text-white font-black shadow-xs'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+            }`}
+          >
+            <span>{cat.emoji}</span>
+            <span>{cat.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── 4. FILTER & SEARCH TOOLBAR ── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-stone-200/90 shadow-2xs">
         
         {/* Search Bar */}
         <div className="flex-1 max-w-md">
           <SearchBar
-            placeholder="Search tournament, sport, venue, or academy..."
+            placeholder="Search tournament, discipline, venue, or host..."
             value={searchQuery}
             onSearch={(q) => setSearchQuery(q)}
           />
@@ -251,7 +287,7 @@ export default function TournamentsPage() {
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl text-xs font-bold border border-stone-200 overflow-x-auto">
           {[
-            { key: 'ALL', label: 'All' },
+            { key: 'ALL', label: 'All Status' },
             { key: 'LIVE', label: 'Live' },
             { key: 'REGISTRATION_OPEN', label: 'Registering' },
             { key: 'COMPLETED', label: 'Completed' },
@@ -273,16 +309,16 @@ export default function TournamentsPage() {
 
       </div>
 
-      {/* ── 4. TOURNAMENT LIST ── */}
+      {/* ── 5. TOURNAMENT LIST ── */}
       {loading ? (
         <LoadingSpinner text="Loading tournaments and active fixtures..." className="py-20" />
       ) : filteredTournaments.length === 0 ? (
         <EmptyState
           icon={Trophy}
-          title="No Tournaments Found"
+          title="No Competitions Found"
           description={
-            statusFilter !== 'ALL'
-              ? `No competitions currently matched with status '${statusFilter}'.`
+            statusFilter !== 'ALL' || categoryFilter !== 'ALL'
+              ? 'No competitions matched your selected category and status filters.'
               : 'There are currently no active tournaments. Certified institutions can organize and launch a new tournament.'
           }
           action={
@@ -306,6 +342,7 @@ export default function TournamentsPage() {
               100,
               Math.round(((t.participantCount || 0) / (t.maxParticipants || 16)) * 100)
             );
+            const isTeam = t.competitionType === 'TEAM';
 
             return (
               <div
@@ -315,10 +352,13 @@ export default function TournamentsPage() {
               >
                 {/* Top Row: Discipline & Status */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-100 text-stone-800 text-xs font-black">
-                      <span>{getSportEmoji(t.sport)}</span>
+                      <span>{getSportEmoji(t.sport, t.category)}</span>
                       <span>{t.sport}</span>
+                    </span>
+                    <span className="text-[11px] font-semibold text-stone-400">
+                      · {isTeam ? 'Team Squads' : 'Individual Solo'}
                     </span>
                     {t.format && (
                       <span className="text-[11px] font-semibold text-stone-400">
@@ -358,7 +398,7 @@ export default function TournamentsPage() {
 
                 {/* Bottom Row: Capacity Progress & Linked Awards */}
                 <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-3 text-xs">
-                  {/* Clean Athletes Capacity Bar */}
+                  {/* Clean Capacity Bar */}
                   <div className="flex items-center gap-2.5">
                     <div className="w-20 h-1.5 bg-stone-100 rounded-full overflow-hidden border border-stone-200/50">
                       <div
@@ -367,13 +407,13 @@ export default function TournamentsPage() {
                       />
                     </div>
                     <span className="text-[11px] font-bold text-stone-600">
-                      {t.participantCount || 0} / {t.maxParticipants || 16} athletes
+                      {t.participantCount || 0} / {t.maxParticipants || 16} {isTeam ? 'teams' : 'athletes'}
                     </span>
                   </div>
 
                   {/* Awards / Arrow */}
                   <div className="flex items-center gap-2">
-                    {t.linkedBadgeGoldName && (
+                    {t.credentialsEnabled && t.linkedBadgeGoldName && (
                       <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 max-w-[140px] truncate">
                         <Award className="w-3 h-3 text-amber-600 shrink-0" />
                         <span className="truncate">{t.linkedBadgeGoldName}</span>

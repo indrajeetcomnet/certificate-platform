@@ -13,6 +13,12 @@ public class TournamentResponse {
     private String title;
     private String description;
     private String sport;
+    private String category;
+    private String competitionType;
+    private Integer teamSize;
+    private String scoringType;
+    private Boolean credentialsEnabled;
+    private Boolean isVirtual;
     private String format;
     private String venue;
     private String startDate;

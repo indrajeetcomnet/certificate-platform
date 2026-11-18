@@ -12,6 +12,9 @@ public class TournamentParticipantResponse {
     private Long tournamentId;
     private Long userId;
     private String athleteName;
+    private String teamName;
+    private Integer seedNumber;
+    private String captainName;
     private String email;
     private String phone;
     private String status;

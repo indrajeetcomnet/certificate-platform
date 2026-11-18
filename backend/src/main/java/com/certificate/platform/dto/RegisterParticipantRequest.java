@@ -10,14 +10,17 @@ public class RegisterParticipantRequest {
 
     private Long userId; // optional if already authenticated
 
-    @NotBlank(message = "Athlete name is required")
+    @NotBlank(message = "Athlete or team name is required")
     private String athleteName;
 
+    private String teamName;
+    private Integer seedNumber;
+    private String captainName;
     private String email;
     private String phone;
 
     /**
-     * JSON string with athlete's answers to the custom questions in the tournament's Google Form.
+     * JSON string with answers to custom registration questions.
      */
     private String formResponses;
 }

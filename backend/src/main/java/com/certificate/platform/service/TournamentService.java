@@ -56,6 +56,12 @@ public class TournamentService {
                 .title(request.getTitle().trim())
                 .description(request.getDescription())
                 .sport(request.getSport().trim())
+                .category(request.getCategory() != null ? request.getCategory() : "SPORTS")
+                .competitionType(request.getCompetitionType() != null ? request.getCompetitionType() : "INDIVIDUAL")
+                .teamSize(request.getTeamSize() != null ? request.getTeamSize() : 1)
+                .scoringType(request.getScoringType() != null ? request.getScoringType() : "POINTS")
+                .credentialsEnabled(request.getCredentialsEnabled() != null ? request.getCredentialsEnabled() : true)
+                .isVirtual(request.getIsVirtual() != null ? request.getIsVirtual() : false)
                 .format(request.getFormat().trim())
                 .venue(request.getVenue() != null ? request.getVenue().trim() : "Main Arena")
                 .startDate(request.getStartDate())
@@ -84,6 +90,12 @@ public class TournamentService {
         if (request.getTitle() != null && !request.getTitle().isBlank()) tournament.setTitle(request.getTitle().trim());
         if (request.getDescription() != null) tournament.setDescription(request.getDescription());
         if (request.getSport() != null && !request.getSport().isBlank()) tournament.setSport(request.getSport().trim());
+        if (request.getCategory() != null) tournament.setCategory(request.getCategory());
+        if (request.getCompetitionType() != null) tournament.setCompetitionType(request.getCompetitionType());
+        if (request.getTeamSize() != null) tournament.setTeamSize(request.getTeamSize());
+        if (request.getScoringType() != null) tournament.setScoringType(request.getScoringType());
+        if (request.getCredentialsEnabled() != null) tournament.setCredentialsEnabled(request.getCredentialsEnabled());
+        if (request.getIsVirtual() != null) tournament.setIsVirtual(request.getIsVirtual());
         if (request.getFormat() != null && !request.getFormat().isBlank()) tournament.setFormat(request.getFormat().trim());
         if (request.getVenue() != null) tournament.setVenue(request.getVenue().trim());
         if (request.getStartDate() != null) tournament.setStartDate(request.getStartDate());
@@ -95,6 +107,7 @@ public class TournamentService {
         if (request.getLinkedBadgeSilverId() != null) tournament.setLinkedBadgeSilverId(request.getLinkedBadgeSilverId());
         if (request.getLinkedBadgeBronzeId() != null) tournament.setLinkedBadgeBronzeId(request.getLinkedBadgeBronzeId());
         if (request.getLinkedCertificateTemplate() != null) tournament.setLinkedCertificateTemplate(request.getLinkedCertificateTemplate());
+        if (request.getStatus() != null && !request.getStatus().isBlank()) tournament.setStatus(request.getStatus().toUpperCase());
 
         tournament = tournamentRepository.save(tournament);
         return mapToResponse(tournament, true);
@@ -134,6 +147,9 @@ public class TournamentService {
                 .tournament(tournament)
                 .user(user)
                 .athleteName(athleteName.trim())
+                .teamName(request.getTeamName() != null ? request.getTeamName().trim() : null)
+                .seedNumber(request.getSeedNumber())
+                .captainName(request.getCaptainName() != null ? request.getCaptainName().trim() : null)
                 .email(email)
                 .phone(request.getPhone())
                 .status("CONFIRMED")
@@ -198,15 +214,20 @@ public class TournamentService {
         tournament.setStatus("COMPLETED");
         tournament = tournamentRepository.save(tournament);
 
-        // Batch Award Badges and Certificates if requested
-        if (Boolean.TRUE.equals(request.getAwardCredentials())) {
+        // Only award badges and certificates if tournament credentials are enabled AND requested
+        boolean credentialsActive = Boolean.TRUE.equals(tournament.getCredentialsEnabled()) && Boolean.TRUE.equals(request.getAwardCredentials());
+        if (credentialsActive) {
             awardPodiumCredentials(tournament, p1, p2, p3, Boolean.TRUE.equals(request.getAwardParticipationCertificates()));
+        } else {
+            log.info("Tournament '{}' finalized in pure competition mode (no digital credentials issued).", tournament.getTitle());
         }
 
         return mapToResponse(tournament, true);
     }
 
     private void awardPodiumCredentials(Tournament tournament, TournamentParticipant p1, TournamentParticipant p2, TournamentParticipant p3, boolean awardParticipation) {
+        if (tournament.getInstitution() == null) return;
+
         // 1st Place Gold Medal
         if (p1 != null) {
             awardBadgeIfLinked(p1.getUser(), tournament.getLinkedBadgeGoldId(), tournament.getInstitution());
@@ -248,12 +269,19 @@ public class TournamentService {
             throw new BadRequestException("At least 2 registered participants are required to generate fixtures");
         }
 
+        // Sort by seedNumber if any are provided
+        List<TournamentParticipant> seededList = new ArrayList<>(participants);
+        boolean anySeeded = seededList.stream().anyMatch(p -> p.getSeedNumber() != null);
+        if (anySeeded) {
+            seededList.sort(Comparator.comparing(p -> p.getSeedNumber() != null ? p.getSeedNumber() : 9999));
+        }
+
         // Clear existing matches for this tournament
         List<TournamentMatch> existingMatches = matchRepository.findByTournamentIdOrderByMatchNumberAsc(tournamentId);
         matchRepository.deleteAll(existingMatches);
 
         List<TournamentMatch> generated = new ArrayList<>();
-        int count = participants.size();
+        int count = seededList.size();
         String format = tournament.getFormat() != null ? tournament.getFormat().toLowerCase() : "";
 
         if (format.contains("heat") || format.contains("time trial")) {
@@ -262,8 +290,8 @@ public class TournamentService {
 
             // Heat 1
             for (int i = 0; i < Math.min(count, heatSize); i += 2) {
-                TournamentParticipant p1 = participants.get(i);
-                TournamentParticipant p2 = (i + 1 < count && i + 1 < heatSize) ? participants.get(i + 1) : null;
+                TournamentParticipant p1 = seededList.get(i);
+                TournamentParticipant p2 = (i + 1 < count && i + 1 < heatSize) ? seededList.get(i + 1) : null;
                 generated.add(TournamentMatch.builder()
                         .tournament(tournament)
                         .roundName("Heat 1 - Qualifying")
@@ -280,19 +308,19 @@ public class TournamentService {
             // Heat 2 if remaining
             if (count > heatSize) {
                 for (int i = heatSize; i < count; i += 2) {
-                    TournamentParticipant p1 = participants.get(i);
-                    TournamentParticipant p2 = (i + 1 < count) ? participants.get(i + 1) : null;
+                    TournamentParticipant p1 = seededList.get(i);
+                    TournamentParticipant p2 = (i + 1 < count) ? seededList.get(i + 1) : null;
                     generated.add(TournamentMatch.builder()
-                            .tournament(tournament)
-                            .roundName("Heat 2 - Qualifying")
-                            .matchNumber(matchNum++)
-                            .participant1(p1)
-                            .participant2(p2)
-                            .scheduledDate(tournament.getStartDate())
-                            .scheduledTime("11:30 AM")
-                            .courtVenue(tournament.getVenue())
-                            .status("UPCOMING")
-                            .build());
+                        .tournament(tournament)
+                        .roundName("Heat 2 - Qualifying")
+                        .matchNumber(matchNum++)
+                        .participant1(p1)
+                        .participant2(p2)
+                        .scheduledDate(tournament.getStartDate())
+                        .scheduledTime("11:30 AM")
+                        .courtVenue(tournament.getVenue())
+                        .status("UPCOMING")
+                        .build());
                 }
             }
 
@@ -313,18 +341,23 @@ public class TournamentService {
             int matchNum = 1;
 
             if (count >= 8) {
-                // Quarter-Finals (4 matches)
-                for (int i = 0; i < 8; i += 2) {
-                    TournamentParticipant p1 = i < count ? participants.get(i) : null;
-                    TournamentParticipant p2 = (i + 1 < count) ? participants.get(i + 1) : null;
+                // Quarter-Finals (4 matches, standard seeding 1v8, 4v5, 2v7, 3v6)
+                int[] seeds1 = {0, 3, 1, 2};
+                int[] seeds2 = {7, 4, 6, 5};
+
+                for (int m = 0; m < 4; m++) {
+                    int idx1 = seeds1[m];
+                    int idx2 = seeds2[m];
+                    TournamentParticipant p1 = idx1 < count ? seededList.get(idx1) : null;
+                    TournamentParticipant p2 = idx2 < count ? seededList.get(idx2) : null;
                     generated.add(TournamentMatch.builder()
                             .tournament(tournament)
-                            .roundName("Quarter-Final " + (i / 2 + 1))
+                            .roundName("Quarter-Final " + (m + 1))
                             .matchNumber(matchNum++)
                             .participant1(p1)
                             .participant2(p2)
                             .scheduledDate(tournament.getStartDate())
-                            .scheduledTime((9 + (i / 2) * 2) + ":00 AM")
+                            .scheduledTime((9 + m * 2) + ":00 AM")
                             .courtVenue(tournament.getVenue())
                             .status("UPCOMING")
                             .build());
@@ -348,31 +381,39 @@ public class TournamentService {
                         .courtVenue(tournament.getVenue())
                         .status("UPCOMING")
                         .build());
-            } else if (count >= 3) {
+            } else if (count >= 4) {
                 // Semi-Finals (2 matches)
-                for (int i = 0; i < Math.min(count, 4); i += 2) {
-                    TournamentParticipant p1 = participants.get(i);
-                    TournamentParticipant p2 = (i + 1 < count) ? participants.get(i + 1) : null;
-                    generated.add(TournamentMatch.builder()
-                            .tournament(tournament)
-                            .roundName("Semi-Final " + (i / 2 + 1))
-                            .matchNumber(matchNum++)
-                            .participant1(p1)
-                            .participant2(p2)
-                            .scheduledDate(tournament.getStartDate())
-                            .scheduledTime((10 + (i / 2) * 2) + ":00 AM")
-                            .courtVenue(tournament.getVenue())
-                            .status("UPCOMING")
-                            .build());
-                }
+                generated.add(TournamentMatch.builder()
+                        .tournament(tournament)
+                        .roundName("Semi-Final 1")
+                        .matchNumber(matchNum++)
+                        .participant1(seededList.get(0))
+                        .participant2(count > 3 ? seededList.get(3) : (count > 2 ? seededList.get(2) : null))
+                        .scheduledDate(tournament.getStartDate())
+                        .scheduledTime("10:00 AM")
+                        .courtVenue(tournament.getVenue())
+                        .status("UPCOMING")
+                        .build());
+
+                generated.add(TournamentMatch.builder()
+                        .tournament(tournament)
+                        .roundName("Semi-Final 2")
+                        .matchNumber(matchNum++)
+                        .participant1(seededList.get(1))
+                        .participant2(count > 2 ? seededList.get(2) : null)
+                        .scheduledDate(tournament.getStartDate())
+                        .scheduledTime("11:30 AM")
+                        .courtVenue(tournament.getVenue())
+                        .status("UPCOMING")
+                        .build());
             } else {
-                // Direct Grand Final
+                // Just Grand Final
                 generated.add(TournamentMatch.builder()
                         .tournament(tournament)
                         .roundName("Grand Final")
                         .matchNumber(matchNum++)
-                        .participant1(participants.get(0))
-                        .participant2(participants.size() > 1 ? participants.get(1) : null)
+                        .participant1(seededList.get(0))
+                        .participant2(seededList.size() > 1 ? seededList.get(1) : null)
                         .scheduledDate(tournament.getStartDate())
                         .scheduledTime("11:00 AM")
                         .courtVenue(tournament.getVenue())
@@ -411,6 +452,9 @@ public class TournamentService {
             toSave.add(TournamentParticipant.builder()
                     .tournament(tournament)
                     .athleteName(athleteName.trim())
+                    .teamName(req.getTeamName() != null ? req.getTeamName().trim() : null)
+                    .seedNumber(req.getSeedNumber())
+                    .captainName(req.getCaptainName() != null ? req.getCaptainName().trim() : null)
                     .email(req.getEmail() != null ? req.getEmail().trim() : null)
                     .phone(req.getPhone() != null ? req.getPhone().trim() : null)
                     .status("CONFIRMED")
@@ -418,7 +462,7 @@ public class TournamentService {
                     .build());
         }
         List<TournamentParticipant> saved = participantRepository.saveAll(toSave);
-        log.info("Bulk-registered {} athletes into tournament '{}'", saved.size(), tournament.getTitle());
+        log.info("Bulk-registered {} athletes/teams into tournament '{}'", saved.size(), tournament.getTitle());
         return saved.stream().map(this::mapToParticipantResponse).collect(Collectors.toList());
     }
 
@@ -433,11 +477,10 @@ public class TournamentService {
     }
 
     private void awardBadgeIfLinked(User user, Long badgeId, Institution institution) {
-        if (user == null || badgeId == null) return;
+        if (user == null || badgeId == null || institution == null) return;
         Badge badge = badgeRepository.findById(badgeId).orElse(null);
         if (badge == null) return;
 
-        // Check if user already has this badge
         List<UserBadge> existing = userBadgeRepository.findByUserId(user.getId());
         boolean alreadyHas = existing.stream().anyMatch(ub -> ub.getBadge().getId().equals(badgeId));
         if (!alreadyHas) {
@@ -453,13 +496,16 @@ public class TournamentService {
     }
 
     private void issueCertificate(Tournament tournament, TournamentParticipant participant, String titleSuffix, String achievementDesc) {
+        if (tournament.getInstitution() == null) return;
         String randomSuffix = UUID.randomUUID().toString().substring(0, 4).toUpperCase();
-        String code = "GC-2026-" + tournament.getSport().replaceAll("[^A-Za-z0-9]", "").toUpperCase().substring(0, Math.min(3, tournament.getSport().length())) + "-" + randomSuffix;
+        String sportTag = tournament.getSport().replaceAll("[^A-Za-z0-9]", "").toUpperCase();
+        if (sportTag.length() < 3) sportTag = "EVT";
+        String code = "GC-2026-" + sportTag.substring(0, Math.min(3, sportTag.length())) + "-" + randomSuffix;
 
         Certificate cert = Certificate.builder()
                 .uniqueCode(code)
                 .title(tournament.getTitle() + " - " + titleSuffix)
-                .description("Awarded for outstanding athletic performance as " + achievementDesc + " in the " + tournament.getTitle() + " organized by " + tournament.getInstitution().getName() + ".")
+                .description("Awarded for outstanding performance as " + achievementDesc + " in " + tournament.getTitle() + " organized by " + tournament.getInstitution().getName() + ".")
                 .recipientName(participant.getAthleteName())
                 .recipientEmail(participant.getEmail())
                 .institution(tournament.getInstitution())
@@ -497,6 +543,12 @@ public class TournamentService {
                 .title(t.getTitle())
                 .description(t.getDescription())
                 .sport(t.getSport())
+                .category(t.getCategory())
+                .competitionType(t.getCompetitionType())
+                .teamSize(t.getTeamSize())
+                .scoringType(t.getScoringType())
+                .credentialsEnabled(t.getCredentialsEnabled())
+                .isVirtual(t.getIsVirtual())
                 .format(t.getFormat())
                 .venue(t.getVenue())
                 .startDate(t.getStartDate())
@@ -535,6 +587,9 @@ public class TournamentService {
                 .tournamentId(p.getTournament().getId())
                 .userId(p.getUser() != null ? p.getUser().getId() : null)
                 .athleteName(p.getAthleteName())
+                .teamName(p.getTeamName())
+                .seedNumber(p.getSeedNumber())
+                .captainName(p.getCaptainName())
                 .email(p.getEmail())
                 .phone(p.getPhone())
                 .status(p.getStatus())
@@ -546,19 +601,23 @@ public class TournamentService {
 
     private TournamentMatchResponse mapToMatchResponse(TournamentMatch m) {
         Long p1Id = m.getParticipant1() != null ? m.getParticipant1().getId() : null;
-        String p1Name = m.getParticipant1() != null ? m.getParticipant1().getAthleteName() : "TBD";
+        String p1Name = m.getParticipant1() != null 
+                ? (m.getParticipant1().getTeamName() != null ? m.getParticipant1().getTeamName() + " (" + m.getParticipant1().getAthleteName() + ")" : m.getParticipant1().getAthleteName())
+                : "TBD";
         String p1Avatar = m.getParticipant1() != null && m.getParticipant1().getUser() != null ? m.getParticipant1().getUser().getAvatarUrl() : null;
 
         Long p2Id = m.getParticipant2() != null ? m.getParticipant2().getId() : null;
-        String p2Name = m.getParticipant2() != null ? m.getParticipant2().getAthleteName() : "TBD";
+        String p2Name = m.getParticipant2() != null 
+                ? (m.getParticipant2().getTeamName() != null ? m.getParticipant2().getTeamName() + " (" + m.getParticipant2().getAthleteName() + ")" : m.getParticipant2().getAthleteName())
+                : "TBD";
         String p2Avatar = m.getParticipant2() != null && m.getParticipant2().getUser() != null ? m.getParticipant2().getUser().getAvatarUrl() : null;
 
         String winnerName = null;
         if (m.getWinnerParticipantId() != null) {
             if (m.getParticipant1() != null && m.getWinnerParticipantId().equals(m.getParticipant1().getId())) {
-                winnerName = m.getParticipant1().getAthleteName();
+                winnerName = m.getParticipant1().getTeamName() != null ? m.getParticipant1().getTeamName() : m.getParticipant1().getAthleteName();
             } else if (m.getParticipant2() != null && m.getWinnerParticipantId().equals(m.getParticipant2().getId())) {
-                winnerName = m.getParticipant2().getAthleteName();
+                winnerName = m.getParticipant2().getTeamName() != null ? m.getParticipant2().getTeamName() : m.getParticipant2().getAthleteName();
             }
         }
 

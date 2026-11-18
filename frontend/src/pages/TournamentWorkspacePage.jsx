@@ -33,7 +33,12 @@ import {
   Filter,
   ShieldCheck,
   Share2,
-  Layers
+  Layers,
+  Upload,
+  FileSpreadsheet,
+  Table,
+  Sliders,
+  HelpCircle
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -57,18 +62,6 @@ import { getAllUsers } from '../api/usersApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
-// Synthetic sample athletes for 1-click demo seeding
-const SAMPLE_ATHLETES = [
-  { athleteName: 'Indrajeet Patil', email: 'indrajeet@example.com', phone: '+91 98765 43210' },
-  { athleteName: 'Marcus Vance', email: 'marcus.v@example.com', phone: '+1 555-0192' },
-  { athleteName: 'Sarah Chen', email: 'sarah.c@example.com', phone: '+1 555-0143' },
-  { athleteName: 'Elena Rostova', email: 'elena.r@example.com', phone: '+44 20 7946 0912' },
-  { athleteName: 'Leo Martinez', email: 'leo.m@example.com', phone: '+34 91 123 4567' },
-  { athleteName: 'Aisha Al-Mansoor', email: 'aisha.m@example.com', phone: '+971 4 123 4567' },
-  { athleteName: 'David Kim', email: 'david.k@example.com', phone: '+82 2 3456 7890' },
-  { athleteName: 'Zoe Dupont', email: 'zoe.d@example.com', phone: '+33 1 42 68 55 00' },
-];
-
 export default function TournamentWorkspacePage() {
   const { tournamentId } = useParams();
   const navigate = useNavigate();
@@ -83,16 +76,17 @@ export default function TournamentWorkspacePage() {
   const [allUsers, setAllUsers] = useState([]);
 
   // Action Loading states
-  const [seedingAthletes, setSeedingAthletes] = useState(false);
   const [generatingFixtures, setGeneratingFixtures] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
 
   // Modals
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [addMatchModalOpen, setAddMatchModalOpen] = useState(false);
   const [viewResponsesModalOpen, setViewResponsesModalOpen] = useState(null);
   const [finalizeModalOpen, setFinalizeModalOpen] = useState(false);
   const [finalizeSuccessModalOpen, setFinalizeSuccessModalOpen] = useState(false);
+  const [manualResultsModalOpen, setManualResultsModalOpen] = useState(false);
 
   // Finalize Options
   const [awardCredentials, setAwardCredentials] = useState(true);
@@ -100,10 +94,20 @@ export default function TournamentWorkspacePage() {
 
   // New Participant Form
   const [newAthleteName, setNewAthleteName] = useState('');
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newSeedNumber, setNewSeedNumber] = useState('');
+  const [newCaptainName, setNewCaptainName] = useState('');
   const [newAthleteEmail, setNewAthleteEmail] = useState('');
   const [newAthletePhone, setNewAthletePhone] = useState('');
   const [newSelectedUserId, setNewSelectedUserId] = useState('');
   const [newCustomAnswers, setNewCustomAnswers] = useState({});
+
+  // CSV Import with Column Mapping State
+  const [rawCsvText, setRawCsvText] = useState('');
+  const [csvParsedRows, setCsvParsedRows] = useState([]);
+  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [columnMapping, setColumnMapping] = useState({});
+  const [importingCsv, setImportingCsv] = useState(false);
 
   // New Match Form
   const [newMatchRound, setNewMatchRound] = useState('Semi-Finals');
@@ -148,7 +152,6 @@ export default function TournamentWorkspacePage() {
       
       if (grandFinal && grandFinal.winnerParticipantId) {
         setPodium1stId(String(grandFinal.winnerParticipantId));
-        // Runner up is the other participant
         const runnerUpId = grandFinal.winnerParticipantId === grandFinal.participant1Id
           ? grandFinal.participant2Id
           : grandFinal.participant1Id;
@@ -181,7 +184,6 @@ export default function TournamentWorkspacePage() {
       });
       showToast('Match score updated!', 'success');
       
-      // Auto-set 1st place podium if this was the Grand Final
       const updatedMatch = (tournament?.matches || []).find((m) => m.id === matchId);
       if (updatedMatch && (updatedMatch.roundName?.toLowerCase().includes('grand final') || updatedMatch.roundName?.toLowerCase().includes('final')) && winnerId) {
         setPodium1stId(String(winnerId));
@@ -199,7 +201,7 @@ export default function TournamentWorkspacePage() {
   const handleGenerateFixtures = async () => {
     const participantsCount = tournament?.participants?.length || 0;
     if (participantsCount < 2) {
-      showToast('At least 2 registered athletes are required to generate brackets. Use "Quick Seed Athletes" below!', 'error');
+      showToast('At least 2 registered participants/teams are required to generate fixtures.', 'error');
       return;
     }
 
@@ -215,17 +217,158 @@ export default function TournamentWorkspacePage() {
     }
   };
 
-  // ⚡ 1-Click Quick Seed Sample Athletes
-  const handleQuickSeedAthletes = async () => {
-    setSeedingAthletes(true);
+  // CSV Parsing & Column Mapping
+  const handleParseCsv = (text) => {
+    setRawCsvText(text);
+    if (!text.trim()) {
+      setCsvHeaders([]);
+      setCsvParsedRows([]);
+      setColumnMapping({});
+      return;
+    }
+
+    const lines = text.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length === 0) return;
+
+    // Detect delimiter: comma, tab, or semicolon
+    const firstLine = lines[0];
+    const delimiter = firstLine.includes('\t') ? '\t' : firstLine.includes(';') ? ';' : ',';
+
+    const parseLine = (line) => {
+      // Basic CSV parser handling quotes
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === delimiter && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim());
+      return values;
+    };
+
+    const headers = parseLine(lines[0]);
+    const rows = lines.slice(1).map(parseLine);
+
+    setCsvHeaders(headers);
+    setCsvParsedRows(rows);
+
+    // Smart default mapping
+    const initialMapping = {};
+    headers.forEach((h, idx) => {
+      const lower = h.toLowerCase();
+      if (lower.includes('team') && !lower.includes('captain')) {
+        initialMapping[idx] = 'teamName';
+      } else if (lower.includes('captain')) {
+        initialMapping[idx] = 'captainName';
+      } else if (lower.includes('seed')) {
+        initialMapping[idx] = 'seedNumber';
+      } else if (lower.includes('mail')) {
+        initialMapping[idx] = 'email';
+      } else if (lower.includes('phone') || lower.includes('mobile') || lower.includes('contact')) {
+        initialMapping[idx] = 'phone';
+      } else if (lower.includes('name') || lower.includes('athlete') || lower.includes('player')) {
+        initialMapping[idx] = 'athleteName';
+      } else {
+        initialMapping[idx] = 'ignore';
+      }
+    });
+
+    // Ensure at least one athleteName is assigned if unmapped
+    const hasAthleteName = Object.values(initialMapping).includes('athleteName');
+    if (!hasAthleteName && headers.length > 0) {
+      initialMapping[0] = 'athleteName';
+    }
+
+    setColumnMapping(initialMapping);
+  };
+
+  // Upload CSV File Reader
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content === 'string') {
+        handleParseCsv(content);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Confirm CSV Bulk Import
+  const handleConfirmCsvImport = async () => {
+    if (csvParsedRows.length === 0) {
+      showToast('No rows found in uploaded data', 'error');
+      return;
+    }
+
+    // Check if athleteName is mapped
+    const nameColIdx = Object.keys(columnMapping).find((col) => columnMapping[col] === 'athleteName');
+    if (nameColIdx === undefined) {
+      showToast('Please map at least one column to "Athlete / Team Name"', 'error');
+      return;
+    }
+
+    setImportingCsv(true);
     try {
-      await bulkRegisterParticipants(tournamentId, SAMPLE_ATHLETES);
-      showToast('8 sample athletes registered into the tournament roster!', 'success');
-      await loadData();
+      const payload = csvParsedRows.map((row) => {
+        const item = {
+          athleteName: '',
+          teamName: null,
+          seedNumber: null,
+          captainName: null,
+          email: null,
+          phone: null,
+          formResponses: '{}',
+        };
+
+        const customObj = {};
+
+        row.forEach((val, idx) => {
+          const target = columnMapping[idx];
+          if (!target || target === 'ignore' || !val) return;
+
+          if (target === 'athleteName') item.athleteName = val;
+          else if (target === 'teamName') item.teamName = val;
+          else if (target === 'captainName') item.captainName = val;
+          else if (target === 'seedNumber') item.seedNumber = Number(val) || null;
+          else if (target === 'email') item.email = val;
+          else if (target === 'phone') item.phone = val;
+          else {
+            // Store as custom response
+            customObj[csvHeaders[idx] || `field_${idx}`] = val;
+          }
+        });
+
+        item.formResponses = JSON.stringify(customObj);
+        return item;
+      }).filter((item) => item.athleteName && item.athleteName.trim() !== '');
+
+      if (payload.length === 0) {
+        showToast('No valid rows found to import', 'error');
+        setImportingCsv(false);
+        return;
+      }
+
+      await bulkRegisterParticipants(tournamentId, payload);
+      showToast(`Successfully imported ${payload.length} competitors/teams!`, 'success');
+      setCsvModalOpen(false);
+      setRawCsvText('');
+      setCsvParsedRows([]);
+      loadData();
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to seed sample athletes', 'error');
+      showToast(err.response?.data?.message || 'Failed to import CSV data', 'error');
     } finally {
-      setSeedingAthletes(false);
+      setImportingCsv(false);
     }
   };
 
@@ -248,7 +391,6 @@ export default function TournamentWorkspacePage() {
     }
   };
 
-  // Add question to schema
   const handleAddQuestionToSchema = () => {
     const newField = {
       id: `custom_${Date.now()}`,
@@ -267,14 +409,20 @@ export default function TournamentWorkspacePage() {
       const payload = {
         userId: newSelectedUserId ? Number(newSelectedUserId) : null,
         athleteName: newAthleteName.trim(),
-        email: newAthleteEmail.trim(),
-        phone: newAthletePhone.trim(),
+        teamName: newTeamName.trim() || null,
+        seedNumber: newSeedNumber ? Number(newSeedNumber) : null,
+        captainName: newCaptainName.trim() || null,
+        email: newAthleteEmail.trim() || null,
+        phone: newAthletePhone.trim() || null,
         formResponses: JSON.stringify(newCustomAnswers),
       };
       await registerParticipant(tournamentId, payload);
-      showToast(`Athlete ${newAthleteName} registered successfully!`, 'success');
+      showToast(`Registered successfully!`, 'success');
       setRegisterModalOpen(false);
       setNewAthleteName('');
+      setNewTeamName('');
+      setNewSeedNumber('');
+      setNewCaptainName('');
       setNewAthleteEmail('');
       setNewAthletePhone('');
       setNewCustomAnswers({});
@@ -310,7 +458,7 @@ export default function TournamentWorkspacePage() {
     }
   };
 
-  // Finalize Tournament and Issue Credentials
+  // Finalize Tournament (concludes with or without credentials)
   const handleFinalizeTournament = async () => {
     setFinalizing(true);
     try {
@@ -318,13 +466,13 @@ export default function TournamentWorkspacePage() {
         winner1stParticipantId: podium1stId ? Number(podium1stId) : null,
         winner2ndParticipantId: podium2ndId ? Number(podium2ndId) : null,
         winner3rdParticipantId: podium3rdId ? Number(podium3rdId) : null,
-        awardCredentials,
-        awardParticipationCertificates,
+        awardCredentials: tournament.credentialsEnabled ? awardCredentials : false,
+        awardParticipationCertificates: tournament.credentialsEnabled ? awardParticipationCertificates : false,
       });
 
       setFinalizeModalOpen(false);
       setFinalizeSuccessModalOpen(true);
-      showToast('Tournament finalized & verified credentials issued!', 'success');
+      showToast('Tournament concluded successfully!', 'success');
       loadData();
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to finalize tournament', 'error');
@@ -340,7 +488,6 @@ export default function TournamentWorkspacePage() {
       showToast(`Tournament status updated to ${newStatus}`, 'success');
       loadData();
     } catch (err) {
-      // Fallback to updateTournament
       try {
         await updateTournament(tournamentId, {
           title: tournament.title,
@@ -387,6 +534,7 @@ export default function TournamentWorkspacePage() {
     const term = searchRoster.toLowerCase();
     return (
       p.athleteName?.toLowerCase().includes(term) ||
+      p.teamName?.toLowerCase().includes(term) ||
       p.email?.toLowerCase().includes(term) ||
       p.phone?.toLowerCase().includes(term)
     );
@@ -403,6 +551,8 @@ export default function TournamentWorkspacePage() {
   } else {
     currentWorkflowStep = 1;
   }
+
+  const isTeam = tournament.competitionType === 'TEAM';
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20 font-sans">
@@ -471,7 +621,7 @@ export default function TournamentWorkspacePage() {
                   }}
                   className="font-black shadow-xs hover:scale-105 transition-all"
                 >
-                  Conclude & Award Credentials
+                  Conclude Tournament
                 </Button>
               </>
             )}
@@ -486,8 +636,16 @@ export default function TournamentWorkspacePage() {
                 🏆 {tournament.sport}
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-xs font-bold text-stone-700">
+                {isTeam ? `Teams (${tournament.teamSize || 5}v${tournament.teamSize || 5})` : 'Individual Solo'}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-xs font-bold text-stone-700">
                 {tournament.format}
               </span>
+              {!tournament.credentialsEnabled && (
+                <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-500 text-xs font-medium">
+                  Pure Standings (No Digital Badges)
+                </span>
+              )}
               <span className="text-xs font-bold text-stone-500">
                 Organized by <strong className="text-stone-900">{tournament.institutionName}</strong>
               </span>
@@ -510,7 +668,7 @@ export default function TournamentWorkspacePage() {
               <span>·</span>
               <span className="flex items-center gap-1.5 font-bold text-stone-800">
                 <Users className="w-3.5 h-3.5 text-amber-600" />
-                <span>{participants.length} / {tournament.maxParticipants} Registered</span>
+                <span>{participants.length} / {tournament.maxParticipants} Registered {isTeam ? 'Teams' : 'Athletes'}</span>
               </span>
             </div>
           </div>
@@ -527,7 +685,7 @@ export default function TournamentWorkspacePage() {
               title="Copy Public Tournament Link"
             >
               <Copy className="w-3.5 h-3.5 text-stone-400" />
-              <span>Share Tournament</span>
+              <span>Share Event</span>
             </button>
 
             <button
@@ -582,7 +740,7 @@ export default function TournamentWorkspacePage() {
               </div>
               <div className="min-w-0">
                 <span className="block text-[10px] font-black uppercase text-stone-400">Step 1</span>
-                <span className="block text-xs font-bold text-stone-900 truncate">Athlete Roster ({participants.length})</span>
+                <span className="block text-xs font-bold text-stone-900 truncate">Roster ({participants.length})</span>
               </div>
             </button>
 
@@ -636,7 +794,7 @@ export default function TournamentWorkspacePage() {
               </div>
               <div className="min-w-0">
                 <span className="block text-[10px] font-black uppercase text-stone-400">Step 3</span>
-                <span className="block text-xs font-bold text-stone-900 truncate">Live Arena & Scores</span>
+                <span className="block text-xs font-bold text-stone-900 truncate">Live Scores</span>
               </div>
             </button>
 
@@ -659,7 +817,7 @@ export default function TournamentWorkspacePage() {
               </div>
               <div className="min-w-0">
                 <span className="block text-[10px] font-black uppercase text-stone-400">Step 4</span>
-                <span className="block text-xs font-bold text-stone-900 truncate">Podium & Awards</span>
+                <span className="block text-xs font-bold text-stone-900 truncate">Podium & Standings</span>
               </div>
             </button>
 
@@ -680,7 +838,7 @@ export default function TournamentWorkspacePage() {
           }`}
         >
           <Clock className="w-4 h-4 text-amber-400" />
-          <span>Timetable & Live Scores ({matches.length})</span>
+          <span>Fixtures & Live Arena ({matches.length})</span>
         </button>
 
         <button
@@ -693,7 +851,7 @@ export default function TournamentWorkspacePage() {
           }`}
         >
           <Users className="w-4 h-4 text-amber-400" />
-          <span>Athlete Roster ({participants.length})</span>
+          <span>{isTeam ? 'Team Roster' : 'Athlete Roster'} ({participants.length})</span>
         </button>
 
         <button
@@ -706,7 +864,7 @@ export default function TournamentWorkspacePage() {
           }`}
         >
           <FileText className="w-4 h-4 text-amber-400" />
-          <span>Registration Form Builder ({formQuestions.length})</span>
+          <span>Registration Questionnaire ({formQuestions.length})</span>
         </button>
 
         <button
@@ -719,7 +877,7 @@ export default function TournamentWorkspacePage() {
           }`}
         >
           <Award className="w-4 h-4 text-amber-400" />
-          <span>Podium & Credentials</span>
+          <span>Podium & Awards</span>
         </button>
       </div>
 
@@ -747,7 +905,7 @@ export default function TournamentWorkspacePage() {
             </div>
 
             {isInstitution && (
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <Button
                   variant="gold"
                   size="sm"
@@ -755,9 +913,20 @@ export default function TournamentWorkspacePage() {
                   loading={generatingFixtures}
                   onClick={handleGenerateFixtures}
                   className="font-black shadow-xs hover:scale-105 transition-all"
-                  title="Automatically generate tournament brackets from registered athletes"
+                  title="Generate bracket matches honoring seeds"
                 >
-                  ⚡ 1-Click Generate Brackets
+                  ⚡ Auto-Generate Brackets
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Sliders}
+                  onClick={() => setManualResultsModalOpen(true)}
+                  className="font-bold text-xs"
+                  title="Post final match results directly or enter podium winners"
+                >
+                  Manual Scoreboard
                 </Button>
 
                 <Button
@@ -765,15 +934,15 @@ export default function TournamentWorkspacePage() {
                   size="sm"
                   icon={Plus}
                   onClick={() => setAddMatchModalOpen(true)}
-                  className="font-bold"
+                  className="font-bold text-xs"
                 >
-                  Add Fixture
+                  Add Match
                 </Button>
               </div>
             )}
           </div>
 
-          {/* Empty State: Prompt Bracket Generation or Seeding */}
+          {/* Empty State */}
           {matches.length === 0 ? (
             <div className="p-10 sm:p-14 text-center bg-white rounded-3xl border border-dashed border-stone-300 space-y-4 shadow-xs">
               <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-xs">
@@ -782,10 +951,12 @@ export default function TournamentWorkspacePage() {
 
               <div className="space-y-1">
                 <h4 className="text-xl font-black text-stone-900">
-                  No Fixture Matches Generated Yet
+                  No Fixture Matches Scheduled
                 </h4>
                 <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
-                  Generate instant knockout brackets or sprint heats based on your registered athletes roster with a single click.
+                  {participants.length >= 2
+                    ? `You have ${participants.length} registered competitors in your roster. Click below to generate your official tournament bracket.`
+                    : 'Add or import competitors in the Roster tab to begin bracket generation.'}
                 </p>
               </div>
 
@@ -799,22 +970,18 @@ export default function TournamentWorkspacePage() {
                     onClick={handleGenerateFixtures}
                     className="font-black shadow-md hover:scale-105 transition-all"
                   >
-                    Generate Brackets from {participants.length} Registered Athletes
+                    Generate Tournament Bracket ({participants.length} Seeded)
                   </Button>
                 ) : (
                   <>
                     <Button
-                      variant="gold"
+                      variant="dark"
                       size="md"
-                      icon={Zap}
-                      loading={seedingAthletes}
-                      onClick={async () => {
-                        await handleQuickSeedAthletes();
-                        await handleGenerateFixtures();
-                      }}
-                      className="font-black shadow-md hover:scale-105 transition-all"
+                      icon={Upload}
+                      onClick={() => setCsvModalOpen(true)}
+                      className="font-bold shadow-xs"
                     >
-                      ⚡ Quick Seed 8 Athletes & Auto-Build Bracket
+                      Import Roster via CSV
                     </Button>
                     <Button
                       variant="secondary"
@@ -823,7 +990,7 @@ export default function TournamentWorkspacePage() {
                       onClick={() => setRegisterModalOpen(true)}
                       className="font-bold"
                     >
-                      Manually Register Athlete
+                      Direct Add Competitor
                     </Button>
                   </>
                 )}
@@ -912,7 +1079,7 @@ export default function TournamentWorkspacePage() {
                               e.target.blur();
                             }
                           }}
-                          placeholder="Score / Time"
+                          placeholder="Score"
                           className="w-full text-center sm:text-left px-3 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-stone-50 focus:bg-white focus:border-amber-500 focus:outline-none transition-all"
                         />
 
@@ -968,7 +1135,7 @@ export default function TournamentWorkspacePage() {
                               e.target.blur();
                             }
                           }}
-                          placeholder="Score / Time"
+                          placeholder="Score"
                           className="w-full text-center sm:text-right px-3 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-stone-50 focus:bg-white focus:border-amber-500 focus:outline-none transition-all"
                         />
 
@@ -1005,7 +1172,7 @@ export default function TournamentWorkspacePage() {
                     {m.winnerName && (
                       <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/80 text-xs font-bold text-amber-900 flex items-center justify-center gap-1.5">
                         <Crown className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Match Winner: <strong>{m.winnerName}</strong></span>
+                        <span>Winner: <strong>{m.winnerName}</strong></span>
                       </div>
                     )}
 
@@ -1017,7 +1184,7 @@ export default function TournamentWorkspacePage() {
         </div>
       )}
 
-      {/* ── TAB 2: ATHLETES ROSTER & QUESTIONNAIRE RESPONSES ── */}
+      {/* ── TAB 2: ATHLETE / TEAM ROSTER & PRODUCTION INGESTION ── */}
       {activeTab === 'participants' && (
         <div className="space-y-4">
           
@@ -1028,10 +1195,10 @@ export default function TournamentWorkspacePage() {
                 <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search athletes by name or email..."
+                  placeholder={`Search ${isTeam ? 'teams or captains' : 'athletes'}...`}
                   value={searchRoster}
                   onChange={(e) => setSearchRoster(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 text-xs font-medium rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-amber-500 w-60"
+                  className="pl-8 pr-3 py-1.5 text-xs font-medium rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-amber-500 w-64"
                 />
               </div>
               <span className="text-xs font-bold text-stone-500">
@@ -1040,17 +1207,16 @@ export default function TournamentWorkspacePage() {
             </div>
 
             {isInstitution && (
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 <Button
                   variant="gold"
                   size="sm"
-                  icon={Zap}
-                  loading={seedingAthletes}
-                  onClick={handleQuickSeedAthletes}
+                  icon={Upload}
+                  onClick={() => setCsvModalOpen(true)}
                   className="font-black shadow-xs hover:scale-105 transition-all"
-                  title="Bulk register 8 sample athletes to test tournament flow"
+                  title="Import spreadsheet/CSV with column mapping"
                 >
-                  ⚡ Seed 8 Sample Athletes
+                  Import Spreadsheet / CSV
                 </Button>
 
                 <Button
@@ -1060,7 +1226,7 @@ export default function TournamentWorkspacePage() {
                   onClick={() => setRegisterModalOpen(true)}
                   className="font-bold"
                 >
-                  Register Athlete
+                  Direct Add {isTeam ? 'Team' : 'Competitor'}
                 </Button>
               </div>
             )}
@@ -1069,22 +1235,34 @@ export default function TournamentWorkspacePage() {
           {/* Roster Table */}
           <div className="bg-white rounded-3xl border border-stone-200/90 shadow-xs overflow-hidden">
             {participants.length === 0 ? (
-              <div className="p-12 text-center space-y-3">
+              <div className="p-12 text-center space-y-4">
                 <Users className="w-12 h-12 text-stone-300 mx-auto" />
-                <h4 className="text-base font-bold text-stone-900">No Athletes Registered Yet</h4>
-                <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                  Share the public registration link with athletes, or use 1-click sample seeding to test brackets.
-                </p>
-                <div className="flex justify-center gap-2 pt-2">
+                <div className="space-y-1">
+                  <h4 className="text-base font-black text-stone-900">
+                    No {isTeam ? 'Teams' : 'Competitors'} Added Yet
+                  </h4>
+                  <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                    Share your public registration link, upload an existing CSV spreadsheet with column mapping, or add participants manually.
+                  </p>
+                </div>
+                <div className="flex justify-center gap-3 pt-1">
                   <Button
                     variant="gold"
                     size="sm"
-                    icon={Zap}
-                    loading={seedingAthletes}
-                    onClick={handleQuickSeedAthletes}
+                    icon={Upload}
+                    onClick={() => setCsvModalOpen(true)}
                     className="font-black"
                   >
-                    ⚡ Seed 8 Sample Athletes
+                    Import CSV / Spreadsheet
+                  </Button>
+                  <Button
+                    variant="dark"
+                    size="sm"
+                    icon={UserPlus}
+                    onClick={() => setRegisterModalOpen(true)}
+                    className="font-bold"
+                  >
+                    Direct Add
                   </Button>
                 </div>
               </div>
@@ -1093,8 +1271,8 @@ export default function TournamentWorkspacePage() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-stone-50 border-b border-stone-200 text-stone-600 font-black uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-5 py-3.5">Athlete</th>
-                      <th className="px-4 py-3.5">Bib / ID</th>
+                      <th className="px-5 py-3.5">Seed & Name</th>
+                      {isTeam && <th className="px-4 py-3.5">Team Captain</th>}
                       <th className="px-4 py-3.5">Contact Details</th>
                       <th className="px-4 py-3.5">Status</th>
                       <th className="px-4 py-3.5">Questionnaire Answers</th>
@@ -1114,32 +1292,33 @@ export default function TournamentWorkspacePage() {
                         <tr key={p.id} className="hover:bg-stone-50/70 transition-colors">
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
-                              <Avatar
-                                src={p.avatarUrl}
-                                name={p.athleteName}
-                                size="sm"
-                              />
+                              {p.seedNumber != null ? (
+                                <span className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-400/40 text-amber-900 text-xs font-black flex items-center justify-center shrink-0">
+                                  #{p.seedNumber}
+                                </span>
+                              ) : (
+                                <span className="w-6 h-6 rounded-lg bg-stone-100 text-stone-500 text-xs font-bold flex items-center justify-center shrink-0">
+                                  {idx + 1}
+                                </span>
+                              )}
                               <div>
-                                <span className="font-black text-stone-900 block">
+                                <span className="font-black text-stone-900 block text-xs">
                                   {p.athleteName}
                                 </span>
-                                {p.userId ? (
-                                  <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
-                                    <ShieldCheck className="w-3 h-3 text-amber-600" />
-                                    <span>Verified Arena Member</span>
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-stone-400">
-                                    Guest Athlete
+                                {p.teamName && (
+                                  <span className="text-[10px] text-stone-500 font-bold block">
+                                    Team: {p.teamName}
                                   </span>
                                 )}
                               </div>
                             </div>
                           </td>
 
-                          <td className="px-4 py-3.5 font-mono text-stone-500 font-bold text-[11px]">
-                            #ATH-{p.id}
-                          </td>
+                          {isTeam && (
+                            <td className="px-4 py-3.5 text-stone-700 font-semibold text-xs">
+                              {p.captainName || '—'}
+                            </td>
+                          )}
 
                           <td className="px-4 py-3.5 text-stone-600">
                             <div>{p.email || '—'}</div>
@@ -1197,10 +1376,10 @@ export default function TournamentWorkspacePage() {
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h2 className="text-lg font-black text-stone-900">
-                Custom Athlete Registration Form Builder
+                Custom Registration Questionnaire Builder
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Customize the registration questionnaire athletes will fill out when entering this tournament.
+                Customize the registration form competitors fill out when registering on the web.
               </p>
             </div>
 
@@ -1213,18 +1392,17 @@ export default function TournamentWorkspacePage() {
                 onClick={handleSaveFormSchema}
                 className="font-bold shadow-xs"
               >
-                Save Form Questions
+                Save Questionnaire
               </Button>
             )}
           </div>
 
-          {/* Quick Two-Links Bar: Share Tournament & Registration Form Filling */}
+          {/* Quick Two-Links Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-stone-50 border border-stone-200">
-            {/* Link 1: Tournament Share */}
             <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-stone-200">
               <div className="min-w-0 flex-1">
                 <span className="block text-[10px] font-black uppercase text-stone-400">
-                  1. Tournament Overview URL
+                  1. Public Tournament Page
                 </span>
                 <span className="block text-xs font-mono font-bold text-stone-800 truncate">
                   {window.location.origin}/tournaments/{tournament.id}
@@ -1236,14 +1414,13 @@ export default function TournamentWorkspacePage() {
                 icon={Copy}
                 onClick={() => {
                   navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}`);
-                  showToast('Tournament overview link copied!', 'success');
+                  showToast('Tournament link copied!', 'success');
                 }}
               >
                 Copy
               </Button>
             </div>
 
-            {/* Link 2: Registration Form Filling */}
             <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-50/60 border border-amber-200">
               <div className="min-w-0 flex-1">
                 <span className="block text-[10px] font-black uppercase text-amber-800">
@@ -1376,17 +1553,19 @@ export default function TournamentWorkspacePage() {
           <div className="flex items-center justify-between border-b border-stone-100 pb-4">
             <div>
               <h2 className="text-xl font-black text-stone-900">
-                Podium & Credential Award Ceremony
+                Podium & Final Standings
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Conclude the tournament to officially issue tamper-proof certificates and verified badges.
+                {tournament.credentialsEnabled
+                  ? 'Confirm podium winners to officially conclude the tournament and mint digital badges & certificates.'
+                  : 'Confirm podium winners to conclude the tournament and permanently archive official standings.'}
               </p>
             </div>
 
             {tournament.status === 'COMPLETED' ? (
               <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-black flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                <span>ALL CREDENTIALS ISSUED</span>
+                <span>TOURNAMENT CONCLUDED</span>
               </span>
             ) : (
               isInstitution && (
@@ -1397,7 +1576,7 @@ export default function TournamentWorkspacePage() {
                   onClick={() => setFinalizeModalOpen(true)}
                   className="font-black shadow-md hover:scale-105 transition-all"
                 >
-                  Conclude Tournament & Award All
+                  Conclude Tournament
                 </Button>
               )
             )}
@@ -1418,7 +1597,7 @@ export default function TournamentWorkspacePage() {
                 {tournament.winner2ndName || (participants.find((p) => String(p.id) === String(podium2ndId))?.athleteName) || 'TBD - Finalist'}
               </h4>
               <div className="p-2.5 rounded-xl bg-white border border-stone-200 text-xs font-bold text-stone-600">
-                Awards {tournament.linkedBadgeSilverName || 'Silver Medal'} & Certificate
+                {tournament.credentialsEnabled ? `Awards ${tournament.linkedBadgeSilverName || 'Silver Medal'} & Certificate` : '2nd Place Finalist Honors'}
               </div>
             </div>
 
@@ -1434,7 +1613,7 @@ export default function TournamentWorkspacePage() {
                 {tournament.winner1stName || (participants.find((p) => String(p.id) === String(podium1stId))?.athleteName) || 'TBD - Champion'}
               </h4>
               <div className="p-3 rounded-xl bg-white border border-amber-300 text-xs font-black text-amber-900">
-                Awards {tournament.linkedBadgeGoldName || 'Gold Medal'} & Official Winner Certificate
+                {tournament.credentialsEnabled ? `Awards ${tournament.linkedBadgeGoldName || 'Gold Medal'} & Official Certificate` : '1st Place Champion Honors'}
               </div>
             </div>
 
@@ -1450,7 +1629,7 @@ export default function TournamentWorkspacePage() {
                 {tournament.winner3rdName || (participants.find((p) => String(p.id) === String(podium3rdId))?.athleteName) || 'TBD - 3rd Place'}
               </h4>
               <div className="p-2.5 rounded-xl bg-white border border-amber-200 text-xs font-bold text-stone-600">
-                Awards {tournament.linkedBadgeBronzeName || 'Bronze Medal'} & Certificate
+                {tournament.credentialsEnabled ? `Awards ${tournament.linkedBadgeBronzeName || 'Bronze Medal'} & Certificate` : '3rd Place Honors'}
               </div>
             </div>
 
@@ -1462,28 +1641,31 @@ export default function TournamentWorkspacePage() {
               <div className="flex items-center gap-3">
                 <Trophy className="w-6 h-6 text-amber-400" />
                 <div>
-                  <h3 className="text-base font-black">Tournament Credentials Successfully Issued</h3>
+                  <h3 className="text-base font-black">Tournament Officially Concluded & Archived</h3>
                   <p className="text-xs text-stone-400">
-                    Badges and tamper-proof certificates have been anchored and deposited into recipients' portfolios.
+                    Final rankings are permanently recorded.
+                    {tournament.credentialsEnabled && ' Badges and tamper-proof certificates have been anchored into portfolios.'}
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                <Link
-                  to="/certificates"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 text-stone-950 font-black text-xs hover:bg-amber-400 transition-all shadow-xs"
-                >
-                  <Award className="w-4 h-4" />
-                  <span>View in Certificate Hub →</span>
-                </Link>
+                {tournament.credentialsEnabled && (
+                  <Link
+                    to="/certificates"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 text-stone-950 font-black text-xs hover:bg-amber-400 transition-all shadow-xs"
+                  >
+                    <Award className="w-4 h-4" />
+                    <span>View in Certificate Hub →</span>
+                  </Link>
+                )}
 
                 <Link
                   to={`/tournaments/${tournament.id}`}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/10 text-white font-bold text-xs hover:bg-white/20 transition-all"
                 >
                   <Eye className="w-4 h-4" />
-                  <span>View Public Tournament Page</span>
+                  <span>Public Tournament Page</span>
                 </Link>
               </div>
             </div>
@@ -1492,11 +1674,228 @@ export default function TournamentWorkspacePage() {
         </div>
       )}
 
+      {/* ── MODAL: BULK SPREADSHEET / CSV IMPORT WITH VISUAL COLUMN MAPPER ── */}
+      <Modal
+        isOpen={csvModalOpen}
+        onClose={() => setCsvModalOpen(false)}
+        title="Import Roster via Spreadsheet or CSV"
+        size="lg"
+      >
+        <div className="space-y-5">
+          <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-2xl text-xs space-y-1">
+            <span className="font-black text-stone-900 flex items-center gap-1.5">
+              <FileSpreadsheet className="w-4 h-4 text-amber-600" />
+              <span>Production CSV / Excel Ingestion with Visual Column Mapping</span>
+            </span>
+            <p className="text-stone-600 leading-relaxed">
+              Upload a `.csv` file or paste table data from Google Sheets/Excel. You can map each column to its corresponding field before importing.
+            </p>
+          </div>
+
+          {/* Option 1: File Upload */}
+          <div className="flex items-center gap-3">
+            <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 transition-colors">
+              <Upload className="w-4 h-4" />
+              <span>Choose .CSV File</span>
+              <input
+                type="file"
+                accept=".csv,.txt,.tsv"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+            <span className="text-xs text-stone-400 font-medium">or paste rows below:</span>
+          </div>
+
+          {/* Option 2: Textarea for Pasting CSV / Excel data */}
+          <div>
+            <textarea
+              rows={4}
+              value={rawCsvText}
+              onChange={(e) => handleParseCsv(e.target.value)}
+              placeholder={`Paste data with headers, e.g.:\nAthlete Name, Email, Phone, Seed Number, Team Name\nAlex Vance, alex@example.com, +1 555-0192, 1, Red Hawks\nSarah Chen, sarah@example.com, +1 555-0143, 2, Blue Vipers`}
+              className="w-full p-3 rounded-2xl border border-stone-300 font-mono text-xs focus:outline-none focus:border-amber-500 bg-stone-50/50"
+            />
+          </div>
+
+          {/* Column Mapping Section (Visible once rows parsed) */}
+          {csvHeaders.length > 0 && (
+            <div className="space-y-4 pt-2 border-t border-stone-200">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-stone-800">
+                  Detected Columns & Field Mapping:
+                </span>
+                <span className="text-xs font-bold text-stone-500">
+                  {csvParsedRows.length} rows parsed
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {csvHeaders.map((header, idx) => (
+                  <div key={idx} className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-1">
+                    <span className="block text-[11px] font-black text-stone-700 truncate" title={header}>
+                      Column: "{header}"
+                    </span>
+                    <select
+                      value={columnMapping[idx] || 'ignore'}
+                      onChange={(e) => {
+                        setColumnMapping({ ...columnMapping, [idx]: e.target.value });
+                      }}
+                      className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-stone-300 bg-white"
+                    >
+                      <option value="athleteName">Athlete / Competitor Name *</option>
+                      <option value="teamName">Team / Squad Name</option>
+                      <option value="seedNumber">Seed Number (#1, #2...)</option>
+                      <option value="captainName">Team Captain Name</option>
+                      <option value="email">Email Address</option>
+                      <option value="phone">Contact Phone</option>
+                      <option value="custom">Custom Questionnaire Field</option>
+                      <option value="ignore">— Ignore Column —</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              {/* Data Table Preview */}
+              <div className="space-y-1.5 pt-2">
+                <span className="text-[11px] font-bold text-stone-500 block uppercase">
+                  Data Preview (First 5 Rows):
+                </span>
+                <div className="max-h-40 overflow-auto rounded-xl border border-stone-200">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-stone-100 text-stone-600 font-bold uppercase tracking-wider">
+                      <tr>
+                        {csvHeaders.map((h, i) => (
+                          <th key={i} className="px-3 py-2 whitespace-nowrap">
+                            {h} ({columnMapping[i] || 'ignore'})
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {csvParsedRows.slice(0, 5).map((row, rIdx) => (
+                        <tr key={rIdx} className="hover:bg-stone-50">
+                          {row.map((cell, cIdx) => (
+                            <td key={cIdx} className="px-3 py-1.5 truncate max-w-[150px]">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-3 border-t border-stone-200 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setCsvModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="gold"
+              size="sm"
+              loading={importingCsv}
+              disabled={csvParsedRows.length === 0}
+              onClick={handleConfirmCsvImport}
+              className="font-black shadow-md"
+            >
+              Confirm & Import {csvParsedRows.length} Competitors →
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── MODAL: MANUAL RESULTS / RAPID SCOREBOARD MODE ── */}
+      <Modal
+        isOpen={manualResultsModalOpen}
+        onClose={() => setManualResultsModalOpen(false)}
+        title="Manual Results & Rapid Scoreboard"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-2xl text-xs space-y-1">
+            <span className="font-black text-stone-900 flex items-center gap-1.5">
+              <Sliders className="w-4 h-4 text-amber-600" />
+              <span>Offline / External Game Results Posting</span>
+            </span>
+            <p className="text-stone-600 leading-relaxed">
+              For tournaments run on physical sheets, external monitors, or game lobbies: post match scores or assign podium winners directly without simulating round by round.
+            </p>
+          </div>
+
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {matches.map((m) => (
+              <div key={m.id} className="p-3.5 rounded-2xl border border-stone-200 bg-stone-50/50 flex items-center justify-between gap-3 text-xs">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-stone-900">{m.roundName}</span>
+                    <span className="text-[10px] text-stone-400">Match #{m.matchNumber}</span>
+                  </div>
+                  <span className="text-stone-700 font-bold block truncate">
+                    {m.participant1Name || 'TBD'} vs {m.participant2Name || 'TBD'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <input
+                    type="text"
+                    defaultValue={m.score1 || ''}
+                    onBlur={(e) => handleScoreChange(m.id, e.target.value, m.score2, m.winnerParticipantId, m.status)}
+                    placeholder="Score 1"
+                    className="w-16 px-2 py-1 text-center text-xs font-bold rounded-lg border border-stone-300 bg-white"
+                  />
+                  <span>–</span>
+                  <input
+                    type="text"
+                    defaultValue={m.score2 || ''}
+                    onBlur={(e) => handleScoreChange(m.id, m.score1, e.target.value, m.winnerParticipantId, m.status)}
+                    placeholder="Score 2"
+                    className="w-16 px-2 py-1 text-center text-xs font-bold rounded-lg border border-stone-300 bg-white"
+                  />
+                  
+                  {/* Quick Winner selector */}
+                  <select
+                    value={m.winnerParticipantId || ''}
+                    onChange={(e) => {
+                      const wid = e.target.value ? Number(e.target.value) : null;
+                      handleScoreChange(m.id, m.score1, m.score2, wid, 'COMPLETED');
+                    }}
+                    className="px-2 py-1 text-xs font-bold rounded-lg border border-stone-300 bg-white"
+                  >
+                    <option value="">-- Choose Winner --</option>
+                    {m.participant1Id && <option value={m.participant1Id}>{m.participant1Name}</option>}
+                    {m.participant2Id && <option value={m.participant2Id}>{m.participant2Name}</option>}
+                  </select>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-3 border-t border-stone-200 flex justify-end gap-2">
+            <Button
+              variant="dark"
+              size="sm"
+              onClick={() => setManualResultsModalOpen(false)}
+            >
+              Done / Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* ── MODAL: VIEW ATHLETE CUSTOM GOOGLE FORM RESPONSES ── */}
       <Modal
         isOpen={!!viewResponsesModalOpen}
         onClose={() => setViewResponsesModalOpen(null)}
-        title={`Registration Form Responses: ${viewResponsesModalOpen?.athleteName}`}
+        title={`Registration Details: ${viewResponsesModalOpen?.athleteName}`}
         size="md"
       >
         {viewResponsesModalOpen && (
@@ -1511,6 +1910,11 @@ export default function TournamentWorkspacePage() {
                 <h4 className="text-sm font-black text-stone-900">
                   {viewResponsesModalOpen.athleteName}
                 </h4>
+                {viewResponsesModalOpen.teamName && (
+                  <p className="text-xs font-bold text-amber-800">
+                    Team: {viewResponsesModalOpen.teamName}
+                  </p>
+                )}
                 <p className="text-xs text-stone-500">
                   {viewResponsesModalOpen.email} · {viewResponsesModalOpen.phone || 'No phone'}
                 </p>
@@ -1564,53 +1968,63 @@ export default function TournamentWorkspacePage() {
         )}
       </Modal>
 
-      {/* ── MODAL: REGISTER PLAYER / ATHLETE (MANUAL ENTRY) ── */}
+      {/* ── MODAL: DIRECT ADD PARTICIPANT / TEAM ── */}
       <Modal
         isOpen={registerModalOpen}
         onClose={() => setRegisterModalOpen(false)}
-        title="Register Player / Athlete"
+        title={isTeam ? 'Add Team to Roster' : 'Register Competitor'}
         size="md"
       >
         <form onSubmit={handleRegisterParticipant} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-stone-700 mb-1">
-              Link Existing Arena Athlete (Optional)
-            </label>
-            <select
-              value={newSelectedUserId}
-              onChange={(e) => {
-                const uid = e.target.value;
-                setNewSelectedUserId(uid);
-                const found = (allUsers || []).find((u) => u && String(u.id) === String(uid));
-                if (found) {
-                  setNewAthleteName(found.displayName || found.username || '');
-                  setNewAthleteEmail(found.email || '');
-                }
-              }}
-              className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-stone-300 bg-white"
-            >
-              <option value="">-- Manual Athlete Entry (Not Linked) --</option>
-              {(allUsers || []).filter(Boolean).map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.displayName || u.username || 'User'} (@{u.username || 'user'})
-                </option>
-              ))}
-            </select>
-          </div>
-
           <Input
-            label="Athlete Full Name"
-            placeholder="e.g. Alex Vance"
+            label={isTeam ? 'Team Name *' : 'Competitor Full Name *'}
+            placeholder={isTeam ? 'e.g. Red Hawks' : 'e.g. Alex Vance'}
             value={newAthleteName}
             onChange={(e) => setNewAthleteName(e.target.value)}
             required
           />
 
+          {isTeam && (
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Team Captain Name"
+                placeholder="e.g. Marcus Vance"
+                value={newCaptainName}
+                onChange={(e) => setNewCaptainName(e.target.value)}
+              />
+              <Input
+                label="Seed Number (Optional)"
+                type="number"
+                placeholder="e.g. 1"
+                value={newSeedNumber}
+                onChange={(e) => setNewSeedNumber(e.target.value)}
+              />
+            </div>
+          )}
+
+          {!isTeam && (
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Affiliated Team/Club (Optional)"
+                placeholder="e.g. Metro Track Club"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+              />
+              <Input
+                label="Seed Number (Optional)"
+                type="number"
+                placeholder="e.g. 1"
+                value={newSeedNumber}
+                onChange={(e) => setNewSeedNumber(e.target.value)}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Email Address"
               type="email"
-              placeholder="athlete@example.com"
+              placeholder="contact@example.com"
               value={newAthleteEmail}
               onChange={(e) => setNewAthleteEmail(e.target.value)}
             />
@@ -1625,7 +2039,7 @@ export default function TournamentWorkspacePage() {
           {formQuestions.length > 0 && (
             <div className="pt-2 border-t border-stone-200 space-y-3">
               <span className="text-[11px] font-black uppercase tracking-wider text-amber-900 block">
-                Tournament Questionnaire Answers:
+                Questionnaire Answers:
               </span>
               {formQuestions.map((q) => (
                 <div key={q.id} className="space-y-1">
@@ -1684,7 +2098,7 @@ export default function TournamentWorkspacePage() {
               size="sm"
               className="font-bold"
             >
-              Confirm Registration
+              Add to Roster
             </Button>
           </div>
         </form>
@@ -1694,7 +2108,7 @@ export default function TournamentWorkspacePage() {
       <Modal
         isOpen={addMatchModalOpen}
         onClose={() => setAddMatchModalOpen(false)}
-        title="Schedule New Fixture Match"
+        title="Schedule Fixture Match"
         size="md"
       >
         <form onSubmit={handleCreateMatch} className="space-y-4">
@@ -1725,13 +2139,13 @@ export default function TournamentWorkspacePage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Competitor 1</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Side 1 ({isTeam ? 'Team 1' : 'Player 1'})</label>
               <select
                 value={newMatchP1Id}
                 onChange={(e) => setNewMatchP1Id(e.target.value)}
                 className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-stone-300 bg-white"
               >
-                <option value="">-- Select Athlete 1 --</option>
+                <option value="">-- Select Competitor --</option>
                 {participants.map((p) => (
                   <option key={p.id} value={p.id}>{p.athleteName}</option>
                 ))}
@@ -1739,13 +2153,13 @@ export default function TournamentWorkspacePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Competitor 2</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Side 2 ({isTeam ? 'Team 2' : 'Player 2'})</label>
               <select
                 value={newMatchP2Id}
                 onChange={(e) => setNewMatchP2Id(e.target.value)}
                 className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-stone-300 bg-white"
               >
-                <option value="">-- Select Athlete 2 --</option>
+                <option value="">-- Select Competitor --</option>
                 {participants.map((p) => (
                   <option key={p.id} value={p.id}>{p.athleteName}</option>
                 ))}
@@ -1766,7 +2180,7 @@ export default function TournamentWorkspacePage() {
               onChange={(e) => setNewMatchTime(e.target.value)}
             />
             <Input
-              label="Court / Track"
+              label="Court / Lobby"
               value={newMatchVenue}
               onChange={(e) => setNewMatchVenue(e.target.value)}
             />
@@ -1787,34 +2201,34 @@ export default function TournamentWorkspacePage() {
               size="sm"
               className="font-bold"
             >
-              Schedule Fixture
+              Schedule Match
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* ── MODAL: FINALIZE TOURNAMENT & 1-CLICK ISSUE CREDENTIALS ── */}
+      {/* ── MODAL: FINALIZE TOURNAMENT ── */}
       <Modal
         isOpen={finalizeModalOpen}
         onClose={() => setFinalizeModalOpen(false)}
-        title="Conclude Tournament & Award Verified Credentials"
+        title="Conclude Tournament & Confirm Standings"
         size="md"
       >
         <div className="space-y-4">
           <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-1 text-xs">
             <p className="font-black text-amber-950 flex items-center gap-1.5">
               <Award className="w-4 h-4 text-amber-700" />
-              <span>Automated Credential Issuance</span>
+              <span>Official Tournament Conclusion</span>
             </p>
             <p className="text-stone-600">
-              Confirm podium winners below to automatically mint and anchor official digital certificates and achievement badges.
+              Confirm the final podium winners below. This permanently concludes the tournament and updates public records.
             </p>
           </div>
 
-          {/* 1st Place Champion */}
+          {/* 1st Place */}
           <div className="space-y-1">
             <label className="text-xs font-black text-stone-900 flex items-center gap-1.5">
-              <span>🥇 1st Place Gold Medalist</span>
+              <span>🥇 1st Place Champion</span>
             </label>
             <select
               value={podium1stId}
@@ -1828,10 +2242,10 @@ export default function TournamentWorkspacePage() {
             </select>
           </div>
 
-          {/* 2nd Place Silver */}
+          {/* 2nd Place */}
           <div className="space-y-1">
             <label className="text-xs font-black text-stone-900 flex items-center gap-1.5">
-              <span>🥈 2nd Place Silver Medalist</span>
+              <span>🥈 2nd Place Finalist</span>
             </label>
             <select
               value={podium2ndId}
@@ -1845,10 +2259,10 @@ export default function TournamentWorkspacePage() {
             </select>
           </div>
 
-          {/* 3rd Place Bronze */}
+          {/* 3rd Place */}
           <div className="space-y-1">
             <label className="text-xs font-black text-stone-900 flex items-center gap-1.5">
-              <span>🥉 3rd Place Bronze Medalist</span>
+              <span>🥉 3rd Place Podium</span>
             </label>
             <select
               value={podium3rdId}
@@ -1862,28 +2276,30 @@ export default function TournamentWorkspacePage() {
             </select>
           </div>
 
-          {/* Credential Options Checkboxes */}
-          <div className="pt-2 border-t border-stone-200 space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-stone-800">
-              <input
-                type="checkbox"
-                checked={awardCredentials}
-                onChange={(e) => setAwardCredentials(e.target.checked)}
-                className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
-              />
-              <span>Award Gold, Silver & Bronze Badges and Winner Certificates</span>
-            </label>
+          {/* Credential Options Checkboxes (Only if tournament has credentials enabled) */}
+          {tournament.credentialsEnabled && (
+            <div className="pt-2 border-t border-stone-200 space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-stone-800">
+                <input
+                  type="checkbox"
+                  checked={awardCredentials}
+                  onChange={(e) => setAwardCredentials(e.target.checked)}
+                  className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+                />
+                <span>Award Gold, Silver & Bronze Badges and Winner Certificates</span>
+              </label>
 
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-stone-800">
-              <input
-                type="checkbox"
-                checked={awardParticipationCertificates}
-                onChange={(e) => setAwardParticipationCertificates(e.target.checked)}
-                className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
-              />
-              <span>Award Official Participation Certificates to all other competitors</span>
-            </label>
-          </div>
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-stone-800">
+                <input
+                  type="checkbox"
+                  checked={awardParticipationCertificates}
+                  onChange={(e) => setAwardParticipationCertificates(e.target.checked)}
+                  className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+                />
+                <span>Award Official Participation Certificates to all other competitors</span>
+              </label>
+            </div>
+          )}
 
           <div className="pt-3 border-t border-stone-200 flex justify-end gap-2">
             <Button
@@ -1902,7 +2318,7 @@ export default function TournamentWorkspacePage() {
               onClick={handleFinalizeTournament}
               className="font-black shadow-md"
             >
-              Confirm & Issue All Credentials →
+              Confirm & Conclude Tournament →
             </Button>
           </div>
         </div>
@@ -1912,7 +2328,7 @@ export default function TournamentWorkspacePage() {
       <Modal
         isOpen={finalizeSuccessModalOpen}
         onClose={() => setFinalizeSuccessModalOpen(false)}
-        title="Tournament Concluded & Credentials Issued"
+        title="Tournament Concluded"
         size="md"
       >
         <div className="text-center space-y-5 py-2">
@@ -1922,28 +2338,29 @@ export default function TournamentWorkspacePage() {
 
           <div className="space-y-1">
             <h3 className="text-xl font-black text-stone-900">
-              Credentials Anchored & Delivered!
+              Tournament Successfully Concluded!
             </h3>
             <p className="text-xs text-stone-600 max-w-sm mx-auto leading-relaxed">
-              Official digital certificates and achievement badges have been generated and deposited into the recipient athletes' verified portfolios.
+              Official standings have been archived.
+              {tournament.credentialsEnabled && ' Minted credentials and verified badges have been anchored into recipient portfolios.'}
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-left space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-stone-600">🥇 Gold Champion:</span>
+              <span className="font-bold text-stone-600">🥇 Champion:</span>
               <span className="font-black text-stone-900">
                 {participants.find((p) => String(p.id) === String(podium1stId))?.athleteName || 'Winner'}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-bold text-stone-600">🥈 Silver Finalist:</span>
+              <span className="font-bold text-stone-600">🥈 Runner-Up:</span>
               <span className="font-black text-stone-900">
                 {participants.find((p) => String(p.id) === String(podium2ndId))?.athleteName || 'Finalist'}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="font-bold text-stone-600">🥉 Bronze Podium:</span>
+              <span className="font-bold text-stone-600">🥉 3rd Place:</span>
               <span className="font-black text-stone-900">
                 {participants.find((p) => String(p.id) === String(podium3rdId))?.athleteName || 'Podium'}
               </span>
@@ -1951,16 +2368,18 @@ export default function TournamentWorkspacePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Button
-              variant="gold"
-              onClick={() => {
-                setFinalizeSuccessModalOpen(false);
-                navigate('/certificates');
-              }}
-              className="w-full sm:w-auto font-black shadow-md"
-            >
-              View in Certificate Hub →
-            </Button>
+            {tournament.credentialsEnabled && (
+              <Button
+                variant="gold"
+                onClick={() => {
+                  setFinalizeSuccessModalOpen(false);
+                  navigate('/certificates');
+                }}
+                className="w-full sm:w-auto font-black shadow-md"
+              >
+                View in Certificate Hub →
+              </Button>
+            )}
             <Button
               variant="dark"
               onClick={() => {
@@ -1969,7 +2388,7 @@ export default function TournamentWorkspacePage() {
               }}
               className="w-full sm:w-auto font-bold"
             >
-              View Public Tournament
+              Public Tournament Page
             </Button>
           </div>
         </div>

@@ -36,7 +36,8 @@ export default function TournamentRegistrationPage() {
   const [confirmedParticipant, setConfirmedParticipant] = useState(null);
 
   // Form states
-  const [athleteName, setAthleteName] = useState('');
+  const [name, setName] = useState('');
+  const [captainName, setCaptainName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [customAnswers, setCustomAnswers] = useState({});
@@ -61,7 +62,11 @@ export default function TournamentRegistrationPage() {
 
         // Pre-fill if user logged in
         if (currentUser) {
-          setAthleteName(currentUser?.displayName || currentUser?.username || '');
+          if (t.competitionType === 'TEAM') {
+            setCaptainName(currentUser?.displayName || currentUser?.username || '');
+          } else {
+            setName(currentUser?.displayName || currentUser?.username || '');
+          }
           setEmail(currentUser?.email || '');
         }
       })
@@ -77,10 +82,12 @@ export default function TournamentRegistrationPage() {
     };
   }, [tournamentId, currentUser]);
 
+  const isTeam = tournament?.competitionType === 'TEAM';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!athleteName.trim() || !email.trim()) {
-      showToast('Name and email are required', 'error');
+    if (!name.trim() || !email.trim()) {
+      showToast(`${isTeam ? 'Team name' : 'Athlete name'} and contact email are required`, 'error');
       return;
     }
 
@@ -96,7 +103,9 @@ export default function TournamentRegistrationPage() {
     try {
       const payload = {
         userId: currentUser?.id || null,
-        athleteName: athleteName.trim(),
+        athleteName: name.trim(),
+        teamName: isTeam ? name.trim() : null,
+        captainName: isTeam ? captainName.trim() : null,
         email: email.trim(),
         phone: phone.trim(),
         formResponses: JSON.stringify(customAnswers),
@@ -104,7 +113,7 @@ export default function TournamentRegistrationPage() {
 
       const res = await registerParticipant(tournamentId, payload);
       setConfirmedParticipant(res.data || {
-        athleteName: athleteName.trim(),
+        athleteName: name.trim(),
         email: email.trim(),
         id: Date.now()
       });
@@ -161,7 +170,7 @@ export default function TournamentRegistrationPage() {
             <span>Back to Tournament Overview</span>
           </Link>
           <span className="text-[11px] font-bold text-stone-500">
-            Official Athlete Registration
+            Official {isTeam ? 'Team' : 'Athlete'} Entry
           </span>
         </div>
 
@@ -170,6 +179,9 @@ export default function TournamentRegistrationPage() {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-900 text-xs font-black uppercase tracking-wider">
               🏆 {tournament.sport}
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-xs font-bold">
+              {isTeam ? `Squads of ${tournament.teamSize || 5}` : 'Individual Solo'}
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-xs font-bold">
               {tournament.format}
@@ -209,7 +221,7 @@ export default function TournamentRegistrationPage() {
                 <span>Roster Capacity</span>
               </span>
               <span className="text-stone-900">
-                {registeredCount} / {maxSpots} Registered ({spotsLeft} spots remaining)
+                {registeredCount} / {maxSpots} Registered {isTeam ? 'Teams' : 'Athletes'} ({spotsLeft} spots remaining)
               </span>
             </div>
             <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
@@ -221,7 +233,7 @@ export default function TournamentRegistrationPage() {
           </div>
         </div>
 
-        {/* ── SUCCESS SCREEN: OFFICIAL DIGITAL ATHLETE PASS / BIB ── */}
+        {/* ── SUCCESS SCREEN: OFFICIAL DIGITAL COMPETITOR PASS ── */}
         {submitted ? (
           <div className="space-y-6">
             <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6 sm:p-8 space-y-6 text-center">
@@ -232,20 +244,19 @@ export default function TournamentRegistrationPage() {
 
               <div className="space-y-1">
                 <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
-                  Registration Confirmed & Verified
+                  Registration Confirmed & Seeded
                 </span>
                 <h2 className="text-2xl font-black text-stone-900 tracking-tight pt-1">
                   You are in the Tournament!
                 </h2>
                 <p className="text-xs text-stone-600 max-w-md mx-auto">
-                  Thank you, <strong>{athleteName}</strong>. Your entry has been recorded in the official roster. Below is your digital competitor bib.
+                  Thank you, <strong>{name}</strong>. Your entry has been recorded in the official roster. Below is your official competitor pass.
                 </p>
               </div>
 
               {/* ── DIGITAL COMPETITOR PASS / BIB CARD ── */}
               <div className="max-w-md mx-auto rounded-3xl bg-gradient-to-br from-stone-900 via-stone-850 to-stone-950 text-white p-6 shadow-xl border-2 border-amber-500/40 relative overflow-hidden text-left space-y-5">
                 
-                {/* Decorative accent */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
 
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
@@ -253,7 +264,7 @@ export default function TournamentRegistrationPage() {
                     <Trophy className="w-5 h-5 text-amber-400" />
                     <div>
                       <span className="text-[10px] font-black tracking-widest uppercase text-amber-400 block">
-                        Official Athlete Pass
+                        Official {isTeam ? 'Team Pass' : 'Athlete Pass'}
                       </span>
                       <span className="text-xs font-bold text-white/90 truncate block max-w-[200px]">
                         {tournament.title}
@@ -266,26 +277,32 @@ export default function TournamentRegistrationPage() {
                   </span>
                 </div>
 
-                {/* Big Bib Number */}
+                {/* Entry ID Number */}
                 <div className="text-center py-2 bg-white/5 rounded-2xl border border-white/10">
                   <span className="text-[10px] uppercase font-bold text-white/50 tracking-widest block">
-                    Competitor Bib
+                    {isTeam ? 'Team Entry ID' : 'Competitor Bib #'}
                   </span>
                   <span className="text-3xl sm:text-4xl font-mono font-black text-amber-400 tracking-wider">
-                    #BIB-{tournament.id}-{String(confirmedParticipant?.id || Math.floor(1000 + Math.random() * 9000)).slice(-4)}
+                    #ENTRY-{tournament.id}-{String(confirmedParticipant?.id || Math.floor(1000 + Math.random() * 9000)).slice(-4)}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-[10px] text-white/50 uppercase font-bold block">Athlete Name</span>
-                    <span className="font-black text-white text-sm truncate block">{athleteName}</span>
+                    <span className="text-[10px] text-white/50 uppercase font-bold block">{isTeam ? 'Team Name' : 'Athlete Name'}</span>
+                    <span className="font-black text-white text-sm truncate block">{name}</span>
                   </div>
+                  {isTeam && (
+                    <div>
+                      <span className="text-[10px] text-white/50 uppercase font-bold block">Team Captain</span>
+                      <span className="font-bold text-white text-sm truncate block">{captainName || 'Captain'}</span>
+                    </div>
+                  )}
                   <div>
                     <span className="text-[10px] text-white/50 uppercase font-bold block">Status</span>
                     <span className="font-bold text-emerald-400 flex items-center gap-1">
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      <span>Roster Seeded</span>
+                      <span>Seeded in Roster</span>
                     </span>
                   </div>
                   <div>
@@ -293,14 +310,13 @@ export default function TournamentRegistrationPage() {
                     <span className="font-semibold text-white/80 truncate block">{tournament.venue}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-white/50 uppercase font-bold block">Tournament Dates</span>
+                    <span className="text-[10px] text-white/50 uppercase font-bold block">Dates</span>
                     <span className="font-semibold text-white/80 truncate block">{tournament.startDate}</span>
                   </div>
                 </div>
 
-                {/* Barcode line representation */}
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/40 font-mono">
-                  <span>VERIFIED ARENA CREDENTIAL</span>
+                  <span>OFFICIAL ARENA PASS</span>
                   <span>ISSUER: {tournament.institutionName}</span>
                 </div>
               </div>
@@ -321,7 +337,7 @@ export default function TournamentRegistrationPage() {
                   onClick={() => window.print()}
                   className="w-full sm:w-auto font-bold"
                 >
-                  Print / Save Bib
+                  Print / Save Pass
                 </Button>
                 
                 <button
@@ -330,14 +346,15 @@ export default function TournamentRegistrationPage() {
                     setSubmitted(false);
                     setCustomAnswers({});
                     if (!currentUser) {
-                      setAthleteName('');
+                      setName('');
+                      setCaptainName('');
                       setEmail('');
                       setPhone('');
                     }
                   }}
                   className="text-xs font-bold text-stone-500 hover:text-stone-900 px-3 py-2 transition-colors"
                 >
-                  Register another athlete
+                  Register another entry
                 </button>
               </div>
 
@@ -349,38 +366,54 @@ export default function TournamentRegistrationPage() {
             
             <div className="border-b border-stone-100 pb-3">
               <h2 className="text-lg font-black text-stone-900">
-                Athlete Registration Details
+                {isTeam ? 'Team Registration Details' : 'Athlete Registration Details'}
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Please complete your details accurately for tournament matchmaking and credential issuance.
+                Please complete your details accurately for tournament matchmaking and credentials.
               </p>
             </div>
 
-            {/* Standard Contact Fields */}
+            {/* Standard Name & Captain Fields */}
             <div>
               <label className="block text-xs font-bold text-stone-800 mb-1.5">
-                Athlete Full Name <span className="text-rose-500">*</span>
+                {isTeam ? 'Official Team / Squad Name *' : 'Athlete Full Name *'}
               </label>
               <input
                 type="text"
-                value={athleteName}
-                onChange={(e) => setAthleteName(e.target.value)}
-                placeholder="e.g. Alex Vance"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={isTeam ? 'e.g. Red Hawks' : 'e.g. Alex Vance'}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 font-medium"
                 required
               />
             </div>
 
+            {isTeam && (
+              <div>
+                <label className="block text-xs font-bold text-stone-800 mb-1.5">
+                  Team Captain / Representative Name *
+                </label>
+                <input
+                  type="text"
+                  value={captainName}
+                  onChange={(e) => setCaptainName(e.target.value)}
+                  placeholder="e.g. Marcus Vance"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 font-medium"
+                  required
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-stone-800 mb-1.5">
-                  Email Address <span className="text-rose-500">*</span>
+                  Contact Email Address *
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="athlete@example.com"
+                  placeholder="contact@example.com"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-stone-900 text-sm focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 font-medium"
                   required
                 />
@@ -454,16 +487,18 @@ export default function TournamentRegistrationPage() {
               </div>
             )}
 
-            {/* Awards & Credential Guarantee Notice */}
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-              <Award className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-950 space-y-1">
-                <span className="font-black block">Official Credential Guarantee</span>
-                <p className="text-stone-600 leading-relaxed">
-                  Upon completion of this tournament, official verified digital certificates and athletic badges issued by <strong>{tournament.institutionName}</strong> will be anchored and delivered directly to your verified portfolio.
-                </p>
+            {/* Awards & Credential Guarantee Notice (Only when tournament has credentials enabled) */}
+            {tournament.credentialsEnabled && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                <Award className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-950 space-y-1">
+                  <span className="font-black block">Official Credential Guarantee</span>
+                  <p className="text-stone-600 leading-relaxed">
+                    Upon completion of this tournament, official verified digital certificates and athletic badges issued by <strong>{tournament.institutionName}</strong> will be anchored and delivered directly to your verified portfolio.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             <Button
               type="submit"
@@ -472,7 +507,7 @@ export default function TournamentRegistrationPage() {
               loading={submitting}
               className="w-full font-black text-sm shadow-md hover:scale-[1.01] transition-all"
             >
-              Confirm Registration & Generate Athlete Pass →
+              Confirm Registration & Generate {isTeam ? 'Team' : 'Athlete'} Pass →
             </Button>
           </form>
         )}

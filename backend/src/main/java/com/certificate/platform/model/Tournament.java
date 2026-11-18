@@ -28,6 +28,26 @@ public class Tournament {
     private String sport;
 
     @Column(nullable = false)
+    @Builder.Default
+    private String category = "SPORTS"; // SPORTS, ESPORTS, ACADEMICS, ARTS, CORPORATE, OTHER
+
+    @Column(nullable = false)
+    @Builder.Default
+    private String competitionType = "INDIVIDUAL"; // INDIVIDUAL, TEAM
+
+    @Builder.Default
+    private Integer teamSize = 1;
+
+    @Builder.Default
+    private String scoringType = "POINTS"; // POINTS, SETS, TIME, CUSTOM
+
+    @Builder.Default
+    private Boolean credentialsEnabled = true;
+
+    @Builder.Default
+    private Boolean isVirtual = false;
+
+    @Column(nullable = false)
     private String format;
 
     private String venue;

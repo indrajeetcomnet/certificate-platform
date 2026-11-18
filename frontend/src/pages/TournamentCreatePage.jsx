@@ -3,1158 +3,1110 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   Trophy,
   ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
   Calendar,
   MapPin,
   Users,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  FileText,
   Award,
   Shield,
   Sparkles,
-  Eye,
+  FileText,
+  Plus,
+  Trash2,
   Copy,
-  ChevronRight,
-  ArrowRight,
   ExternalLink,
-  QrCode,
-  Share2,
-  Check,
+  ChevronRight,
   Flame,
-  Zap,
-  Building2,
-  Sliders,
-  Clock
+  Check,
+  Globe,
+  Monitor,
+  Gamepad2,
+  GraduationCap,
+  Palette,
+  Briefcase
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import TextArea from '../components/ui/TextArea';
 import Modal from '../components/ui/Modal';
 import { createTournament } from '../api/tournamentsApi';
 import { getAllBadges } from '../api/badgesApi';
+import { getAllCertificates } from '../api/certificatesApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
-// Preset Sport Categories with Icons & Form defaults
-const SPORT_CATEGORIES = [
-  { id: 'Track & Field', name: 'Track & Field', icon: '🏃', preset: 'ATHLETICS' },
-  { id: 'Football', name: 'Football / Soccer', icon: '⚽', preset: 'FOOTBALL' },
-  { id: 'Badminton', name: 'Badminton', icon: '🏸', preset: 'ATHLETICS' },
-  { id: 'Esports', name: 'Esports Gaming', icon: '🎮', preset: 'ESPORTS' },
-  { id: 'Swimming', name: 'Swimming', icon: '🏊', preset: 'ATHLETICS' },
-  { id: 'Basketball', name: 'Basketball', icon: '🏀', preset: 'FOOTBALL' },
-  { id: 'Tennis', name: 'Tennis', icon: '🎾', preset: 'ATHLETICS' },
-  { id: 'Cricket', name: 'Cricket', icon: '🏏', preset: 'FOOTBALL' },
+// Multi-Domain Category Taxonomy
+const CATEGORIES = [
+  { id: 'SPORTS', name: 'Sports & Athletics', emoji: '🏃', icon: Trophy, desc: 'Track & field, football, basketball, swimming, racket sports, etc.' },
+  { id: 'ESPORTS', name: 'Esports & Gaming', emoji: '🎮', icon: Gamepad2, desc: 'Competitive PC, console & mobile titles, scrims & championships.' },
+  { id: 'ACADEMICS', name: 'Academics & Education', emoji: '🎓', icon: GraduationCap, desc: 'Debate cups, science & math olympiads, hackathons, quiz bowls.' },
+  { id: 'ARTS', name: 'Arts & Cultural', emoji: '🎭', icon: Palette, desc: 'Music, singing, dance competitions, drama, fine arts & filmmaking.' },
+  { id: 'CORPORATE', name: 'Corporate & Other', emoji: '💼', icon: Briefcase, desc: 'Case competitions, pitch fests, company leagues, open challenges.' },
 ];
 
-// Preset Question Form Templates for different disciplines
-const PRESET_TEMPLATES = {
-  ATHLETICS: [
-    { id: 'bib_number', label: 'Bib / Chest Number', type: 'text', required: true, placeholder: 'e.g. 101' },
-    { id: 'age_category', label: 'Age Division', type: 'select', required: true, options: ['Under-18', 'Senior Elite (18-29)', 'Masters (30+)'], placeholder: 'Select Division' },
-    { id: 'personal_best', label: 'Official Personal Best / Seeding Time', type: 'text', required: false, placeholder: 'e.g. 10.18s' },
-    { id: 'medical_clearance', label: 'Certified Medically Fit to Compete', type: 'checkbox', required: true, placeholder: 'Certified' },
-  ],
-  FOOTBALL: [
-    { id: 'jersey_number', label: 'Jersey Number', type: 'number', required: true, placeholder: 'e.g. 9' },
-    { id: 'preferred_position', label: 'Preferred Position', type: 'select', required: true, options: ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'], placeholder: 'Select Position' },
-    { id: 'team_name', label: 'Club / Academy Affiliation', type: 'text', required: true, placeholder: 'e.g. Athlos FC' },
-    { id: 'captain_status', label: 'Team Captain / Vice Captain', type: 'checkbox', required: false, placeholder: 'Yes, Captain' },
+const DISCIPLINES_BY_CATEGORY = {
+  SPORTS: [
+    'Athletics & Track', 'Football (Soccer)', 'Basketball', 'Tennis', 'Badminton',
+    'Swimming', 'Cricket', 'Martial Arts (Karate/Judo/Taekwondo)', 'Volleyball',
+    'Table Tennis', 'Other / Custom Sport'
   ],
   ESPORTS: [
-    { id: 'gamer_tag', label: 'In-Game Nickname / Gamertag', type: 'text', required: true, placeholder: 'e.g. ShadowStriker' },
-    { id: 'discord_handle', label: 'Discord Tag / Contact', type: 'text', required: true, placeholder: 'e.g. player#1234' },
-    { id: 'competitive_rank', label: 'Current Competitive Rank / Tier', type: 'select', required: true, options: ['Diamond', 'Master', 'Grandmaster', 'Challenger / Pro'], placeholder: 'Select Rank' },
+    'Valorant', 'Counter-Strike 2 (CS2)', 'BGMI / PUBG Mobile', 'Rocket League',
+    'League of Legends', 'EA Sports FC / FIFA', 'Dota 2', 'Overwatch 2',
+    'Rainbow Six Siege', 'Call of Duty: Warzone', 'Other / Custom Game'
   ],
-  GENERAL: [
-    { id: 'participant_id', label: 'Athlete Identification #', type: 'text', required: true, placeholder: 'e.g. ATH-9821' },
-    { id: 'tshirt_size', label: 'Official Jersey / T-Shirt Size', type: 'select', required: false, options: ['S', 'M', 'L', 'XL', 'XXL'], placeholder: 'Select Size' },
-    { id: 'emergency_contact', label: 'Emergency Contact Person & Phone', type: 'text', required: true, placeholder: 'Name & Phone #' },
+  ACADEMICS: [
+    'Parliamentary Debate Championship', 'Science & Innovation Olympiad',
+    'Mathematics Olympiad', 'Software & AI Hackathon', 'Model United Nations (MUN)',
+    'National Quiz Bowl', 'Robotics & Mechatronics Challenge', 'Business Case Competition',
+    'Other / Custom Academic Event'
   ],
+  ARTS: [
+    'Solo & Choral Singing / Music', 'Dance Championship (Solo & Squad)',
+    'Drama & One-Act Theater', 'Fine Arts & Painting Exhibition',
+    'Short Film & Photography Contest', 'Other / Custom Cultural Contest'
+  ],
+  CORPORATE: [
+    'Startup Pitch Fest', 'Corporate Hackathon', 'Company Esports League',
+    'Annual Sports Meet', 'Other / Custom Challenge'
+  ]
 };
 
-const FORMAT_OPTIONS = [
-  { id: 'Single Elimination Knockout', label: 'Single Elimination', desc: 'Fast-paced bracket where winners advance and losers drop out.' },
-  { id: 'Sprint Heats / Time Trials', label: 'Heats & Time Trials', desc: 'Athletes run timed qualifying heats; top times contest the Grand Final.' },
-  { id: 'Round Robin League', label: 'Round Robin', desc: 'Every competitor plays every other competitor in a points table.' },
-  { id: 'Group Stage + Playoffs', label: 'Groups + Playoffs', desc: 'Top qualifiers from each group advance to elimination finals.' },
+const FORMATS = [
+  {
+    id: 'Single Elimination Knockout',
+    name: 'Single Elimination Knockout',
+    desc: 'Loser is immediately eliminated; winner advances. Classic knockout bracket.',
+    badge: 'Standard Bracket',
+  },
+  {
+    id: 'Double Elimination Bracket',
+    name: 'Double Elimination Bracket',
+    desc: 'Participants must lose twice to be eliminated. Features Winners and Losers brackets.',
+    badge: 'Competitive Standard',
+  },
+  {
+    id: 'Round Robin / League Table',
+    name: 'Round Robin / League Table',
+    desc: 'Every participant plays every other participant. Best for group stages and leagues.',
+    badge: 'Round Robin',
+  },
+  {
+    id: 'Sprint Heats / Time Trials',
+    name: 'Sprint Heats / Time Trials',
+    desc: 'Qualifying heats based on time or distance, advancing top seeds to the Grand Final.',
+    badge: 'Heats & Timed',
+  },
+  {
+    id: 'Open Showcase / Exhibition',
+    name: 'Open Showcase / Exhibition',
+    desc: 'Open entry format without strict elimination; direct ranking or judged scores.',
+    badge: 'Open / Showcase',
+  },
+];
+
+const SCORING_TYPES = [
+  { id: 'POINTS', name: 'Points / Goals based', example: 'e.g. 3 – 1 or 88 – 82' },
+  { id: 'SETS', name: 'Sets / Games based', example: 'e.g. Best of 3 / Best of 5' },
+  { id: 'TIME', name: 'Time / Distance based', example: 'e.g. 10.42s or 7.85m' },
 ];
 
 export default function TournamentCreatePage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { isInstitution, currentUser } = useAuth();
+  const { currentUser, isInstitution } = useAuth();
 
-  // 5-Step Guided Wizard State
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 5;
-
-  const [availableBadges, setAvailableBadges] = useState([]);
-  const [loadingBadges, setLoadingBadges] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
-
-  // Success Launchpad Modal
+  const [loading, setLoading] = useState(false);
   const [createdTournament, setCreatedTournament] = useState(null);
-  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [postLaunchModalOpen, setPostLaunchModalOpen] = useState(false);
 
-  // Step 1: Basic Info & Sport
+  // Available badges & templates
+  const [badges, setBadges] = useState([]);
+  const [templates, setTemplates] = useState([]);
+
+  // Form State - Step 1: Category, Discipline, Scope, Title
+  const [category, setCategory] = useState('SPORTS');
+  const [disciplineSelect, setDisciplineSelect] = useState('Athletics & Track');
+  const [customDiscipline, setCustomDiscipline] = useState('');
+  const [competitionType, setCompetitionType] = useState('INDIVIDUAL'); // INDIVIDUAL | TEAM
+  const [teamSize, setTeamSize] = useState(5);
   const [title, setTitle] = useState('');
-  const [sport, setSport] = useState('Track & Field');
-  const [format, setFormat] = useState('Single Elimination Knockout');
   const [description, setDescription] = useState('');
 
-  // Step 2: Schedule & Capacity
-  const [venue, setVenue] = useState('National Athletic Arena');
+  // Form State - Step 2: Format, Scoring, Schedule & Venue
+  const [format, setFormat] = useState('Single Elimination Knockout');
+  const [scoringType, setScoringType] = useState('POINTS');
+  const [isVirtual, setIsVirtual] = useState(false);
+  const [venue, setVenue] = useState('National Athletic Stadium, Track 4');
   const [startDate, setStartDate] = useState('2026-11-20');
   const [endDate, setEndDate] = useState('2026-11-22');
   const [registrationDeadline, setRegistrationDeadline] = useState('2026-11-19');
   const [maxParticipants, setMaxParticipants] = useState(16);
 
-  // Step 3: Registration Form Builder
-  const [customFields, setCustomFields] = useState(PRESET_TEMPLATES.ATHLETICS);
+  // Form State - Step 3: Registration Channels & Form Builder
+  const [formFields, setFormFields] = useState([
+    { id: 'category_class', label: 'Competition Category / Division', type: 'select', options: ['Open Division', 'Junior Elite', 'Senior Championship'], required: true },
+    { id: 'emergency_contact', label: 'Emergency Contact or Guardian Phone', type: 'text', placeholder: '+91 98765 43210', required: false },
+  ]);
 
-  // Step 4: Badges & Certificates
-  const [linkedBadgeGoldId, setLinkedBadgeGoldId] = useState('');
-  const [linkedBadgeSilverId, setLinkedBadgeSilverId] = useState('');
-  const [linkedBadgeBronzeId, setLinkedBadgeBronzeId] = useState('');
-  const [linkedCertificateTemplate, setLinkedCertificateTemplate] = useState('CHAMPIONSHIP_GOLD');
-  const [awardParticipationCerts, setAwardParticipationCerts] = useState(true);
+  // Form State - Step 4: Digital Credentials (Optional)
+  const [credentialsEnabled, setCredentialsEnabled] = useState(true);
+  const [goldBadgeId, setGoldBadgeId] = useState('');
+  const [silverBadgeId, setSilverBadgeId] = useState('');
+  const [bronzeBadgeId, setBronzeBadgeId] = useState('');
+  const [certTemplate, setCertTemplate] = useState('MODERN_GOLD');
 
+  // Load available badges & templates
   useEffect(() => {
-    setLoadingBadges(true);
     getAllBadges()
+      .then((res) => setBadges(res.data || []))
+      .catch(() => setBadges([]));
+
+    getAllCertificates()
       .then((res) => {
-        const badges = res.data || [];
-        setAvailableBadges(badges);
-        const gold = badges.find((b) => b.rank === 1);
-        const silver = badges.find((b) => b.rank === 2);
-        const bronze = badges.find((b) => b.rank === 3);
-        if (gold) setLinkedBadgeGoldId(gold.id);
-        if (silver) setLinkedBadgeSilverId(silver.id);
-        if (bronze) setLinkedBadgeBronzeId(bronze.id);
+        const unique = [...new Set((res.data || []).map((c) => c.title).filter(Boolean))];
+        setTemplates(unique);
       })
-      .catch(() => setAvailableBadges([]))
-      .finally(() => setLoadingBadges(false));
+      .catch(() => setTemplates([]));
   }, []);
 
-  // Quick preset loader
-  const handleApplyPreset = (presetKey) => {
-    if (PRESET_TEMPLATES[presetKey]) {
-      setCustomFields(JSON.parse(JSON.stringify(PRESET_TEMPLATES[presetKey])));
-      showToast(`Loaded ${presetKey.toLowerCase()} questions template`, 'info');
+  // Update discipline when category changes
+  const handleCategoryChange = (newCat) => {
+    setCategory(newCat);
+    const available = DISCIPLINES_BY_CATEGORY[newCat] || [];
+    setDisciplineSelect(available[0] || 'Other');
+    setCustomDiscipline('');
+    
+    // Smart title recommendation
+    const catObj = CATEGORIES.find((c) => c.id === newCat);
+    if (!title || title.includes('Championship') || title.includes('Tournament')) {
+      const year = new Date().getFullYear();
+      setTitle(`${catObj?.name.split('&')[0].trim()} Championship ${year}`);
     }
   };
 
-  // Add custom question
-  const handleAddField = () => {
-    const newId = `custom_field_${Date.now()}`;
+  const getEffectiveDiscipline = () => {
+    if (disciplineSelect.includes('Other') && customDiscipline.trim()) {
+      return customDiscipline.trim();
+    }
+    return disciplineSelect;
+  };
+
+  // Form builder actions
+  const addFormField = () => {
     const newField = {
-      id: newId,
-      label: 'New Question',
+      id: `field_${Date.now()}`,
+      label: 'New Question Title',
       type: 'text',
-      required: false,
       placeholder: 'Enter answer...',
-      options: ['Option 1', 'Option 2'],
+      required: false,
     };
-    setCustomFields((prev) => [...prev, newField]);
+    setFormFields([...formFields, newField]);
   };
 
-  const handleUpdateField = (index, key, val) => {
-    setCustomFields((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [key]: val };
-      return copy;
-    });
+  const removeFormField = (idx) => {
+    setFormFields(formFields.filter((_, i) => i !== idx));
   };
 
-  const handleDeleteField = (index) => {
-    setCustomFields((prev) => prev.filter((_, i) => i !== index));
+  const updateFormField = (idx, key, value) => {
+    const copy = [...formFields];
+    copy[idx][key] = value;
+    setFormFields(copy);
   };
 
-  const handleAddOption = (fieldIndex) => {
-    setCustomFields((prev) => {
-      const copy = [...prev];
-      const opts = copy[fieldIndex].options || [];
-      copy[fieldIndex] = {
-        ...copy[fieldIndex],
-        options: [...opts, `Option ${opts.length + 1}`],
-      };
-      return copy;
-    });
-  };
-
-  const handleDeleteOption = (fieldIndex, optIndex) => {
-    setCustomFields((prev) => {
-      const copy = [...prev];
-      const opts = copy[fieldIndex].options.filter((_, i) => i !== optIndex);
-      copy[fieldIndex] = { ...copy[fieldIndex], options: opts };
-      return copy;
-    });
-  };
-
-  // Step Validation before advancing
-  const canProceedStep = () => {
-    if (currentStep === 1) {
-      return title.trim().length > 0 && sport.trim().length > 0;
+  // Step 1 Validation
+  const validateStep1 = () => {
+    if (!title.trim()) {
+      showToast('Please enter an official tournament title', 'error');
+      return false;
     }
-    if (currentStep === 2) {
-      return venue.trim().length > 0 && startDate && endDate;
+    if (disciplineSelect.includes('Other') && !customDiscipline.trim()) {
+      showToast('Please specify the custom sport / discipline name', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  // Step 2 Validation
+  const validateStep2 = () => {
+    if (!venue.trim()) {
+      showToast('Please specify an event venue or online lobby URL', 'error');
+      return false;
+    }
+    if (!startDate) {
+      showToast('Please choose a start date', 'error');
+      return false;
     }
     return true;
   };
 
   // Final Submit
-  const handleCreateTournament = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!title.trim() || !sport.trim()) {
-      showToast('Please provide a tournament title and sport category.', 'error');
-      setCurrentStep(1);
-      return;
-    }
-
-    setSubmitting(true);
+  const handleLaunchTournament = async () => {
+    setLoading(true);
     try {
       const payload = {
         title: title.trim(),
         description: description.trim(),
-        sport: sport.trim(),
-        format: format.trim(),
+        sport: getEffectiveDiscipline(),
+        category,
+        competitionType,
+        teamSize: competitionType === 'TEAM' ? Number(teamSize) : 1,
+        scoringType,
+        credentialsEnabled,
+        isVirtual,
+        format,
         venue: venue.trim(),
         startDate,
         endDate,
         registrationDeadline,
         maxParticipants: Number(maxParticipants) || 16,
-        customFormSchema: JSON.stringify(customFields),
-        linkedBadgeGoldId: linkedBadgeGoldId ? Number(linkedBadgeGoldId) : null,
-        linkedBadgeSilverId: linkedBadgeSilverId ? Number(linkedBadgeSilverId) : null,
-        linkedBadgeBronzeId: linkedBadgeBronzeId ? Number(linkedBadgeBronzeId) : null,
-        linkedCertificateTemplate,
+        customFormSchema: JSON.stringify(formFields),
+        linkedBadgeGoldId: credentialsEnabled && goldBadgeId ? Number(goldBadgeId) : null,
+        linkedBadgeSilverId: credentialsEnabled && silverBadgeId ? Number(silverBadgeId) : null,
+        linkedBadgeBronzeId: credentialsEnabled && bronzeBadgeId ? Number(bronzeBadgeId) : null,
+        linkedCertificateTemplate: credentialsEnabled ? certTemplate : null,
       };
 
       const res = await createTournament(payload);
       setCreatedTournament(res.data);
-      setSuccessModalOpen(true);
-      showToast('Tournament successfully published on the official registry!', 'success');
+      setPostLaunchModalOpen(true);
+      showToast('Tournament created successfully!', 'success');
     } catch (err) {
-      console.error('Failed to create tournament:', err);
-      showToast(err.response?.data?.message || err.message || 'Failed to create tournament', 'error');
+      showToast(err.response?.data?.message || 'Failed to create tournament', 'error');
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const stepsMeta = [
-    { num: 1, label: 'Discipline & Event', subtitle: 'Title, sport & format' },
-    { num: 2, label: 'Schedule & Venue', subtitle: 'Dates & capacity' },
-    { num: 3, label: 'Registration Form', subtitle: 'Google Forms builder' },
-    { num: 4, label: 'Medals & Awards', subtitle: 'Badges & certificates' },
-    { num: 5, label: 'Review & Launch', subtitle: 'Final verification' },
-  ];
-
-  if (!isInstitution) {
-    return (
-      <div className="max-w-xl mx-auto py-16 px-4">
-        <Card className="p-8 sm:p-10 border border-stone-200/90 shadow-2xl text-center space-y-6 bg-white">
-          <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center mx-auto shadow-xs">
-            <Building2 className="w-8 h-8" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black text-stone-900">
-              Institution Accreditation Required
-            </h2>
-            <p className="text-sm text-stone-500 max-w-md mx-auto">
-              Tournament organization, credential issuance, and official fixture hosting are reserved for verified academies and federations.
-            </p>
-          </div>
-          <Button
-            variant="dark"
-            size="lg"
-            className="w-full"
-            onClick={() => navigate('/login', { state: { mode: 'institution' } })}
-          >
-            Sign In to Institution Gateway
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20">
-
-      {/* ── TOP HEADER ── */}
-      <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 font-sans">
+      
+      {/* ── TOP BREADCRUMB & HEADER ── */}
+      <div className="flex items-center justify-between border-b border-stone-200 pb-4">
         <div className="flex items-center gap-3">
           <Link
             to="/tournaments"
-            className="p-2 rounded-xl text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors"
-            title="Return to Tournaments"
+            className="p-1.5 rounded-xl hover:bg-stone-100 text-stone-500 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-800 border border-amber-500/20">
-                Organizer Wizard
-              </span>
-              <span className="text-xs text-stone-400">·</span>
-              <span className="text-xs font-bold text-stone-500">End-to-End Workflow</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight mt-0.5 flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
               <Trophy className="w-6 h-6 text-amber-600" />
-              <span>Create Official Tournament</span>
+              <span>Organize a Tournament</span>
             </h1>
+            <p className="text-xs text-stone-500 font-medium">
+              Enterprise step-by-step tournament setup for sports, esports, academic and corporate events.
+            </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            icon={Eye}
-            onClick={() => setPreviewModalOpen(true)}
-            className="font-bold border-stone-300"
-          >
-            Preview Athlete Form
-          </Button>
         </div>
       </div>
 
-      {/* ── STEPPER PROGRESS BAR ── */}
-      <div className="bg-white border border-stone-200/90 rounded-2xl p-4 shadow-xs">
+      {/* ── STEP PROGRESS BAR ── */}
+      <div className="bg-white border border-stone-200/90 rounded-2xl p-3 shadow-2xs">
         <div className="grid grid-cols-5 gap-2">
-          {stepsMeta.map((s) => {
-            const isCompleted = s.num < currentStep;
-            const isCurrent = s.num === currentStep;
+          {[
+            { num: 1, title: 'Discipline & Scope' },
+            { num: 2, title: 'Schedule & Venue' },
+            { num: 3, title: 'Form Builder' },
+            { num: 4, title: 'Credentials' },
+            { num: 5, title: 'Review & Launch' },
+          ].map((s) => {
+            const isDone = currentStep > s.num;
+            const isCurrent = currentStep === s.num;
+
             return (
-              <button
+              <div
                 key={s.num}
-                type="button"
-                onClick={() => {
-                  if (s.num < currentStep || canProceedStep()) {
-                    setCurrentStep(s.num);
-                  }
-                }}
-                className={`text-left p-2 rounded-xl transition-all border ${
+                className={`flex items-center gap-2 p-2 rounded-xl transition-all ${
                   isCurrent
-                    ? 'border-amber-500 bg-amber-50/70 shadow-xs'
-                    : isCompleted
-                    ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50'
-                    : 'border-transparent text-stone-400 hover:text-stone-600'
+                    ? 'bg-stone-900 text-white font-black shadow-xs'
+                    : isDone
+                      ? 'bg-stone-100 text-stone-800 font-bold'
+                      : 'text-stone-400'
                 }`}
               >
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span
-                    className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center shrink-0 ${
-                      isCurrent
-                        ? 'bg-amber-600 text-white'
-                        : isCompleted
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-stone-200 text-stone-600'
-                    }`}
-                  >
-                    {isCompleted ? <Check className="w-3 h-3 stroke-[3]" /> : s.num}
-                  </span>
-                  <span
-                    className={`text-xs font-black truncate ${
-                      isCurrent ? 'text-amber-950' : isCompleted ? 'text-emerald-950' : 'text-stone-500'
-                    }`}
-                  >
-                    {s.label}
-                  </span>
+                <div
+                  className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                    isCurrent
+                      ? 'bg-amber-500 text-stone-950'
+                      : isDone
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-stone-200 text-stone-500'
+                  }`}
+                >
+                  {isDone ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : s.num}
                 </div>
-                <p className="text-[10px] text-stone-500 hidden sm:block truncate pl-6">
-                  {s.subtitle}
-                </p>
-              </button>
+                <span className="text-[11px] truncate hidden md:inline">{s.title}</span>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* ── STEP CONTENT AREA ── */}
-      <div className="space-y-6">
-
-        {/* ── STEP 1: EVENT DETAILS & SPORT DISCIPLINE ── */}
-        {currentStep === 1 && (
-          <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in duration-150">
-            <div className="border-b border-stone-100 pb-4">
-              <h2 className="text-lg font-black text-stone-900 flex items-center gap-2">
-                <span>Step 1: Event Details & Sport Discipline</span>
-              </h2>
-              <p className="text-xs text-stone-500 mt-1">
-                Name your competition, select the official discipline, and define the bracket format.
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              <Input
-                label="Tournament Title *"
-                placeholder="e.g. Athlos National Track & Field Championship 2026"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-
-              {/* Sport Category Selection Grid */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-stone-800">
-                  Select Sport Discipline *
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {SPORT_CATEGORIES.map((s) => {
-                    const isSelected = sport === s.id;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => {
-                          setSport(s.id);
-                          handleApplyPreset(s.preset);
-                        }}
-                        className={`p-3 rounded-2xl border text-left transition-all flex items-center gap-2.5 group ${
-                          isSelected
-                            ? 'border-amber-500 bg-amber-50 text-amber-950 font-black shadow-xs ring-2 ring-amber-500/20'
-                            : 'border-stone-200 hover:border-amber-300 bg-stone-50/50 hover:bg-stone-50 text-stone-700 font-bold'
-                        }`}
-                      >
-                        <span className="text-2xl group-hover:scale-110 transition-transform">
-                          {s.icon}
-                        </span>
-                        <span className="text-xs truncate">{s.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Tournament Format Selector */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-stone-800">
-                  Tournament Format *
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {FORMAT_OPTIONS.map((f) => {
-                    const isSelected = format === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() => setFormat(f.id)}
-                        className={`p-3.5 rounded-2xl border text-left transition-all space-y-1 ${
-                          isSelected
-                            ? 'border-amber-500 bg-amber-50/70 shadow-xs ring-2 ring-amber-500/20'
-                            : 'border-stone-200 hover:border-stone-300 bg-stone-50/30 text-stone-700'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className={`text-xs font-black ${isSelected ? 'text-amber-950' : 'text-stone-900'}`}>
-                            {f.label}
-                          </span>
-                          {isSelected && (
-                            <span className="w-2 h-2 rounded-full bg-amber-600" />
-                          )}
-                        </div>
-                        <p className="text-[11px] text-stone-500 leading-relaxed">
-                          {f.desc}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <TextArea
-                label="Tournament Description & Competition Rules"
-                placeholder="Detail the eligibility guidelines, reporting schedule, scoring rules, and gear guidelines..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
+      {/* ── STEP 1: CLASSIFICATION & EVENT SCOPE ── */}
+      {currentStep === 1 && (
+        <div className="bg-white rounded-3xl border border-stone-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
+          <div>
+            <h2 className="text-lg font-black text-stone-900">
+              Step 1: Event Classification & Competition Scope
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Select the primary category and competition discipline to configure sport-specific rules and formats.
+            </p>
           </div>
-        )}
 
-        {/* ── STEP 2: SCHEDULE & CAPACITY ── */}
-        {currentStep === 2 && (
-          <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in duration-150">
-            <div className="border-b border-stone-100 pb-4">
-              <h2 className="text-lg font-black text-stone-900">
-                Step 2: Dates, Schedule & Athlete Capacity
-              </h2>
-              <p className="text-xs text-stone-500 mt-1">
-                Set venue location, competition dates, registration deadline, and max player slots.
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              <Input
-                label="Venue / Stadium / Arena Location *"
-                placeholder="e.g. National Athletic Stadium - Arena Track 4"
-                value={venue}
-                onChange={(e) => setVenue(e.target.value)}
-                required
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Tournament Start Date *"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  required
-                />
-                <Input
-                  label="Tournament End Date *"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Athlete Registration Deadline"
-                  type="date"
-                  value={registrationDeadline}
-                  onChange={(e) => setRegistrationDeadline(e.target.value)}
-                />
-
-                <div className="space-y-1.5">
-                  <label className="block text-sm font-semibold text-stone-800">
-                    Maximum Participant Capacity
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {[8, 16, 32, 64].map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => setMaxParticipants(size)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                          maxParticipants === size
-                            ? 'border-amber-500 bg-amber-50 text-amber-950 font-black shadow-xs'
-                            : 'border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100'
-                        }`}
-                      >
-                        {size} Slots
-                      </button>
-                    ))}
-                    <input
-                      type="number"
-                      min="2"
-                      max="512"
-                      value={maxParticipants}
-                      onChange={(e) => setMaxParticipants(e.target.value)}
-                      className="w-20 px-3 py-2 rounded-xl border border-stone-200 text-xs font-bold text-center"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 3: REGISTRATION FORM BUILDER ── */}
-        {currentStep === 3 && (
-          <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in duration-150">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
-              <div>
-                <h2 className="text-lg font-black text-stone-900">
-                  Step 3: Custom Registration Form (Google Forms Style)
-                </h2>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  Customize the exact fields and questions athletes must answer when registering.
-                </p>
-              </div>
-
-              {/* 1-Click Preset Loaders */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] font-bold text-stone-400 uppercase">Presets:</span>
-                <button
-                  type="button"
-                  onClick={() => handleApplyPreset('ATHLETICS')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200"
-                >
-                  🏃 Athletics
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyPreset('FOOTBALL')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-800"
-                >
-                  ⚽ Football
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyPreset('ESPORTS')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-800"
-                >
-                  🎮 Esports
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyPreset('GENERAL')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-stone-100 hover:bg-stone-200 text-stone-800"
-                >
-                  📋 General
-                </button>
-              </div>
-            </div>
-
-            {/* Standard Defaults Note */}
-            <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/70 text-xs text-amber-900 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>Standard fields (Athlete Full Name, Email Address, and Phone Number) are automatically captured on every registration.</span>
-            </div>
-
-            {/* Questions List */}
-            <div className="space-y-3.5">
-              {customFields.map((field, idx) => (
-                <div
-                  key={field.id || idx}
-                  className="p-4 rounded-2xl bg-stone-50 border border-stone-200 hover:border-amber-400 transition-all space-y-3"
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
-                      <span className="w-6 h-6 rounded-lg bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <input
-                        type="text"
-                        value={field.label}
-                        onChange={(e) => handleUpdateField(idx, 'label', e.target.value)}
-                        placeholder="Question title (e.g. Bib Number, Jersey Size...)"
-                        className="flex-1 font-bold text-stone-900 text-sm bg-transparent border-b border-dashed border-stone-300 focus:border-amber-500 focus:outline-none px-1 py-0.5"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      <select
-                        value={field.type}
-                        onChange={(e) => handleUpdateField(idx, 'type', e.target.value)}
-                        className="px-2.5 py-1 text-xs font-bold rounded-lg border border-stone-300 bg-white text-stone-800 focus:ring-1 focus:ring-amber-500"
-                      >
-                        <option value="text">Short Text</option>
-                        <option value="number">Number</option>
-                        <option value="select">Dropdown Choices</option>
-                        <option value="checkbox">Checkbox (Yes/No)</option>
-                      </select>
-
-                      <label className="flex items-center gap-1 text-xs font-semibold text-stone-600 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={field.required}
-                          onChange={(e) => handleUpdateField(idx, 'required', e.target.checked)}
-                          className="rounded border-stone-300 text-stone-900 focus:ring-amber-500"
-                        />
-                        <span>Required</span>
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteField(idx)}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Delete Question"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {field.type === 'select' && (
-                    <div className="pl-8 space-y-1.5 pt-1">
-                      <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
-                        Options:
-                      </span>
-                      <div className="flex flex-wrap gap-2 items-center">
-                        {(field.options || []).map((opt, optIdx) => (
-                          <span
-                            key={optIdx}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-stone-200 text-xs font-medium text-stone-800"
-                          >
-                            <span>{opt}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteOption(idx, optIdx)}
-                              className="text-stone-400 hover:text-rose-600 ml-1"
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => handleAddOption(idx)}
-                          className="px-2 py-1 rounded-lg bg-stone-200 hover:bg-amber-100 text-stone-700 hover:text-amber-900 text-xs font-bold transition-colors"
-                        >
-                          + Add Option
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {field.type !== 'select' && field.type !== 'checkbox' && (
-                    <div className="pl-8">
-                      <input
-                        type="text"
-                        value={field.placeholder || ''}
-                        onChange={(e) => handleUpdateField(idx, 'placeholder', e.target.value)}
-                        placeholder="Hint placeholder for athlete..."
-                        className="w-full text-xs text-stone-500 bg-transparent border-b border-stone-200 focus:border-stone-400 focus:outline-none px-1 py-0.5"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              icon={Plus}
-              onClick={handleAddField}
-              className="w-full py-2.5 font-bold border-dashed border-stone-300 hover:border-amber-500"
-            >
-              Add Custom Question
-            </Button>
-          </div>
-        )}
-
-        {/* ── STEP 4: MEDALS & CERTIFICATES ── */}
-        {currentStep === 4 && (
-          <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in duration-150">
-            <div className="border-b border-stone-100 pb-4">
-              <h2 className="text-lg font-black text-stone-900">
-                Step 4: Link Official Medals & Certificate Templates
-              </h2>
-              <p className="text-xs text-stone-500 mt-1">
-                Connect verified athlete badges and cryptographic certificate templates to be conferred upon tournament conclusion.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {/* Podium Medals linking */}
-              <div className="space-y-2">
-                <label className="block text-sm font-semibold text-stone-800">
-                  Podium Badges (Conferred to Athlete Social Profiles)
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* 1st Place Gold */}
-                  <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-900">
-                      <span>🥇 1st Place Gold Medal</span>
-                    </div>
-                    <select
-                      value={linkedBadgeGoldId}
-                      onChange={(e) => setLinkedBadgeGoldId(e.target.value)}
-                      className="w-full px-2.5 py-2 text-xs font-bold rounded-xl border border-amber-300 bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    >
-                      <option value="">-- Auto-Generate Gold Medal --</option>
-                      {availableBadges.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name} (Rank #{b.rank})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 2nd Place Silver */}
-                  <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-stone-800">
-                      <span>🥈 2nd Place Silver Medal</span>
-                    </div>
-                    <select
-                      value={linkedBadgeSilverId}
-                      onChange={(e) => setLinkedBadgeSilverId(e.target.value)}
-                      className="w-full px-2.5 py-2 text-xs font-bold rounded-xl border border-stone-300 bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    >
-                      <option value="">-- Auto-Generate Silver Medal --</option>
-                      {availableBadges.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name} (Rank #{b.rank})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 3rd Place Bronze */}
-                  <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-200/60 space-y-2">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-800">
-                      <span>🥉 3rd Place Bronze Medal</span>
-                    </div>
-                    <select
-                      value={linkedBadgeBronzeId}
-                      onChange={(e) => setLinkedBadgeBronzeId(e.target.value)}
-                      className="w-full px-2.5 py-2 text-xs font-bold rounded-xl border border-amber-200 bg-white text-stone-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                    >
-                      <option value="">-- Auto-Generate Bronze Medal --</option>
-                      {availableBadges.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name} (Rank #{b.rank})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Certificate Template Selection */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-semibold text-stone-800">
-                    Official Certificate Style
-                  </label>
-                  <Link
-                    to="/certificates/create"
-                    target="_blank"
-                    className="text-xs font-bold text-amber-800 hover:text-amber-950 flex items-center gap-1"
+          {/* 1.1 Category Cards */}
+          <div className="space-y-2">
+            <label className="block text-xs font-black text-stone-800 uppercase tracking-wider">
+              1. Event Domain / Category
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+              {CATEGORIES.map((c) => {
+                const isSelected = category === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleCategoryChange(c.id)}
+                    className={`p-3 rounded-2xl text-left border transition-all space-y-1.5 ${
+                      isSelected
+                        ? 'bg-stone-900 text-white border-stone-900 shadow-md ring-2 ring-amber-400/40'
+                        : 'bg-stone-50 hover:bg-white border-stone-200 text-stone-700'
+                    }`}
                   >
-                    <span>Design custom in Creator Studio</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { id: 'CHAMPIONSHIP_GOLD', name: 'Imperial Gold Luxury', desc: 'Filigree gold border, gold medal seal & watermark' },
-                    { id: 'EXECUTIVE_MEDAL', name: 'Royal Silver Medalist', desc: 'Precision silver double frame with official laurel wreath' },
-                    { id: 'CLASSIC_VERIFIED', name: 'Emerald Crest Diploma', desc: 'Formal academic green border with verification QR seal' },
-                  ].map((tmpl) => {
-                    const isSelected = linkedCertificateTemplate === tmpl.id;
-                    return (
-                      <button
-                        key={tmpl.id}
-                        type="button"
-                        onClick={() => setLinkedCertificateTemplate(tmpl.id)}
-                        className={`p-4 rounded-2xl border text-left transition-all space-y-1.5 ${
-                          isSelected
-                            ? 'border-amber-500 bg-amber-50/70 ring-2 ring-amber-500/20 shadow-xs'
-                            : 'border-stone-200 hover:border-stone-300 bg-stone-50/30'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-stone-900">{tmpl.name}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-amber-600" />}
-                        </div>
-                        <p className="text-[11px] text-stone-500 leading-relaxed">{tmpl.desc}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Participation Certificate Toggle */}
-              <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-xs font-bold text-stone-900">
-                    Auto-Issue Official Participation Credentials
-                  </h4>
-                  <p className="text-[11px] text-stone-500">
-                    Every athlete who competes will receive an authentic verified certificate recorded on the public registry.
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={awardParticipationCerts}
-                  onChange={(e) => setAwardParticipationCerts(e.target.checked)}
-                  className="w-5 h-5 rounded border-stone-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
-                />
-              </div>
+                    <div className="text-2xl">{c.emoji}</div>
+                    <div className="text-xs font-black truncate">{c.name.split('&')[0]}</div>
+                    <div className={`text-[10px] line-clamp-2 ${isSelected ? 'text-stone-300' : 'text-stone-500'}`}>
+                      {c.desc}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
 
-        {/* ── STEP 5: REVIEW & PUBLISH ── */}
-        {currentStep === 5 && (
-          <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in duration-150">
-            <div className="border-b border-stone-100 pb-4">
-              <h2 className="text-lg font-black text-stone-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-600" />
-                <span>Step 5: Review & Publish Official Tournament</span>
-              </h2>
-              <p className="text-xs text-stone-500 mt-1">
-                Verify all tournament details before opening public registrations on the platform.
-              </p>
+          {/* 1.2 Discipline Select & Custom Fallback */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div>
+              <label className="block text-xs font-black text-stone-800 uppercase tracking-wider mb-1.5">
+                2. Sub-Discipline / Sport
+              </label>
+              <select
+                value={disciplineSelect}
+                onChange={(e) => setDisciplineSelect(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-sm font-bold text-stone-900 focus:outline-none focus:border-amber-500"
+              >
+                {(DISCIPLINES_BY_CATEGORY[category] || []).map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </div>
 
-            {/* Comprehensive Review Card */}
-            <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200/90 space-y-5">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-200 pb-4">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                    {sport}
-                  </span>
-                  <h3 className="text-xl font-black text-stone-900 mt-1">
-                    {title || 'Untitled Tournament'}
-                  </h3>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Format: <span className="font-bold text-stone-700">{format}</span>
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold text-stone-500 block">Maximum Capacity</span>
-                  <span className="text-lg font-black text-stone-900">{maxParticipants} Athletes</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="space-y-1">
-                  <span className="font-bold text-stone-500 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-stone-400" /> Competition Dates
-                  </span>
-                  <p className="font-black text-stone-800">{startDate} to {endDate}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="font-bold text-stone-500 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-stone-400" /> Official Venue
-                  </span>
-                  <p className="font-black text-stone-800">{venue}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="font-bold text-stone-500 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-stone-400" /> Registration Deadline
-                  </span>
-                  <p className="font-black text-stone-800">{registrationDeadline || 'Open until event'}</p>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-stone-200 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <span className="font-bold text-stone-500 block mb-1">
-                    Custom Registration Questions ({customFields.length}):
-                  </span>
-                  <ul className="list-disc list-inside text-stone-700 space-y-0.5">
-                    {customFields.slice(0, 4).map((f, i) => (
-                      <li key={i} className="truncate">
-                        {f.label} {f.required && <span className="text-rose-500 font-bold">*</span>}
-                      </li>
-                    ))}
-                    {customFields.length > 4 && (
-                      <li className="text-stone-400 italic">+{customFields.length - 4} more questions</li>
-                    )}
-                  </ul>
-                </div>
-
-                <div>
-                  <span className="font-bold text-stone-500 block mb-1">Awards & Credentials:</span>
-                  <p className="text-stone-700">🥇 Gold, 🥈 Silver, 🥉 Bronze Badges linked</p>
-                  <p className="text-stone-700">📜 Official Certificate: <span className="font-bold">{linkedCertificateTemplate}</span></p>
-                  {awardParticipationCerts && (
-                    <p className="text-emerald-700 font-bold mt-1">✓ Participation certificates to all athletes</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {description && (
-              <div className="p-4 rounded-xl bg-white border border-stone-200 text-xs text-stone-600">
-                <span className="font-bold text-stone-800 block mb-1">Guidelines:</span>
-                <p className="line-clamp-3 leading-relaxed">{description}</p>
+            {disciplineSelect.includes('Other') && (
+              <div>
+                <label className="block text-xs font-black text-stone-800 uppercase tracking-wider mb-1.5">
+                  Specify Custom Discipline Name
+                </label>
+                <input
+                  type="text"
+                  value={customDiscipline}
+                  onChange={(e) => setCustomDiscipline(e.target.value)}
+                  placeholder="e.g. Weightlifting, Speedcubing, Archery"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300 bg-amber-50/20 text-sm font-bold text-stone-900 focus:outline-none focus:border-amber-500"
+                />
               </div>
             )}
           </div>
-        )}
 
-      </div>
+          {/* 1.3 Competition Mode: Individual vs Team */}
+          <div className="space-y-2 pt-2 border-t border-stone-100">
+            <label className="block text-xs font-black text-stone-800 uppercase tracking-wider">
+              3. Competition Mode
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setCompetitionType('INDIVIDUAL')}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                  competitionType === 'INDIVIDUAL'
+                    ? 'border-amber-500 bg-amber-50/40 ring-2 ring-amber-400/20'
+                    : 'border-stone-200 hover:border-stone-300 bg-white'
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center font-black shrink-0">
+                  👤
+                </div>
+                <div>
+                  <span className="block text-sm font-black text-stone-900">
+                    Solo Competitors (Singles / 1v1)
+                  </span>
+                  <span className="block text-xs text-stone-500 mt-0.5">
+                    Individual athletes or participants compete directly.
+                  </span>
+                </div>
+              </button>
 
-      {/* ── BOTTOM NAVIGATION CONTROLS ── */}
-      <div className="flex items-center justify-between pt-4 border-t border-stone-200">
-        {currentStep > 1 ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            icon={ArrowLeft}
-            onClick={() => setCurrentStep((prev) => prev - 1)}
-          >
-            Previous Step
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            onClick={() => navigate('/tournaments')}
-          >
-            Cancel
-          </Button>
-        )}
+              <button
+                type="button"
+                onClick={() => setCompetitionType('TEAM')}
+                className={`p-4 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                  competitionType === 'TEAM'
+                    ? 'border-amber-500 bg-amber-50/40 ring-2 ring-amber-400/20'
+                    : 'border-stone-200 hover:border-stone-300 bg-white'
+                }`}
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-black shrink-0">
+                  👥
+                </div>
+                <div>
+                  <span className="block text-sm font-black text-stone-900">
+                    Teams / Squads
+                  </span>
+                  <span className="block text-xs text-stone-500 mt-0.5">
+                    Rosters of 2 or more players per team (e.g. doubles, 5v5, 11v11).
+                  </span>
+                </div>
+              </button>
+            </div>
 
-        {currentStep < totalSteps ? (
-          <Button
-            type="button"
-            variant="dark"
-            size="md"
-            disabled={!canProceedStep()}
-            onClick={() => setCurrentStep((prev) => prev + 1)}
-            className="flex items-center gap-1.5 font-bold"
-          >
-            <span>Next: {stepsMeta[currentStep].label}</span>
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="gold"
-            size="lg"
-            loading={submitting}
-            icon={Trophy}
-            onClick={handleCreateTournament}
-            className="font-black shadow-lg hover:scale-105"
-          >
-            🚀 Launch Tournament & Open Registration
-          </Button>
-        )}
-      </div>
+            {competitionType === 'TEAM' && (
+              <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200 max-w-xs space-y-1">
+                <label className="block text-xs font-bold text-stone-700">
+                  Standard Squad Size (Players per Team)
+                </label>
+                <input
+                  type="number"
+                  min="2"
+                  max="50"
+                  value={teamSize}
+                  onChange={(e) => setTeamSize(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-white"
+                />
+              </div>
+            )}
+          </div>
 
-      {/* ── PREVIEW ATHLETE GOOGLE FORM MODAL ── */}
-      <Modal
-        isOpen={previewModalOpen}
-        onClose={() => setPreviewModalOpen(false)}
-        title="Live Preview: Athlete Registration Form"
-        size="md"
-      >
-        <div className="space-y-4">
-          <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-1">
-            <h4 className="text-xs font-black text-amber-950 uppercase tracking-wider">
-              {title || 'Tournament Name Preview'}
-            </h4>
-            <p className="text-xs text-stone-600 font-medium">
-              This is the exact Google-Form-style registration page presented to athletes.
+          {/* 1.4 Title & Description */}
+          <div className="space-y-4 pt-2 border-t border-stone-100">
+            <div>
+              <label className="block text-xs font-black text-stone-800 uppercase tracking-wider mb-1.5">
+                4. Official Tournament Title <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. National Athletics Championship 2026"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-bold text-stone-900 focus:outline-none focus:border-amber-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-stone-800 uppercase tracking-wider mb-1.5">
+                Overview & Official Rules
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                placeholder="Provide event overview, rules, eligibility criteria, and scoring guidelines..."
+                className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-xs font-medium text-stone-800 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* Step 1 Actions */}
+          <div className="pt-4 border-t border-stone-100 flex justify-end">
+            <Button
+              variant="dark"
+              size="md"
+              icon={ArrowRight}
+              iconPosition="right"
+              onClick={() => {
+                if (validateStep1()) setCurrentStep(2);
+              }}
+              className="font-bold shadow-xs"
+            >
+              Continue to Schedule & Format →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 2: FORMAT, SCORING, SCHEDULE & VENUE ── */}
+      {currentStep === 2 && (
+        <div className="bg-white rounded-3xl border border-stone-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
+          <div>
+            <h2 className="text-lg font-black text-stone-900">
+              Step 2: Tournament Format, Scoring & Schedule
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Choose your competitive bracket structure, scoring methodology, and venue arrangements.
+            </p>
+          </div>
+
+          {/* 2.1 Tournament Format */}
+          <div className="space-y-2">
+            <label className="block text-xs font-black text-stone-800 uppercase tracking-wider">
+              1. Competition Structure / Bracket Format
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {FORMATS.map((f) => {
+                const isSelected = format === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFormat(f.id)}
+                    className={`p-4 rounded-2xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-amber-500 bg-amber-50/40 ring-2 ring-amber-400/20'
+                        : 'border-stone-200 hover:border-stone-300 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-black text-stone-900">{f.name}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                        {f.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-500">{f.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2.2 Scoring System */}
+          <div className="space-y-2 pt-2 border-t border-stone-100">
+            <label className="block text-xs font-black text-stone-800 uppercase tracking-wider">
+              2. Match Scoring Methodology
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {SCORING_TYPES.map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => setScoringType(st.id)}
+                  className={`p-3.5 rounded-2xl border text-left transition-all ${
+                    scoringType === st.id
+                      ? 'border-stone-900 bg-stone-900 text-white shadow-xs'
+                      : 'border-stone-200 hover:border-stone-300 bg-white text-stone-800'
+                  }`}
+                >
+                  <span className="block text-xs font-black">{st.name}</span>
+                  <span className={`block text-[11px] mt-0.5 ${scoringType === st.id ? 'text-stone-300' : 'text-stone-500'}`}>
+                    {st.example}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 2.3 Venue: Physical vs Virtual */}
+          <div className="space-y-3 pt-2 border-t border-stone-100">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-black text-stone-800 uppercase tracking-wider">
+                3. Venue Location
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsVirtual(false)}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                    !isVirtual ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  📍 Physical Venue
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsVirtual(true);
+                    if (!venue || venue.includes('Stadium')) setVenue('Online Lobby / Discord Server');
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                    isVirtual ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  🌐 Virtual / Online URL
+                </button>
+              </div>
+            </div>
+
+            <input
+              type="text"
+              value={venue}
+              onChange={(e) => setVenue(e.target.value)}
+              placeholder={isVirtual ? 'e.g. Discord: discord.gg/esports-arena or Custom Lobby URL' : 'e.g. National Athletic Stadium, Track 4'}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm font-bold text-stone-900 focus:outline-none focus:border-amber-500"
+              required
+            />
+          </div>
+
+          {/* 2.4 Schedule & Capacity */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-stone-100">
+            <Input
+              label="Start Date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
+            <Input
+              label="End Date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              required
+            />
+            <Input
+              label="Registration Cutoff"
+              type="date"
+              value={registrationDeadline}
+              onChange={(e) => setRegistrationDeadline(e.target.value)}
+            />
+            <Input
+              label={`Max ${competitionType === 'TEAM' ? 'Teams' : 'Athletes'}`}
+              type="number"
+              min="2"
+              max="256"
+              value={maxParticipants}
+              onChange={(e) => setMaxParticipants(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Step 2 Actions */}
+          <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setCurrentStep(1)}
+            >
+              ← Back
+            </Button>
+            <Button
+              variant="dark"
+              size="md"
+              icon={ArrowRight}
+              iconPosition="right"
+              onClick={() => {
+                if (validateStep2()) setCurrentStep(3);
+              }}
+              className="font-bold shadow-xs"
+            >
+              Continue to Registration Form Builder →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3: REGISTRATION CHANNELS & FORM BUILDER ── */}
+      {currentStep === 3 && (
+        <div className="bg-white rounded-3xl border border-stone-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
+          <div>
+            <h2 className="text-lg font-black text-stone-900">
+              Step 3: Custom Athlete / Team Questionnaire
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Build custom questionnaire fields that competitors will fill out upon web registration.
             </p>
           </div>
 
           <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-700">Athlete Full Name *</label>
-              <input disabled placeholder="Indrajeet Patil" className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-stone-700">Email Address *</label>
-              <input disabled placeholder="athlete@example.com" className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs" />
-            </div>
-          </div>
+            {formFields.map((f, i) => (
+              <div
+                key={f.id || i}
+                className="p-4 rounded-2xl bg-stone-50 border border-stone-200 hover:border-amber-400 transition-all space-y-2"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="w-6 h-6 rounded-lg bg-stone-200 text-stone-700 text-xs font-bold flex items-center justify-center shrink-0">
+                      {i + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={f.label}
+                      onChange={(e) => updateFormField(i, 'label', e.target.value)}
+                      className="flex-1 font-black text-sm text-stone-900 bg-transparent border-b border-dashed border-stone-300 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
 
-          <div className="pt-2 border-t border-stone-200 space-y-3">
-            <span className="text-[11px] font-black uppercase tracking-wider text-amber-900 block">
-              Custom Questions:
-            </span>
-            {customFields.map((f, i) => (
-              <div key={i} className="space-y-1">
-                <label className="text-xs font-bold text-stone-800">
-                  {f.label} {f.required && <span className="text-rose-500">*</span>}
-                </label>
-                {f.type === 'select' ? (
-                  <select disabled className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs">
-                    {(f.options || []).map((opt, oi) => (
-                      <option key={oi}>{opt}</option>
-                    ))}
-                  </select>
-                ) : f.type === 'checkbox' ? (
-                  <label className="flex items-center gap-2 text-xs text-stone-700 font-medium">
-                    <input type="checkbox" disabled checked />
-                    <span>{f.placeholder || f.label}</span>
-                  </label>
-                ) : (
-                  <input disabled placeholder={f.placeholder} className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs" />
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={f.type}
+                      onChange={(e) => updateFormField(i, 'type', e.target.value)}
+                      className="px-2.5 py-1 text-xs font-bold rounded-lg border border-stone-300 bg-white"
+                    >
+                      <option value="text">Text Input</option>
+                      <option value="number">Numeric</option>
+                      <option value="select">Dropdown</option>
+                      <option value="checkbox">Checkbox (Yes/No)</option>
+                    </select>
+
+                    <label className="flex items-center gap-1 text-xs font-semibold text-stone-600">
+                      <input
+                        type="checkbox"
+                        checked={f.required}
+                        onChange={(e) => updateFormField(i, 'required', e.target.checked)}
+                      />
+                      <span>Required</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => removeFormField(i)}
+                      className="p-1 rounded-lg text-stone-400 hover:text-rose-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {f.type !== 'select' && f.type !== 'checkbox' && (
+                  <input
+                    type="text"
+                    value={f.placeholder || ''}
+                    onChange={(e) => updateFormField(i, 'placeholder', e.target.value)}
+                    placeholder="Placeholder / Hint..."
+                    className="w-full text-xs text-stone-500 bg-transparent border-b border-stone-100 pl-8 focus:outline-none"
+                  />
                 )}
               </div>
             ))}
           </div>
 
-          <div className="pt-3 border-t border-stone-200 flex justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            icon={Plus}
+            onClick={addFormField}
+            className="w-full py-2.5 border-dashed font-bold"
+          >
+            + Add Another Custom Questionnaire Question
+          </Button>
+
+          {/* Step 3 Actions */}
+          <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
             <Button
-              type="button"
-              variant="dark"
-              size="sm"
-              onClick={() => setPreviewModalOpen(false)}
+              variant="secondary"
+              size="md"
+              onClick={() => setCurrentStep(2)}
             >
-              Done Previewing
+              ← Back
+            </Button>
+            <Button
+              variant="dark"
+              size="md"
+              icon={ArrowRight}
+              iconPosition="right"
+              onClick={() => setCurrentStep(4)}
+              className="font-bold shadow-xs"
+            >
+              Continue to Credentials Setup →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 4: DIGITAL CREDENTIALS (OPTIONAL) ── */}
+      {currentStep === 4 && (
+        <div className="bg-white rounded-3xl border border-stone-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
+          <div>
+            <h2 className="text-lg font-black text-stone-900">
+              Step 4: Digital Credentials & Badges (Optional)
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Decide whether to auto-issue verified cryptographic badges and tamper-proof certificates upon conclusion.
+            </p>
+          </div>
+
+          {/* Toggle Card */}
+          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="block text-sm font-black text-stone-900">
+                Award Verified Digital Badges & Certificates
+              </span>
+              <span className="block text-xs text-stone-500">
+                Automatically mint Gold, Silver, and Bronze badges and winner certificates into athlete portfolios.
+              </span>
+            </div>
+
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={credentialsEnabled}
+                onChange={(e) => setCredentialsEnabled(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+          </div>
+
+          {!credentialsEnabled ? (
+            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 space-y-2">
+              <span className="text-xs font-black flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-amber-700" />
+                <span>Pure Tournament Mode Active</span>
+              </span>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                This tournament will manage match progression, timetable fixtures, live scores, and official standings without requiring digital certificates or badges. Perfect for internal leagues, scholastic trials, or competitions managing physical trophies.
+              </p>
+            </div>
+          ) : (
+            /* Badge Selection */
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Gold */}
+                <div className="p-3.5 rounded-2xl border border-amber-300 bg-amber-50/30 space-y-1.5">
+                  <span className="text-xs font-black text-amber-900 block">🥇 1st Place Gold Medal</span>
+                  <select
+                    value={goldBadgeId}
+                    onChange={(e) => setGoldBadgeId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-white"
+                  >
+                    <option value="">-- Choose Gold Badge --</option>
+                    {badges.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Silver */}
+                <div className="p-3.5 rounded-2xl border border-stone-300 bg-stone-50/50 space-y-1.5">
+                  <span className="text-xs font-black text-stone-700 block">🥈 2nd Place Silver Medal</span>
+                  <select
+                    value={silverBadgeId}
+                    onChange={(e) => setSilverBadgeId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-white"
+                  >
+                    <option value="">-- Choose Silver Badge --</option>
+                    {badges.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Bronze */}
+                <div className="p-3.5 rounded-2xl border border-amber-200 bg-amber-50/20 space-y-1.5">
+                  <span className="text-xs font-black text-amber-800 block">🥉 3rd Place Bronze Medal</span>
+                  <select
+                    value={bronzeBadgeId}
+                    onChange={(e) => setBronzeBadgeId(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-white"
+                  >
+                    <option value="">-- Choose Bronze Badge --</option>
+                    {badges.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Certificate Template */}
+              <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-2">
+                <label className="block text-xs font-black text-stone-800 uppercase tracking-wider">
+                  Winner Certificate Template
+                </label>
+                <select
+                  value={certTemplate}
+                  onChange={(e) => setCertTemplate(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-stone-300 bg-white"
+                >
+                  <option value="MODERN_GOLD">Modern Gold Champion Certificate</option>
+                  <option value="CLASSIC_NAVY">Classic Athletic Navy Certificate</option>
+                  <option value="MINIMAL_DARK">Minimal Dark Arena Certificate</option>
+                  {templates.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4 Actions */}
+          <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setCurrentStep(3)}
+            >
+              ← Back
+            </Button>
+            <Button
+              variant="dark"
+              size="md"
+              icon={ArrowRight}
+              iconPosition="right"
+              onClick={() => setCurrentStep(5)}
+              className="font-bold shadow-xs"
+            >
+              Review & Launch Tournament →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 5: REVIEW & LAUNCH ── */}
+      {currentStep === 5 && (
+        <div className="bg-white rounded-3xl border border-stone-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
+          <div>
+            <h2 className="text-xl font-black text-stone-900">
+              Step 5: Review & Official Launch
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Confirm all tournament parameters before publishing to the Arena Hub.
+            </p>
+          </div>
+
+          {/* Summary Card */}
+          <div className="p-6 rounded-3xl bg-stone-50 border border-stone-200 space-y-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-900 text-xs font-black uppercase">
+                {category} · {getEffectiveDiscipline()}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700 text-xs font-bold">
+                {competitionType === 'TEAM' ? `Teams (${teamSize}v${teamSize})` : 'Individual Solo'}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700 text-xs font-bold">
+                {format}
+              </span>
+            </div>
+
+            <h3 className="text-2xl font-black text-stone-900">
+              {title}
+            </h3>
+
+            {description && (
+              <p className="text-xs text-stone-600 leading-relaxed">
+                {description}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-stone-200 text-xs text-stone-600 font-semibold">
+              <div>
+                <span className="block text-[10px] text-stone-400 uppercase font-black">Dates</span>
+                <span>{startDate} to {endDate}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] text-stone-400 uppercase font-black">Venue</span>
+                <span className="truncate block">{venue}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] text-stone-400 uppercase font-black">Capacity</span>
+                <span>{maxParticipants} {competitionType === 'TEAM' ? 'Teams' : 'Athletes'}</span>
+              </div>
+              <div>
+                <span className="block text-[10px] text-stone-400 uppercase font-black">Digital Credentials</span>
+                <span className={credentialsEnabled ? 'text-emerald-700 font-bold' : 'text-stone-500 font-bold'}>
+                  {credentialsEnabled ? '✓ Enabled' : '— Disabled (Pure Mode)'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 5 Actions */}
+          <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setCurrentStep(4)}
+            >
+              ← Back
+            </Button>
+            <Button
+              variant="gold"
+              size="lg"
+              loading={loading}
+              onClick={handleLaunchTournament}
+              className="font-black shadow-md hover:scale-105 transition-all"
+            >
+              Official Launch Tournament 🚀
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: POST-LAUNCH SUCCESS ── */}
+      <Modal
+        isOpen={postLaunchModalOpen}
+        onClose={() => {
+          setPostLaunchModalOpen(false);
+          if (createdTournament?.id) navigate(`/tournaments/${createdTournament.id}`);
+        }}
+        title="Tournament Published Successfully!"
+        size="md"
+      >
+        <div className="text-center space-y-5 py-2">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500 text-stone-950 flex items-center justify-center mx-auto text-3xl font-black shadow-md ring-4 ring-amber-100">
+            🏆
+          </div>
+
+          <div className="space-y-1">
+            <h3 className="text-xl font-black text-stone-900">
+              {createdTournament?.title || 'Tournament Published!'}
+            </h3>
+            <p className="text-xs text-stone-600 max-w-sm mx-auto">
+              Your competition is now live on the Arena Hub. Share the public registration link with competitors or manage your roster in the organizer workspace.
+            </p>
+          </div>
+
+          {/* Public Link Box */}
+          <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200 text-left space-y-1.5">
+            <span className="text-[10px] uppercase font-black text-stone-400 block">
+              Shareable Public Registration Link
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={`${window.location.origin}/tournaments/${createdTournament?.id}/register`}
+                className="w-full px-3 py-1.5 text-xs font-mono font-bold bg-white rounded-xl border border-stone-300 text-stone-800 select-all"
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={Copy}
+                onClick={() => {
+                  navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${createdTournament?.id}/register`);
+                  showToast('Registration link copied!', 'success');
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Button
+              variant="gold"
+              onClick={() => {
+                setPostLaunchModalOpen(false);
+                navigate(`/tournaments/${createdTournament.id}`);
+              }}
+              className="w-full sm:w-auto font-black shadow-md"
+            >
+              Open Organizer Workspace →
+            </Button>
+            <Button
+              variant="dark"
+              onClick={() => {
+                setPostLaunchModalOpen(false);
+                navigate('/tournaments');
+              }}
+              className="w-full sm:w-auto font-bold"
+            >
+              Tournament Hub
             </Button>
           </div>
         </div>
       </Modal>
-
-      {/* ── TOURNAMENT LAUNCHPAD SUCCESS MODAL ── */}
-      {createdTournament && (
-        <Modal
-          isOpen={successModalOpen}
-          onClose={() => navigate(`/tournaments/${createdTournament.id}`)}
-          title="🏆 Tournament Successfully Launched!"
-          size="lg"
-        >
-          <div className="space-y-5 text-center p-2">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center mx-auto shadow-md">
-              <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-            </div>
-
-            <div className="space-y-1">
-              <h3 className="text-xl font-black text-stone-900">
-                {createdTournament.title}
-              </h3>
-              <p className="text-xs text-stone-500 max-w-md mx-auto">
-                Your tournament is registered on the Athlos platform. Registrations are open, and your Organizer Command Center is ready.
-              </p>
-            </div>
-
-            {/* Shareable Link Box */}
-            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2 text-left">
-              <label className="text-[11px] font-black uppercase tracking-wider text-amber-900 block">
-                Public Athlete Registration Link:
-              </label>
-              <div className="flex items-center gap-2 bg-white rounded-xl border border-amber-300 p-1.5 shadow-2xs">
-                <input
-                  readOnly
-                  value={`${window.location.origin}/tournaments/${createdTournament.id}/register`}
-                  className="flex-1 px-2 text-xs font-mono font-bold text-stone-800 bg-transparent focus:outline-none"
-                />
-                <Button
-                  size="sm"
-                  variant="gold"
-                  icon={Copy}
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/tournaments/${createdTournament.id}/register`);
-                    showToast('Registration link copied to clipboard!', 'success');
-                  }}
-                  className="font-bold text-xs"
-                >
-                  Copy Link
-                </Button>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <Button
-                variant="dark"
-                size="lg"
-                icon={Trophy}
-                onClick={() => navigate(`/tournaments/${createdTournament.id}`)}
-                className="w-full font-black shadow-md"
-              >
-                Open Organizer Workspace →
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                icon={ExternalLink}
-                onClick={() => window.open(`/tournaments/${createdTournament.id}/register`, '_blank')}
-                className="w-full font-bold"
-              >
-                Preview Registration Page
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
 
     </div>
   );

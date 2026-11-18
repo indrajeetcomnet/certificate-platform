@@ -28,6 +28,12 @@ public class TournamentParticipant {
     @Column(nullable = false)
     private String athleteName;
 
+    private String teamName;
+
+    private Integer seedNumber;
+
+    private String captainName;
+
     private String email;
 
     private String phone;
