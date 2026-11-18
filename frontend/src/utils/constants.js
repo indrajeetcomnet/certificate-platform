@@ -1,14 +1,16 @@
 export const ROLE_NAV_ITEMS = {
   USER: [
     { label: 'Social Feed', path: '/feed', icon: 'Newspaper' },
+    { label: 'Hall of Fame', path: '/hall-of-fame', icon: 'Trophy' },
     { label: 'Direct Messages', path: '/messages', icon: 'MessageSquare' },
-    { label: 'My Badges', path: '/profile', icon: 'Shield' },
+    { label: 'My Profile', path: '/profile', icon: 'User' },
     { label: 'Sponsor Hub', path: '/sponsors', icon: 'Sparkles' },
     { label: 'Sponsor Earnings', path: '/earnings', icon: 'DollarSign' },
   ],
   INSTITUTION: [
     { label: 'Organize Tournaments', path: '/tournaments', icon: 'Trophy' },
     { label: 'Certificate Studio', path: '/certificates', icon: 'Award' },
+    { label: 'Hall of Fame', path: '/hall-of-fame', icon: 'Trophy' },
     { label: 'Award Badges', path: '/badges/manage', icon: 'ShieldAlert' },
     { label: 'Direct Messages', path: '/messages', icon: 'MessageSquare' },
     { label: 'Social Feed', path: '/feed', icon: 'Newspaper' },
@@ -16,6 +18,7 @@ export const ROLE_NAV_ITEMS = {
   GUEST: [
     { label: 'Home', path: '/', icon: 'Home' },
     { label: 'Social Feed', path: '/feed', icon: 'Newspaper' },
+    { label: 'Hall of Fame', path: '/hall-of-fame', icon: 'Trophy' },
     { label: 'Sponsor Hub', path: '/sponsors', icon: 'Sparkles' },
   ],
 };

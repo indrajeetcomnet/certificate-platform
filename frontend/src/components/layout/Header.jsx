@@ -51,6 +51,11 @@ export default function Header({ onSearch, title = 'Athlos', isStudio = false, c
         onClick: () => navigate('/certificates'),
       },
       {
+        label: 'Hall of Fame',
+        icon: Trophy,
+        onClick: () => navigate('/hall-of-fame'),
+      },
+      {
         label: 'Create Certificate (Studio)',
         icon: Award,
         onClick: () => navigate('/certificates/create'),
@@ -74,9 +79,14 @@ export default function Header({ onSearch, title = 'Athlos', isStudio = false, c
     ]
     : [
       {
-        label: 'My Athlete Profile',
+        label: 'My Profile',
         icon: User,
         onClick: () => navigate(`/profile/${currentUser?.id || 1}`),
+      },
+      {
+        label: 'Hall of Fame',
+        icon: Trophy,
+        onClick: () => navigate('/hall-of-fame'),
       },
       {
         label: 'Direct Messages',
@@ -129,6 +139,16 @@ export default function Header({ onSearch, title = 'Athlos', isStudio = false, c
 
       {/* Right controls */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* Hall of Fame Shortcut */}
+        <Link
+          to="/hall-of-fame"
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-amber-50/50 text-xs font-bold text-stone-800 transition-all hover:scale-105 shadow-2xs"
+          title="Hall of Fame & Podium Champions"
+        >
+          <Trophy className="w-3.5 h-3.5 text-amber-600" />
+          <span>Hall of Fame</span>
+        </Link>
+
         {/* Sponsor Hub Shortcut */}
         <Link
           to="/sponsors"

@@ -18,6 +18,10 @@ export function getUserBadges(userId) {
   return axiosClient.get(`/badges/user/${userId}`);
 }
 
+export function getAllAwardedBadges() {
+  return axiosClient.get('/badges/awarded');
+}
+
 export function getBadgeSponsors(badgeId) {
   return axiosClient.get(`/badges/${badgeId}/sponsors`);
 }

@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  Trophy, 
-  ArrowLeft, 
-  Calendar, 
-  MapPin, 
-  Users, 
-  Plus, 
-  Trash2, 
-  CheckCircle2, 
-  FileText, 
-  Award, 
-  Shield, 
-  Sparkles, 
-  Clock, 
-  Flame, 
-  Play, 
-  Check, 
-  Edit3, 
-  Copy, 
+import {
+  Trophy,
+  ArrowLeft,
+  Calendar,
+  MapPin,
+  Users,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  FileText,
+  Award,
+  Shield,
+  Sparkles,
+  Clock,
+  Flame,
+  Play,
+  Check,
+  Edit3,
+  Copy,
   ExternalLink,
   ChevronRight,
   Crown,
@@ -32,14 +32,14 @@ import Avatar from '../components/ui/Avatar';
 import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { 
-  getTournamentById, 
-  updateTournament, 
-  registerParticipant, 
-  updateParticipantStatus, 
-  createMatch, 
-  updateMatchScore, 
-  finalizeTournament 
+import {
+  getTournamentById,
+  updateTournament,
+  registerParticipant,
+  updateParticipantStatus,
+  createMatch,
+  updateMatchScore,
+  finalizeTournament
 } from '../api/tournamentsApi';
 import { getAllUsers } from '../api/usersApi';
 import { useAuth } from '../context/AuthContext';
@@ -277,10 +277,10 @@ export default function TournamentWorkspacePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20">
-      
+
       {/* ── TOP HERO HEADER ── */}
       <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs space-y-4">
-        
+
         {/* Breadcrumb & Quick Status */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
           <div className="flex items-center gap-2">
@@ -402,11 +402,10 @@ export default function TournamentWorkspacePage() {
         <button
           type="button"
           onClick={() => setActiveTab('matches')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'matches'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'matches'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-          }`}
+            }`}
         >
           <Clock className="w-4 h-4 text-amber-400" />
           <span>Timetable & Live Scores ({matches.length})</span>
@@ -415,11 +414,10 @@ export default function TournamentWorkspacePage() {
         <button
           type="button"
           onClick={() => setActiveTab('participants')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'participants'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'participants'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-          }`}
+            }`}
         >
           <Users className="w-4 h-4" />
           <span>Athlete Roster ({participants.length})</span>
@@ -428,11 +426,10 @@ export default function TournamentWorkspacePage() {
         <button
           type="button"
           onClick={() => setActiveTab('form')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'form'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'form'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-          }`}
+            }`}
         >
           <FileText className="w-4 h-4" />
           <span>Custom Registration Form ({formQuestions.length})</span>
@@ -441,11 +438,10 @@ export default function TournamentWorkspacePage() {
         <button
           type="button"
           onClick={() => setActiveTab('podium')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === 'podium'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'podium'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-          }`}
+            }`}
         >
           <Award className="w-4 h-4 text-amber-400" />
           <span>Podium & Awards</span>
@@ -500,13 +496,12 @@ export default function TournamentWorkspacePage() {
                 return (
                   <div
                     key={m.id}
-                    className={`bg-white rounded-3xl p-5 border transition-all space-y-4 shadow-xs ${
-                      isLive
+                    className={`bg-white rounded-3xl p-5 border transition-all space-y-4 shadow-xs ${isLive
                         ? 'border-emerald-400 ring-2 ring-emerald-400/20'
                         : isCompleted
-                        ? 'border-stone-200'
-                        : 'border-stone-200/90'
-                    }`}
+                          ? 'border-stone-200'
+                          : 'border-stone-200/90'
+                      }`}
                   >
                     {/* Header info */}
                     <div className="flex items-center justify-between text-xs pb-3 border-b border-stone-100">
@@ -515,13 +510,12 @@ export default function TournamentWorkspacePage() {
                         <span className="text-[10px] font-bold text-stone-400">Match #{m.matchNumber}</span>
                       </div>
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          isLive
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${isLive
                             ? 'bg-emerald-100 text-emerald-800 animate-pulse'
                             : isCompleted
-                            ? 'bg-stone-100 text-stone-700'
-                            : 'bg-amber-100 text-amber-900'
-                        }`}
+                              ? 'bg-stone-100 text-stone-700'
+                              : 'bg-amber-100 text-amber-900'
+                          }`}
                       >
                         {m.status}
                       </span>
@@ -529,7 +523,7 @@ export default function TournamentWorkspacePage() {
 
                     {/* Participant 1 vs Participant 2 Grid */}
                     <div className="grid grid-cols-5 items-center gap-3">
-                      
+
                       {/* Competitor 1 */}
                       <div className="col-span-2 space-y-1.5 text-center sm:text-left">
                         <div className="flex items-center gap-2">
@@ -568,11 +562,10 @@ export default function TournamentWorkspacePage() {
                             <button
                               type="button"
                               onClick={() => handleScoreChange(m.id, m.score1, m.score2, m.participant1Id, 'COMPLETED')}
-                              className={`p-1 rounded-lg text-xs transition-colors ${
-                                m.winnerParticipantId && m.winnerParticipantId === m.participant1Id
+                              className={`p-1 rounded-lg text-xs transition-colors ${m.winnerParticipantId && m.winnerParticipantId === m.participant1Id
                                   ? 'text-amber-500 bg-amber-50 font-black'
                                   : 'text-stone-300 hover:text-amber-500'
-                              }`}
+                                }`}
                               title="Award Winner to Player 1"
                             >
                               <Crown className="w-3.5 h-3.5" />
@@ -580,11 +573,10 @@ export default function TournamentWorkspacePage() {
                             <button
                               type="button"
                               onClick={() => handleScoreChange(m.id, m.score1, m.score2, m.participant2Id, 'COMPLETED')}
-                              className={`p-1 rounded-lg text-xs transition-colors ${
-                                m.winnerParticipantId && m.winnerParticipantId === m.participant2Id
+                              className={`p-1 rounded-lg text-xs transition-colors ${m.winnerParticipantId && m.winnerParticipantId === m.participant2Id
                                   ? 'text-amber-500 bg-amber-50 font-black'
                                   : 'text-stone-300 hover:text-amber-500'
-                              }`}
+                                }`}
                               title="Award Winner to Player 2"
                             >
                               <Crown className="w-3.5 h-3.5" />
@@ -909,7 +901,7 @@ export default function TournamentWorkspacePage() {
 
           {/* Podium Visual Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-            
+
             {/* 2nd Place Silver */}
             <div className="p-5 rounded-3xl bg-stone-50 border border-stone-200 text-center space-y-3 order-2 sm:order-1">
               <div className="w-14 h-14 rounded-2xl bg-stone-200 text-stone-700 flex items-center justify-center mx-auto text-xl font-black shadow-xs">
@@ -1042,7 +1034,7 @@ export default function TournamentWorkspacePage() {
         size="md"
       >
         <form onSubmit={handleRegisterParticipant} className="space-y-4">
-          
+
           {/* Quick pick from arena accounts */}
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1">

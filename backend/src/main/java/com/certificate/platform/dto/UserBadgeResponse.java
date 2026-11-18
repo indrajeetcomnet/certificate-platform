@@ -13,4 +13,8 @@ public class UserBadgeResponse {
     private BadgeResponse badge;
     private LocalDateTime awardedAt;
     private String awardedByInstitutionName;
+    private Long userId;
+    private String username;
+    private String userDisplayName;
+    private String userAvatarUrl;
 }

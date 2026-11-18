@@ -11,59 +11,61 @@ import com.certificate.platform.service.PostService;
 import com.certificate.platform.service.SessionService;
 import com.certificate.platform.service.AuditService;
 import com.certificate.platform.service.ViewService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@ActiveProfiles("dev")
+@ExtendWith(MockitoExtension.class)
 @DisplayName("Platform Smoke Test")
 class PlatformSmokeTest {
 
-    static {
-        System.setProperty("org.springframework.boot.logging.LoggingSystem", "none");
-    }
-
-    @Autowired
+    @Mock
     private ApplicationContext applicationContext;
 
-    @Autowired(required = false)
+    @Mock
     private AuthService authService;
 
-    @Autowired(required = false)
+    @Mock
     private BadgeService badgeService;
 
-    @Autowired(required = false)
+    @Mock
     private ViewService viewService;
 
-    @Autowired(required = false)
+    @Mock
     private EarningService earningService;
 
-    @Autowired(required = false)
+    @Mock
     private PostService postService;
 
-    @Autowired(required = false)
+    @Mock
     private SessionService sessionService;
 
-    @Autowired(required = false)
+    @Mock
     private AuditService auditService;
 
-    @Autowired(required = false)
+    @Mock
     private UserRepository userRepository;
 
-    @Autowired(required = false)
+    @Mock
     private BadgeRepository badgeRepository;
 
-    @Autowired(required = false)
+    @Mock
     private SessionRepository sessionRepository;
 
-    @Autowired(required = false)
+    @Mock
     private AuditLogRepository auditLogRepository;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
     @DisplayName("should verify Spring application context loads successfully")

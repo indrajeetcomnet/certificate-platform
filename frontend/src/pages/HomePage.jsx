@@ -97,6 +97,13 @@ export default function HomePage() {
           {/* Action CTAs */}
           <div className="flex items-center gap-2.5">
             <Link
+              to="/hall-of-fame"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-bold text-stone-800 transition-all hover:scale-105 shadow-2xs"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-600" />
+              <span>Hall of Fame</span>
+            </Link>
+            <Link
               to="/sponsors"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300/80 bg-amber-50/80 hover:bg-amber-100 text-xs font-bold text-amber-900 transition-all hover:scale-105 shadow-2xs"
             >
@@ -506,6 +513,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-400 text-center sm:text-left">
           <p>© {new Date().getFullYear()} Athlos Arena. All rights reserved.</p>
           <div className="flex items-center gap-4 text-[11px]">
+            <Link to="/hall-of-fame" className="hover:text-stone-700 font-bold underline underline-offset-2">
+              Hall of Fame
+            </Link>
+            <span>·</span>
             <Link to="/certificates/verify" className="hover:text-stone-700 underline underline-offset-2">
               Public Verification
             </Link>

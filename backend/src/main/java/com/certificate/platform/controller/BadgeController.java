@@ -32,6 +32,11 @@ public class BadgeController {
         return ResponseEntity.ok(badgeService.getAllBadges());
     }
 
+    @GetMapping("/awarded")
+    public ResponseEntity<List<UserBadgeResponse>> getAllAwardedBadges() {
+        return ResponseEntity.ok(badgeService.getAllAwardedBadges());
+    }
+
     @PostMapping("/assign")
     public ResponseEntity<UserBadgeResponse> assignBadgeToUser(@Valid @RequestBody AssignBadgeRequest request) {
         UserBadgeResponse assigned = badgeService.assignBadgeToUser(request);

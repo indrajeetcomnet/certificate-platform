@@ -160,12 +160,22 @@ public class BadgeService {
                 .build();
     }
 
+    public List<UserBadgeResponse> getAllAwardedBadges() {
+        return userBadgeRepository.findAll().stream()
+                .map(this::mapToUserBadgeResponse)
+                .collect(Collectors.toList());
+    }
+
     private UserBadgeResponse mapToUserBadgeResponse(UserBadge ub) {
         return UserBadgeResponse.builder()
                 .id(ub.getId())
                 .badge(mapToResponse(ub.getBadge()))
                 .awardedAt(ub.getAwardedAt())
                 .awardedByInstitutionName(ub.getAwardedBy() != null ? ub.getAwardedBy().getName() : null)
+                .userId(ub.getUser() != null ? ub.getUser().getId() : null)
+                .username(ub.getUser() != null ? ub.getUser().getUsername() : null)
+                .userDisplayName(ub.getUser() != null ? ub.getUser().getDisplayName() : null)
+                .userAvatarUrl(ub.getUser() != null ? ub.getUser().getAvatarUrl() : null)
                 .build();
     }
 }

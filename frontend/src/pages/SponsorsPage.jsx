@@ -317,11 +317,10 @@ export default function SponsorsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('ALL')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'ALL'
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'ALL'
                 ? 'bg-white text-stone-900 shadow-sm'
                 : 'text-stone-600 hover:text-stone-900'
-            }`}
+              }`}
           >
             All Active Sponsors ({sponsors.length})
           </button>
@@ -330,11 +329,10 @@ export default function SponsorsPage() {
             <button
               type="button"
               onClick={() => setActiveTab('MY')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'MY'
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'MY'
                   ? 'bg-white text-stone-900 shadow-sm'
                   : 'text-stone-600 hover:text-stone-900'
-              }`}
+                }`}
             >
               My Campaigns ({mySponsors.length})
             </button>
@@ -469,7 +467,7 @@ export default function SponsorsPage() {
                     href={sponsor.websiteUrl || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => recordClick(sponsor.id).catch(() => {})}
+                    onClick={() => recordClick(sponsor.id).catch(() => { })}
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-stone-700 hover:text-amber-600 transition-colors"
                   >
                     <span>Visit Sponsor</span>
@@ -667,11 +665,10 @@ export default function SponsorsPage() {
                     key={p.name}
                     type="button"
                     onClick={() => setLogoUrl(p.url)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                      logoUrl === p.url
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${logoUrl === p.url
                         ? 'border-amber-500 bg-amber-50 text-amber-900 ring-2 ring-amber-400/30'
                         : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
-                    }`}
+                      }`}
                   >
                     <img src={p.url} alt={p.name} className="w-4 h-4 rounded-full object-cover" />
                     <span>{p.name}</span>
@@ -697,11 +694,10 @@ export default function SponsorsPage() {
                     key={preset}
                     type="button"
                     onClick={() => setBudget(preset)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all ${
-                      budget === preset
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border transition-all ${budget === preset
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-400/30'
                         : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-50'
-                    }`}
+                      }`}
                   >
                     ₹{Number(preset).toLocaleString()}
                   </button>
@@ -761,9 +757,8 @@ export default function SponsorsPage() {
                   key={preset}
                   type="button"
                   onClick={() => setDepositAmount(preset)}
-                  className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border ${
-                    depositAmount === preset ? 'bg-amber-50 border-amber-500 text-amber-900' : 'bg-white border-stone-200 text-stone-700'
-                  }`}
+                  className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border ${depositAmount === preset ? 'bg-amber-50 border-amber-500 text-amber-900' : 'bg-white border-stone-200 text-stone-700'
+                    }`}
                 >
                   +₹{Number(preset).toLocaleString()}
                 </button>

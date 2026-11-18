@@ -24,6 +24,7 @@ import TournamentsPage from './pages/TournamentsPage';
 import TournamentCreatePage from './pages/TournamentCreatePage';
 import TournamentWorkspacePage from './pages/TournamentWorkspacePage';
 import SponsorsPage from './pages/SponsorsPage';
+import HallOfFamePage from './pages/HallOfFamePage';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<LoginPage />} />
           <Route path="/sponsors" element={<AppLayout><SponsorsPage /></AppLayout>} />
+          <Route path="/hall-of-fame" element={<AppLayout><HallOfFamePage /></AppLayout>} />
 
           {/* Public Direct Verification Portal (Accessed strictly via footer link / direct link / QR code) */}
           <Route path="/certificates/verify" element={<CertificateVerifyPage />} />
@@ -55,6 +57,7 @@ export default function App() {
             <Route path="messages" element={<MessagesPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="profile/:userId" element={<ProfilePage />} />
+            <Route path="hall-of-fame" element={<HallOfFamePage />} />
             <Route path="earnings" element={<EarningsPage />} />
 
             {/* Institution-Only Workspace Pages (Divided into dedicated full-window pages) */}
