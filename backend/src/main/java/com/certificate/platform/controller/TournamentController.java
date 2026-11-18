@@ -88,6 +88,25 @@ public class TournamentController {
         return ResponseEntity.ok(tournamentService.updateMatchScore(id, matchId, request));
     }
 
+    @PutMapping("/{id}/status")
+    public ResponseEntity<TournamentResponse> updateTournamentStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        return ResponseEntity.ok(tournamentService.updateTournamentStatus(id, status));
+    }
+
+    @PostMapping("/{id}/participants/bulk")
+    public ResponseEntity<List<TournamentParticipantResponse>> bulkRegisterParticipants(
+            @PathVariable Long id,
+            @RequestBody List<RegisterParticipantRequest> requests) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(tournamentService.bulkRegisterParticipants(id, requests));
+    }
+
+    @PostMapping("/{id}/generate-fixtures")
+    public ResponseEntity<List<TournamentMatchResponse>> generateFixtures(@PathVariable Long id) {
+        return ResponseEntity.ok(tournamentService.generateFixtures(id));
+    }
+
     @PostMapping("/{id}/finalize")
     public ResponseEntity<TournamentResponse> finalizeTournament(
             @PathVariable Long id,

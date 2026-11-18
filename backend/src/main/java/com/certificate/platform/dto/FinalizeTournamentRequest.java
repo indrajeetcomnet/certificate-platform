@@ -10,4 +10,5 @@ public class FinalizeTournamentRequest {
     private Long winner2ndParticipantId;
     private Long winner3rdParticipantId;
     private Boolean awardCredentials; // Automatically award linked badges and certificates
+    private Boolean awardParticipationCertificates; // Award official participation certificates to all athletes
 }

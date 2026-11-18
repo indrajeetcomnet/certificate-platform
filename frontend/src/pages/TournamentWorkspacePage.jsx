@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Trophy,
@@ -24,7 +24,16 @@ import {
   Crown,
   AlertCircle,
   Save,
-  UserPlus
+  UserPlus,
+  Zap,
+  RefreshCw,
+  Eye,
+  CheckSquare,
+  Search,
+  Filter,
+  ShieldCheck,
+  Share2,
+  Layers
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -39,11 +48,26 @@ import {
   updateParticipantStatus,
   createMatch,
   updateMatchScore,
-  finalizeTournament
+  finalizeTournament,
+  generateFixtures,
+  bulkRegisterParticipants,
+  updateTournamentStatus
 } from '../api/tournamentsApi';
 import { getAllUsers } from '../api/usersApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+
+// Synthetic sample athletes for 1-click demo seeding
+const SAMPLE_ATHLETES = [
+  { athleteName: 'Indrajeet Patil', email: 'indrajeet@example.com', phone: '+91 98765 43210' },
+  { athleteName: 'Marcus Vance', email: 'marcus.v@example.com', phone: '+1 555-0192' },
+  { athleteName: 'Sarah Chen', email: 'sarah.c@example.com', phone: '+1 555-0143' },
+  { athleteName: 'Elena Rostova', email: 'elena.r@example.com', phone: '+44 20 7946 0912' },
+  { athleteName: 'Leo Martinez', email: 'leo.m@example.com', phone: '+34 91 123 4567' },
+  { athleteName: 'Aisha Al-Mansoor', email: 'aisha.m@example.com', phone: '+971 4 123 4567' },
+  { athleteName: 'David Kim', email: 'david.k@example.com', phone: '+82 2 3456 7890' },
+  { athleteName: 'Zoe Dupont', email: 'zoe.d@example.com', phone: '+33 1 42 68 55 00' },
+];
 
 export default function TournamentWorkspacePage() {
   const { tournamentId } = useParams();
@@ -54,22 +78,34 @@ export default function TournamentWorkspacePage() {
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('matches'); // 'matches' | 'participants' | 'form' | 'podium'
+  const [roundFilter, setRoundFilter] = useState('ALL');
+  const [searchRoster, setSearchRoster] = useState('');
   const [allUsers, setAllUsers] = useState([]);
+
+  // Action Loading states
+  const [seedingAthletes, setSeedingAthletes] = useState(false);
+  const [generatingFixtures, setGeneratingFixtures] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
 
   // Modals
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [addMatchModalOpen, setAddMatchModalOpen] = useState(false);
-  const [viewResponsesModalOpen, setViewResponsesModalOpen] = useState(null); // participant object
+  const [viewResponsesModalOpen, setViewResponsesModalOpen] = useState(null);
   const [finalizeModalOpen, setFinalizeModalOpen] = useState(false);
+  const [finalizeSuccessModalOpen, setFinalizeSuccessModalOpen] = useState(false);
 
-  // New Participant form
+  // Finalize Options
+  const [awardCredentials, setAwardCredentials] = useState(true);
+  const [awardParticipationCertificates, setAwardParticipationCertificates] = useState(true);
+
+  // New Participant Form
   const [newAthleteName, setNewAthleteName] = useState('');
   const [newAthleteEmail, setNewAthleteEmail] = useState('');
   const [newAthletePhone, setNewAthletePhone] = useState('');
   const [newSelectedUserId, setNewSelectedUserId] = useState('');
   const [newCustomAnswers, setNewCustomAnswers] = useState({});
 
-  // New Match form
+  // New Match Form
   const [newMatchRound, setNewMatchRound] = useState('Semi-Finals');
   const [newMatchNumber, setNewMatchNumber] = useState(1);
   const [newMatchP1Id, setNewMatchP1Id] = useState('');
@@ -78,12 +114,12 @@ export default function TournamentWorkspacePage() {
   const [newMatchDate, setNewMatchDate] = useState('2026-11-20');
   const [newMatchVenue, setNewMatchVenue] = useState('Track 4');
 
-  // Podium selection
+  // Podium Selection
   const [podium1stId, setPodium1stId] = useState('');
   const [podium2ndId, setPodium2ndId] = useState('');
   const [podium3rdId, setPodium3rdId] = useState('');
 
-  // Editable form schema in Tab
+  // Editable Form Schema
   const [formQuestions, setFormQuestions] = useState([]);
   const [savingForm, setSavingForm] = useState(false);
 
@@ -104,14 +140,23 @@ export default function TournamentWorkspacePage() {
         parsedQuestions = [];
       }
       setFormQuestions(parsedQuestions);
-
       setAllUsers(uRes.data || []);
 
-      // If matches have completed, auto-suggest podium
-      if (tData.participants && tData.participants.length >= 2) {
-        setPodium1stId(tData.participants[0]?.id || '');
-        setPodium2ndId(tData.participants[1]?.id || '');
-        if (tData.participants[2]) setPodium3rdId(tData.participants[2]?.id || '');
+      // Auto-suggest podium from Grand Final or top participants if not yet set
+      const matches = tData.matches || [];
+      const grandFinal = matches.find((m) => m.roundName?.toLowerCase().includes('grand final') || m.roundName?.toLowerCase().includes('final'));
+      
+      if (grandFinal && grandFinal.winnerParticipantId) {
+        setPodium1stId(String(grandFinal.winnerParticipantId));
+        // Runner up is the other participant
+        const runnerUpId = grandFinal.winnerParticipantId === grandFinal.participant1Id
+          ? grandFinal.participant2Id
+          : grandFinal.participant1Id;
+        if (runnerUpId) setPodium2ndId(String(runnerUpId));
+      } else if (tData.participants && tData.participants.length >= 2) {
+        if (!podium1stId) setPodium1stId(String(tData.participants[0]?.id || ''));
+        if (!podium2ndId) setPodium2ndId(String(tData.participants[1]?.id || ''));
+        if (!podium3rdId && tData.participants[2]) setPodium3rdId(String(tData.participants[2]?.id || ''));
       }
     } catch (err) {
       console.error('Failed to load tournament:', err);
@@ -135,13 +180,75 @@ export default function TournamentWorkspacePage() {
         status: status || 'COMPLETED',
       });
       showToast('Match score updated!', 'success');
+      
+      // Auto-set 1st place podium if this was the Grand Final
+      const updatedMatch = (tournament?.matches || []).find((m) => m.id === matchId);
+      if (updatedMatch && (updatedMatch.roundName?.toLowerCase().includes('grand final') || updatedMatch.roundName?.toLowerCase().includes('final')) && winnerId) {
+        setPodium1stId(String(winnerId));
+        const runnerUp = winnerId === updatedMatch.participant1Id ? updatedMatch.participant2Id : updatedMatch.participant1Id;
+        if (runnerUp) setPodium2ndId(String(runnerUp));
+      }
+
       loadData();
     } catch (err) {
       showToast('Failed to update score', 'error');
     }
   };
 
-  // Add a new question to the Google Form schema
+  // ⚡ 1-Click Auto-Generate Fixtures & Brackets
+  const handleGenerateFixtures = async () => {
+    const participantsCount = tournament?.participants?.length || 0;
+    if (participantsCount < 2) {
+      showToast('At least 2 registered athletes are required to generate brackets. Use "Quick Seed Athletes" below!', 'error');
+      return;
+    }
+
+    setGeneratingFixtures(true);
+    try {
+      await generateFixtures(tournamentId);
+      showToast('Tournament bracket and fixtures generated successfully!', 'success');
+      loadData();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to generate fixtures', 'error');
+    } finally {
+      setGeneratingFixtures(false);
+    }
+  };
+
+  // ⚡ 1-Click Quick Seed Sample Athletes
+  const handleQuickSeedAthletes = async () => {
+    setSeedingAthletes(true);
+    try {
+      await bulkRegisterParticipants(tournamentId, SAMPLE_ATHLETES);
+      showToast('8 sample athletes registered into the tournament roster!', 'success');
+      await loadData();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to seed sample athletes', 'error');
+    } finally {
+      setSeedingAthletes(false);
+    }
+  };
+
+  // Save updated Google Form Schema
+  const handleSaveFormSchema = async () => {
+    setSavingForm(true);
+    try {
+      await updateTournament(tournamentId, {
+        title: tournament.title,
+        sport: tournament.sport,
+        format: tournament.format,
+        customFormSchema: JSON.stringify(formQuestions),
+      });
+      showToast('Registration form schema saved successfully!', 'success');
+      loadData();
+    } catch (err) {
+      showToast('Failed to update form questions', 'error');
+    } finally {
+      setSavingForm(false);
+    }
+  };
+
+  // Add question to schema
   const handleAddQuestionToSchema = () => {
     const newField = {
       id: `custom_${Date.now()}`,
@@ -153,26 +260,7 @@ export default function TournamentWorkspacePage() {
     setFormQuestions((prev) => [...prev, newField]);
   };
 
-  // Save updated Google Form Schema to backend
-  const handleSaveFormSchema = async () => {
-    setSavingForm(true);
-    try {
-      await updateTournament(tournamentId, {
-        title: tournament.title,
-        sport: tournament.sport,
-        format: tournament.format,
-        customFormSchema: JSON.stringify(formQuestions),
-      });
-      showToast('Registration form schema updated successfully!', 'success');
-      loadData();
-    } catch (err) {
-      showToast('Failed to update form questions', 'error');
-    } finally {
-      setSavingForm(false);
-    }
-  };
-
-  // Register a new participant
+  // Register single participant manually
   const handleRegisterParticipant = async (e) => {
     e.preventDefault();
     try {
@@ -196,7 +284,7 @@ export default function TournamentWorkspacePage() {
     }
   };
 
-  // Create Fixture Match
+  // Create manual Fixture Match
   const handleCreateMatch = async (e) => {
     e.preventDefault();
     try {
@@ -214,7 +302,7 @@ export default function TournamentWorkspacePage() {
         status: 'UPCOMING',
       });
 
-      showToast('Timetable fixture match scheduled!', 'success');
+      showToast('Fixture match scheduled!', 'success');
       setAddMatchModalOpen(false);
       loadData();
     } catch (err) {
@@ -224,35 +312,47 @@ export default function TournamentWorkspacePage() {
 
   // Finalize Tournament and Issue Credentials
   const handleFinalizeTournament = async () => {
+    setFinalizing(true);
     try {
       await finalizeTournament(tournamentId, {
         winner1stParticipantId: podium1stId ? Number(podium1stId) : null,
         winner2ndParticipantId: podium2ndId ? Number(podium2ndId) : null,
         winner3rdParticipantId: podium3rdId ? Number(podium3rdId) : null,
-        awardCredentials: true,
+        awardCredentials,
+        awardParticipationCertificates,
       });
 
-      showToast('Tournament finalized! Verified badges & certificates awarded to winners!', 'success');
       setFinalizeModalOpen(false);
+      setFinalizeSuccessModalOpen(true);
+      showToast('Tournament finalized & verified credentials issued!', 'success');
       loadData();
     } catch (err) {
-      showToast('Failed to finalize tournament', 'error');
+      showToast(err.response?.data?.message || 'Failed to finalize tournament', 'error');
+    } finally {
+      setFinalizing(false);
     }
   };
 
-  // Quick Status Changer
+  // Status Changer
   const handleUpdateStatus = async (newStatus) => {
     try {
-      await updateTournament(tournamentId, {
-        title: tournament.title,
-        sport: tournament.sport,
-        format: tournament.format,
-        status: newStatus,
-      });
+      await updateTournamentStatus(tournamentId, newStatus);
       showToast(`Tournament status updated to ${newStatus}`, 'success');
       loadData();
     } catch (err) {
-      showToast('Failed to update status', 'error');
+      // Fallback to updateTournament
+      try {
+        await updateTournament(tournamentId, {
+          title: tournament.title,
+          sport: tournament.sport,
+          format: tournament.format,
+          status: newStatus,
+        });
+        showToast(`Tournament status updated to ${newStatus}`, 'success');
+        loadData();
+      } catch (err2) {
+        showToast('Failed to update status', 'error');
+      }
     }
   };
 
@@ -275,13 +375,42 @@ export default function TournamentWorkspacePage() {
   const matches = tournament.matches || [];
   const participants = tournament.participants || [];
 
+  // Round names for filtering
+  const roundNames = ['ALL', ...new Set(matches.map((m) => m.roundName).filter(Boolean))];
+  const filteredMatches = roundFilter === 'ALL'
+    ? matches
+    : matches.filter((m) => m.roundName === roundFilter);
+
+  // Search filtered roster
+  const filteredParticipants = participants.filter((p) => {
+    if (!searchRoster.trim()) return true;
+    const term = searchRoster.toLowerCase();
+    return (
+      p.athleteName?.toLowerCase().includes(term) ||
+      p.email?.toLowerCase().includes(term) ||
+      p.phone?.toLowerCase().includes(term)
+    );
+  });
+
+  // Calculate Lifecycle Stepper Current Step
+  let currentWorkflowStep = 1;
+  if (tournament.status === 'COMPLETED') {
+    currentWorkflowStep = 4;
+  } else if (tournament.status === 'LIVE') {
+    currentWorkflowStep = 3;
+  } else if (matches.length > 0) {
+    currentWorkflowStep = 2;
+  } else {
+    currentWorkflowStep = 1;
+  }
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20">
+    <div className="max-w-6xl mx-auto space-y-6 pb-20 font-sans">
 
-      {/* ── TOP HERO HEADER ── */}
-      <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs space-y-4">
+      {/* ── TOP HERO HEADER & TOURNAMENT METRICS ── */}
+      <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-5">
 
-        {/* Breadcrumb & Quick Status */}
+        {/* Breadcrumb & Global Action Controls */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
           <div className="flex items-center gap-2">
             <Link
@@ -291,15 +420,21 @@ export default function TournamentWorkspacePage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex items-center gap-2 text-xs font-bold text-stone-500">
-              <span>Tournaments</span>
+              <Link to="/tournaments" className="hover:text-stone-900">Tournaments</Link>
               <span>/</span>
               <span className="text-stone-900 font-black">{tournament.title}</span>
             </div>
           </div>
 
-          {/* Status Controls */}
+          {/* Quick Lifecycle Action CTA */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/15 text-amber-900 border border-amber-400/40">
+            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${
+              tournament.status === 'LIVE'
+                ? 'bg-emerald-500/15 text-emerald-900 border-emerald-400/40'
+                : tournament.status === 'COMPLETED'
+                  ? 'bg-amber-500/15 text-amber-900 border-amber-400/40'
+                  : 'bg-stone-100 text-stone-800 border-stone-300'
+            }`}>
               {tournament.status === 'LIVE' ? '🔥 LIVE ARENA' : tournament.status === 'COMPLETED' ? '🏆 COMPLETED' : '📝 REGISTRATION OPEN'}
             </span>
 
@@ -311,36 +446,50 @@ export default function TournamentWorkspacePage() {
                     size="sm"
                     icon={Play}
                     onClick={() => handleUpdateStatus('LIVE')}
+                    className="font-bold shadow-xs"
                   >
-                    Start Matches (Go Live)
+                    Start Tournament (Go Live)
+                  </Button>
+                )}
+                {tournament.status === 'LIVE' && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleUpdateStatus('REGISTRATION_OPEN')}
+                    className="font-bold text-xs"
+                  >
+                    Reopen Registration
                   </Button>
                 )}
                 <Button
                   variant="gold"
                   size="sm"
                   icon={Trophy}
-                  onClick={() => setFinalizeModalOpen(true)}
-                  className="font-bold shadow-xs"
+                  onClick={() => {
+                    setActiveTab('podium');
+                    setFinalizeModalOpen(true);
+                  }}
+                  className="font-black shadow-xs hover:scale-105 transition-all"
                 >
-                  Finalize & Award Medals
+                  Conclude & Award Credentials
                 </Button>
               </>
             )}
           </div>
         </div>
 
-        {/* Title & Metadata Showcase */}
+        {/* Title, Discipline Chips & Venue Details */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-[10px] font-black uppercase tracking-wider text-stone-700">
-                🏃 {tournament.sport}
+              <span className="px-3 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-900 text-xs font-black uppercase tracking-wider">
+                🏆 {tournament.sport}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-[10px] font-bold text-stone-600">
+              <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-xs font-bold text-stone-700">
                 {tournament.format}
               </span>
-              <span className="text-xs font-bold text-amber-800">
-                Organized by {tournament.institutionName}
+              <span className="text-xs font-bold text-stone-500">
+                Organized by <strong className="text-stone-900">{tournament.institutionName}</strong>
               </span>
             </div>
 
@@ -359,23 +508,23 @@ export default function TournamentWorkspacePage() {
                 <span>{tournament.venue}</span>
               </span>
               <span>·</span>
-              <span className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-stone-400" />
+              <span className="flex items-center gap-1.5 font-bold text-stone-800">
+                <Users className="w-3.5 h-3.5 text-amber-600" />
                 <span>{participants.length} / {tournament.maxParticipants} Registered</span>
               </span>
             </div>
           </div>
 
-          {/* Quick Actions: Two Links (Share Tournament & Registration Form Link) */}
+          {/* Quick Share Links */}
           <div className="flex items-center gap-2 flex-wrap shrink-0">
             <button
               type="button"
               onClick={() => {
                 navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}`);
-                showToast('Tournament link copied!', 'success');
+                showToast('Tournament link copied to clipboard!', 'success');
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-xs font-bold text-stone-700 shadow-2xs transition-all"
-              title="Copy Tournament Overview link"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-bold text-stone-700 shadow-2xs transition-all"
+              title="Copy Public Tournament Link"
             >
               <Copy className="w-3.5 h-3.5 text-stone-400" />
               <span>Share Tournament</span>
@@ -385,26 +534,135 @@ export default function TournamentWorkspacePage() {
               type="button"
               onClick={() => {
                 navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}/register`);
-                showToast('Registration form link copied!', 'success');
+                showToast('Registration form link copied to clipboard!', 'success');
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-xs font-black text-amber-900 shadow-2xs transition-all"
-              title="Copy Direct Registration Form link"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-xs font-black text-amber-900 shadow-2xs transition-all"
+              title="Copy Direct Athlete Registration Link"
             >
               <FileText className="w-3.5 h-3.5 text-amber-700" />
-              <span>Registration Form Link</span>
+              <span>Copy Registration URL</span>
             </button>
 
-            {isInstitution && tournament.status !== 'COMPLETED' && (
-              <Button
-                variant="dark"
-                size="sm"
-                icon={UserPlus}
-                onClick={() => setRegisterModalOpen(true)}
-                className="font-bold shadow-xs"
-              >
-                Register Player
-              </Button>
-            )}
+            <Link
+              to={`/tournaments/${tournament.id}/register`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-xl border border-stone-200 hover:bg-stone-100 text-stone-600 transition-colors"
+              title="Preview Registration Page in New Tab"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        {/* ── ORGANIZER LIFECYCLE PROGRESS STEPPER ── */}
+        <div className="pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-stone-50 rounded-2xl border border-stone-200/80">
+            
+            {/* Step 1: Registration */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('participants')}
+              className={`flex items-center gap-2.5 p-2.5 rounded-xl text-left transition-all ${
+                currentWorkflowStep === 1
+                  ? 'bg-white shadow-xs border border-amber-400/50 ring-2 ring-amber-400/20'
+                  : currentWorkflowStep > 1
+                    ? 'bg-white/70 text-stone-800'
+                    : 'text-stone-400'
+              }`}
+            >
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                currentWorkflowStep > 1
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : currentWorkflowStep === 1
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-stone-200 text-stone-600'
+              }`}>
+                {currentWorkflowStep > 1 ? <Check className="w-4 h-4 stroke-[3]" /> : '1'}
+              </div>
+              <div className="min-w-0">
+                <span className="block text-[10px] font-black uppercase text-stone-400">Step 1</span>
+                <span className="block text-xs font-bold text-stone-900 truncate">Athlete Roster ({participants.length})</span>
+              </div>
+            </button>
+
+            {/* Step 2: Bracket Generation */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('matches')}
+              className={`flex items-center gap-2.5 p-2.5 rounded-xl text-left transition-all ${
+                currentWorkflowStep === 2
+                  ? 'bg-white shadow-xs border border-amber-400/50 ring-2 ring-amber-400/20'
+                  : currentWorkflowStep > 2
+                    ? 'bg-white/70 text-stone-800'
+                    : 'text-stone-400'
+              }`}
+            >
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                currentWorkflowStep > 2
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : currentWorkflowStep === 2
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-stone-200 text-stone-600'
+              }`}>
+                {currentWorkflowStep > 2 ? <Check className="w-4 h-4 stroke-[3]" /> : '2'}
+              </div>
+              <div className="min-w-0">
+                <span className="block text-[10px] font-black uppercase text-stone-400">Step 2</span>
+                <span className="block text-xs font-bold text-stone-900 truncate">Fixtures ({matches.length})</span>
+              </div>
+            </button>
+
+            {/* Step 3: Live Arena */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('matches')}
+              className={`flex items-center gap-2.5 p-2.5 rounded-xl text-left transition-all ${
+                currentWorkflowStep === 3
+                  ? 'bg-white shadow-xs border border-emerald-400 ring-2 ring-emerald-400/20'
+                  : currentWorkflowStep > 3
+                    ? 'bg-white/70 text-stone-800'
+                    : 'text-stone-400'
+              }`}
+            >
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                currentWorkflowStep > 3
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : currentWorkflowStep === 3
+                    ? 'bg-emerald-600 text-white animate-pulse'
+                    : 'bg-stone-200 text-stone-600'
+              }`}>
+                {currentWorkflowStep > 3 ? <Check className="w-4 h-4 stroke-[3]" /> : '3'}
+              </div>
+              <div className="min-w-0">
+                <span className="block text-[10px] font-black uppercase text-stone-400">Step 3</span>
+                <span className="block text-xs font-bold text-stone-900 truncate">Live Arena & Scores</span>
+              </div>
+            </button>
+
+            {/* Step 4: Podium & Credentials */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('podium')}
+              className={`flex items-center gap-2.5 p-2.5 rounded-xl text-left transition-all ${
+                currentWorkflowStep === 4
+                  ? 'bg-white shadow-xs border border-amber-400 ring-2 ring-amber-400/20'
+                  : 'text-stone-400'
+              }`}
+            >
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                currentWorkflowStep === 4
+                  ? 'bg-amber-500 text-stone-950 font-black'
+                  : 'bg-stone-200 text-stone-600'
+              }`}>
+                {currentWorkflowStep === 4 ? '🏆' : '4'}
+              </div>
+              <div className="min-w-0">
+                <span className="block text-[10px] font-black uppercase text-stone-400">Step 4</span>
+                <span className="block text-xs font-bold text-stone-900 truncate">Podium & Awards</span>
+              </div>
+            </button>
+
           </div>
         </div>
 
@@ -415,10 +673,11 @@ export default function TournamentWorkspacePage() {
         <button
           type="button"
           onClick={() => setActiveTab('matches')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'matches'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+            activeTab === 'matches'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-            }`}
+          }`}
         >
           <Clock className="w-4 h-4 text-amber-400" />
           <span>Timetable & Live Scores ({matches.length})</span>
@@ -427,94 +686,166 @@ export default function TournamentWorkspacePage() {
         <button
           type="button"
           onClick={() => setActiveTab('participants')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'participants'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+            activeTab === 'participants'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-            }`}
+          }`}
         >
-          <Users className="w-4 h-4" />
+          <Users className="w-4 h-4 text-amber-400" />
           <span>Athlete Roster ({participants.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('form')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'form'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+            activeTab === 'form'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-            }`}
+          }`}
         >
-          <FileText className="w-4 h-4" />
-          <span>Custom Registration Form ({formQuestions.length})</span>
+          <FileText className="w-4 h-4 text-amber-400" />
+          <span>Registration Form Builder ({formQuestions.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('podium')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${activeTab === 'podium'
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${
+            activeTab === 'podium'
               ? 'bg-stone-900 text-white shadow-xs font-black'
               : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-            }`}
+          }`}
         >
           <Award className="w-4 h-4 text-amber-400" />
-          <span>Podium & Awards</span>
+          <span>Podium & Credentials</span>
         </button>
       </div>
 
-      {/* ── TAB 1: TIMETABLE, FIXTURES & LIVE SCORES ── */}
+      {/* ── TAB 1: TIMETABLE, FIXTURES & LIVE ARENA ── */}
       {activeTab === 'matches' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-stone-900">
-                Match Fixtures & Live Timetable
-              </h2>
+          
+          {/* Action Bar & Round Filter */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0">
+              {roundNames.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRoundFilter(r)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    roundFilter === r
+                      ? 'bg-stone-900 text-white font-black'
+                      : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
+                  }`}
+                >
+                  {r === 'ALL' ? 'All Matches' : r}
+                </button>
+              ))}
             </div>
 
             {isInstitution && (
-              <Button
-                variant="dark"
-                size="sm"
-                icon={Plus}
-                onClick={() => setAddMatchModalOpen(true)}
-                className="font-bold"
-              >
-                Schedule New Fixture
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="gold"
+                  size="sm"
+                  icon={Zap}
+                  loading={generatingFixtures}
+                  onClick={handleGenerateFixtures}
+                  className="font-black shadow-xs hover:scale-105 transition-all"
+                  title="Automatically generate tournament brackets from registered athletes"
+                >
+                  ⚡ 1-Click Generate Brackets
+                </Button>
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={() => setAddMatchModalOpen(true)}
+                  className="font-bold"
+                >
+                  Add Fixture
+                </Button>
+              </div>
             )}
           </div>
 
+          {/* Empty State: Prompt Bracket Generation or Seeding */}
           {matches.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-stone-200 space-y-3">
-              <Clock className="w-10 h-10 text-stone-400 mx-auto" />
-              <h4 className="text-base font-bold text-stone-900">No Fixtures Scheduled Yet</h4>
-              <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                Schedule your opening round heats, semi-finals, or league matches to begin tracking tournament progress.
-              </p>
-              <Button
-                variant="dark"
-                size="sm"
-                icon={Plus}
-                onClick={() => setAddMatchModalOpen(true)}
-              >
-                Schedule First Match
-              </Button>
+            <div className="p-10 sm:p-14 text-center bg-white rounded-3xl border border-dashed border-stone-300 space-y-4 shadow-xs">
+              <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-xs">
+                <Zap className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-1">
+                <h4 className="text-xl font-black text-stone-900">
+                  No Fixture Matches Generated Yet
+                </h4>
+                <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
+                  Generate instant knockout brackets or sprint heats based on your registered athletes roster with a single click.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                {participants.length >= 2 ? (
+                  <Button
+                    variant="gold"
+                    size="md"
+                    icon={Zap}
+                    loading={generatingFixtures}
+                    onClick={handleGenerateFixtures}
+                    className="font-black shadow-md hover:scale-105 transition-all"
+                  >
+                    Generate Brackets from {participants.length} Registered Athletes
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="gold"
+                      size="md"
+                      icon={Zap}
+                      loading={seedingAthletes}
+                      onClick={async () => {
+                        await handleQuickSeedAthletes();
+                        await handleGenerateFixtures();
+                      }}
+                      className="font-black shadow-md hover:scale-105 transition-all"
+                    >
+                      ⚡ Quick Seed 8 Athletes & Auto-Build Bracket
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      icon={UserPlus}
+                      onClick={() => setRegisterModalOpen(true)}
+                      className="font-bold"
+                    >
+                      Manually Register Athlete
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
+            /* Fixture Matches Grid */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {matches.map((m) => {
+              {filteredMatches.map((m) => {
                 const isCompleted = m.status === 'COMPLETED';
                 const isLive = m.status === 'LIVE';
 
                 return (
                   <div
                     key={m.id}
-                    className={`bg-white rounded-3xl p-5 border transition-all space-y-4 shadow-xs ${isLive
+                    className={`bg-white rounded-3xl p-5 border transition-all space-y-4 shadow-xs ${
+                      isLive
                         ? 'border-emerald-400 ring-2 ring-emerald-400/20'
                         : isCompleted
                           ? 'border-stone-200'
                           : 'border-stone-200/90'
-                      }`}
+                    }`}
                   >
                     {/* Header info */}
                     <div className="flex items-center justify-between text-xs pb-3 border-b border-stone-100">
@@ -522,35 +853,51 @@ export default function TournamentWorkspacePage() {
                         <span className="font-black text-stone-900">{m.roundName}</span>
                         <span className="text-[10px] font-bold text-stone-400">Match #{m.matchNumber}</span>
                       </div>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${isLive
-                            ? 'bg-emerald-100 text-emerald-800 animate-pulse'
-                            : isCompleted
-                              ? 'bg-stone-100 text-stone-700'
-                              : 'bg-amber-100 text-amber-900'
+                      
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            isLive
+                              ? 'bg-emerald-100 text-emerald-800 animate-pulse'
+                              : isCompleted
+                                ? 'bg-stone-100 text-stone-700'
+                                : 'bg-amber-100 text-amber-900'
                           }`}
-                      >
-                        {m.status}
-                      </span>
+                        >
+                          {m.status}
+                        </span>
+
+                        {isInstitution && !isCompleted && !isLive && (
+                          <button
+                            type="button"
+                            onClick={() => handleScoreChange(m.id, m.score1, m.score2, m.winnerParticipantId, 'LIVE')}
+                            className="px-2 py-0.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold transition-colors"
+                            title="Mark match as currently LIVE"
+                          >
+                            Go Live
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Participant 1 vs Participant 2 Grid */}
+                    {/* Competitor 1 vs Competitor 2 Grid */}
                     <div className="grid grid-cols-5 items-center gap-3">
 
                       {/* Competitor 1 */}
-                      <div className="col-span-2 space-y-1.5 text-center sm:text-left">
+                      <div className="col-span-2 space-y-2 text-center sm:text-left">
                         <div className="flex items-center gap-2">
                           <Avatar
                             src={m.participant1Avatar}
-                            name={m.participant1Name}
+                            name={m.participant1Name || 'TBD'}
                             size="sm"
                           />
                           <div className="min-w-0 flex-1">
                             <span className="text-xs font-black text-stone-900 block truncate">
-                              {m.participant1Name}
+                              {m.participant1Name || 'TBD (Seed)'}
                             </span>
                           </div>
                         </div>
+
                         {/* Score 1 Input */}
                         <input
                           type="text"
@@ -560,58 +907,53 @@ export default function TournamentWorkspacePage() {
                               handleScoreChange(m.id, e.target.value, m.score2, m.winnerParticipantId, m.status);
                             }
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.target.blur();
+                            }
+                          }}
                           placeholder="Score / Time"
-                          className="w-full text-center sm:text-left px-2.5 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-stone-50 focus:bg-white focus:border-amber-500 focus:outline-none"
+                          className="w-full text-center sm:text-left px-3 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-stone-50 focus:bg-white focus:border-amber-500 focus:outline-none transition-all"
                         />
+
+                        {isInstitution && m.participant1Id && (
+                          <button
+                            type="button"
+                            onClick={() => handleScoreChange(m.id, m.score1, m.score2, m.participant1Id, 'COMPLETED')}
+                            className={`w-full py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                              m.winnerParticipantId === m.participant1Id
+                                ? 'bg-amber-500 text-stone-950 shadow-xs'
+                                : 'bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-900'
+                            }`}
+                          >
+                            <Crown className="w-3 h-3" />
+                            <span>{m.winnerParticipantId === m.participant1Id ? 'Winner ✓' : 'Declare Win'}</span>
+                          </button>
+                        )}
                       </div>
 
-                      {/* VS Divider & Winner Crown */}
+                      {/* VS Divider */}
                       <div className="col-span-1 text-center space-y-1">
                         <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block">
                           VS
                         </span>
-                        {isInstitution && (
-                          <div className="flex justify-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleScoreChange(m.id, m.score1, m.score2, m.participant1Id, 'COMPLETED')}
-                              className={`p-1 rounded-lg text-xs transition-colors ${m.winnerParticipantId && m.winnerParticipantId === m.participant1Id
-                                  ? 'text-amber-500 bg-amber-50 font-black'
-                                  : 'text-stone-300 hover:text-amber-500'
-                                }`}
-                              title="Award Winner to Player 1"
-                            >
-                              <Crown className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleScoreChange(m.id, m.score1, m.score2, m.participant2Id, 'COMPLETED')}
-                              className={`p-1 rounded-lg text-xs transition-colors ${m.winnerParticipantId && m.winnerParticipantId === m.participant2Id
-                                  ? 'text-amber-500 bg-amber-50 font-black'
-                                  : 'text-stone-300 hover:text-amber-500'
-                                }`}
-                              title="Award Winner to Player 2"
-                            >
-                              <Crown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        )}
                       </div>
 
                       {/* Competitor 2 */}
-                      <div className="col-span-2 space-y-1.5 text-center sm:text-right">
+                      <div className="col-span-2 space-y-2 text-center sm:text-right">
                         <div className="flex items-center gap-2 justify-end">
                           <div className="min-w-0 flex-1 text-right">
                             <span className="text-xs font-black text-stone-900 block truncate">
-                              {m.participant2Name}
+                              {m.participant2Name || 'TBD (Seed)'}
                             </span>
                           </div>
                           <Avatar
                             src={m.participant2Avatar}
-                            name={m.participant2Name}
+                            name={m.participant2Name || 'TBD'}
                             size="sm"
                           />
                         </div>
+
                         {/* Score 2 Input */}
                         <input
                           type="text"
@@ -621,9 +963,29 @@ export default function TournamentWorkspacePage() {
                               handleScoreChange(m.id, m.score1, e.target.value, m.winnerParticipantId, m.status);
                             }
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.target.blur();
+                            }
+                          }}
                           placeholder="Score / Time"
-                          className="w-full text-center sm:text-right px-2.5 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-stone-50 focus:bg-white focus:border-amber-500 focus:outline-none"
+                          className="w-full text-center sm:text-right px-3 py-1.5 text-xs font-bold rounded-xl border border-stone-300 bg-stone-50 focus:bg-white focus:border-amber-500 focus:outline-none transition-all"
                         />
+
+                        {isInstitution && m.participant2Id && (
+                          <button
+                            type="button"
+                            onClick={() => handleScoreChange(m.id, m.score1, m.score2, m.participant2Id, 'COMPLETED')}
+                            className={`w-full py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1 ${
+                              m.winnerParticipantId === m.participant2Id
+                                ? 'bg-amber-500 text-stone-950 shadow-xs'
+                                : 'bg-stone-100 hover:bg-amber-100 text-stone-600 hover:text-amber-900'
+                            }`}
+                          >
+                            <Crown className="w-3 h-3" />
+                            <span>{m.winnerParticipantId === m.participant2Id ? 'Winner ✓' : 'Declare Win'}</span>
+                          </button>
+                        )}
                       </div>
 
                     </div>
@@ -632,10 +994,10 @@ export default function TournamentWorkspacePage() {
                     <div className="pt-2.5 border-t border-stone-100 flex items-center justify-between text-[11px] text-stone-500 font-semibold">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3 text-stone-400" />
-                        <span>{m.scheduledTime} · {m.scheduledDate}</span>
+                        <span>{m.scheduledTime || 'TBD'} · {m.scheduledDate || tournament.startDate}</span>
                       </span>
                       <span className="truncate max-w-[150px]">
-                        📍 {m.courtVenue || 'Court / Track'}
+                        📍 {m.courtVenue || tournament.venue}
                       </span>
                     </div>
 
@@ -643,7 +1005,7 @@ export default function TournamentWorkspacePage() {
                     {m.winnerName && (
                       <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/80 text-xs font-bold text-amber-900 flex items-center justify-center gap-1.5">
                         <Crown className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Winner: <strong>{m.winnerName}</strong></span>
+                        <span>Match Winner: <strong>{m.winnerName}</strong></span>
                       </div>
                     )}
 
@@ -655,126 +1017,191 @@ export default function TournamentWorkspacePage() {
         </div>
       )}
 
-      {/* ── TAB 2: ATHLETES ROSTER & GOOGLE FORM RESPONSES ── */}
+      {/* ── TAB 2: ATHLETES ROSTER & QUESTIONNAIRE RESPONSES ── */}
       {activeTab === 'participants' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-black text-stone-900">
-                Registered Athletes Roster
-              </h2>
+          
+          {/* Metrics & Roster Action Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search athletes by name or email..."
+                  value={searchRoster}
+                  onChange={(e) => setSearchRoster(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 text-xs font-medium rounded-xl border border-stone-300 bg-white focus:outline-none focus:border-amber-500 w-60"
+                />
+              </div>
+              <span className="text-xs font-bold text-stone-500">
+                {participants.length} registered
+              </span>
             </div>
 
             {isInstitution && (
-              <Button
-                variant="dark"
-                size="sm"
-                icon={UserPlus}
-                onClick={() => setRegisterModalOpen(true)}
-                className="font-bold"
-              >
-                Register Player / Athlete
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="gold"
+                  size="sm"
+                  icon={Zap}
+                  loading={seedingAthletes}
+                  onClick={handleQuickSeedAthletes}
+                  className="font-black shadow-xs hover:scale-105 transition-all"
+                  title="Bulk register 8 sample athletes to test tournament flow"
+                >
+                  ⚡ Seed 8 Sample Athletes
+                </Button>
+
+                <Button
+                  variant="dark"
+                  size="sm"
+                  icon={UserPlus}
+                  onClick={() => setRegisterModalOpen(true)}
+                  className="font-bold"
+                >
+                  Register Athlete
+                </Button>
+              </div>
             )}
           </div>
 
+          {/* Roster Table */}
           <div className="bg-white rounded-3xl border border-stone-200/90 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-stone-50 border-b border-stone-200 text-stone-600 font-black uppercase tracking-wider text-[10px]">
-                  <tr>
-                    <th className="px-5 py-3.5">Athlete</th>
-                    <th className="px-4 py-3.5">Contact</th>
-                    <th className="px-4 py-3.5">Status</th>
-                    <th className="px-4 py-3.5">Custom Form Answers</th>
-                    <th className="px-5 py-3.5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100 font-medium text-stone-800">
-                  {participants.map((p) => {
-                    let answers = {};
-                    try {
-                      answers = JSON.parse(p.formResponses || '{}');
-                    } catch {
-                      answers = {};
-                    }
+            {participants.length === 0 ? (
+              <div className="p-12 text-center space-y-3">
+                <Users className="w-12 h-12 text-stone-300 mx-auto" />
+                <h4 className="text-base font-bold text-stone-900">No Athletes Registered Yet</h4>
+                <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                  Share the public registration link with athletes, or use 1-click sample seeding to test brackets.
+                </p>
+                <div className="flex justify-center gap-2 pt-2">
+                  <Button
+                    variant="gold"
+                    size="sm"
+                    icon={Zap}
+                    loading={seedingAthletes}
+                    onClick={handleQuickSeedAthletes}
+                    className="font-black"
+                  >
+                    ⚡ Seed 8 Sample Athletes
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-stone-50 border-b border-stone-200 text-stone-600 font-black uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="px-5 py-3.5">Athlete</th>
+                      <th className="px-4 py-3.5">Bib / ID</th>
+                      <th className="px-4 py-3.5">Contact Details</th>
+                      <th className="px-4 py-3.5">Status</th>
+                      <th className="px-4 py-3.5">Questionnaire Answers</th>
+                      <th className="px-5 py-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 font-medium text-stone-800">
+                    {filteredParticipants.map((p, idx) => {
+                      let answers = {};
+                      try {
+                        answers = JSON.parse(p.formResponses || '{}');
+                      } catch {
+                        answers = {};
+                      }
 
-                    return (
-                      <tr key={p.id} className="hover:bg-stone-50/70 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
-                            <Avatar
-                              src={p.avatarUrl}
-                              name={p.athleteName}
-                              size="sm"
-                            />
-                            <div>
-                              <span className="font-black text-stone-900 block">
-                                {p.athleteName}
-                              </span>
-                              {p.userId && (
-                                <span className="text-[10px] text-amber-700 font-bold">
-                                  Verified Arena Member
+                      return (
+                        <tr key={p.id} className="hover:bg-stone-50/70 transition-colors">
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <Avatar
+                                src={p.avatarUrl}
+                                name={p.athleteName}
+                                size="sm"
+                              />
+                              <div>
+                                <span className="font-black text-stone-900 block">
+                                  {p.athleteName}
+                                </span>
+                                {p.userId ? (
+                                  <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
+                                    <ShieldCheck className="w-3 h-3 text-amber-600" />
+                                    <span>Verified Arena Member</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-stone-400">
+                                    Guest Athlete
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3.5 font-mono text-stone-500 font-bold text-[11px]">
+                            #ATH-{p.id}
+                          </td>
+
+                          <td className="px-4 py-3.5 text-stone-600">
+                            <div>{p.email || '—'}</div>
+                            <div className="text-[10px] text-stone-400">{p.phone || ''}</div>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300">
+                              {p.status || 'CONFIRMED'}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-1.5 flex-wrap max-w-xs">
+                              {Object.entries(answers).slice(0, 2).map(([k, v]) => (
+                                <span key={k} className="px-2 py-0.5 rounded-md bg-stone-100 text-[10px] font-bold text-stone-700 truncate">
+                                  {k}: {String(v)}
+                                </span>
+                              ))}
+                              {Object.keys(answers).length > 2 && (
+                                <span className="text-[10px] text-stone-400 font-bold">
+                                  +{Object.keys(answers).length - 2} more
                                 </span>
                               )}
+                              {Object.keys(answers).length === 0 && (
+                                <span className="text-[10px] text-stone-400 italic">None</span>
+                              )}
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="px-4 py-3.5 text-stone-600">
-                          <div>{p.email || '—'}</div>
-                          <div className="text-[10px] text-stone-400">{p.phone || ''}</div>
-                        </td>
-
-                        <td className="px-4 py-3.5">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300">
-                            {p.status}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5">
-                          <div className="flex items-center gap-1.5 flex-wrap max-w-xs">
-                            {Object.entries(answers).slice(0, 2).map(([k, v]) => (
-                              <span key={k} className="px-2 py-0.5 rounded-md bg-stone-100 text-[10px] font-bold text-stone-700 truncate">
-                                {k}: {String(v)}
-                              </span>
-                            ))}
-                            {Object.keys(answers).length > 2 && (
-                              <span className="text-[10px] text-stone-400 font-bold">
-                                +{Object.keys(answers).length - 2} more
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5 text-right space-x-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setViewResponsesModalOpen(p)}
-                            className="font-bold border-stone-200"
-                          >
-                            View Form Responses
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          <td className="px-5 py-3.5 text-right space-x-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => setViewResponsesModalOpen(p)}
+                              className="font-bold border-stone-200"
+                            >
+                              Responses
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ── TAB 3: CUSTOM REGISTRATION FORM (GOOGLE FORMS BUILDER) ── */}
+      {/* ── TAB 3: CUSTOM REGISTRATION FORM BUILDER ── */}
       {activeTab === 'form' && (
-        <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs space-y-4">
+        <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs space-y-5">
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
               <h2 className="text-lg font-black text-stone-900">
-                Custom Registration Form
+                Custom Athlete Registration Form Builder
               </h2>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Customize the registration questionnaire athletes will fill out when entering this tournament.
+              </p>
             </div>
 
             {isInstitution && (
@@ -797,7 +1224,7 @@ export default function TournamentWorkspacePage() {
             <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-stone-200">
               <div className="min-w-0 flex-1">
                 <span className="block text-[10px] font-black uppercase text-stone-400">
-                  1. Tournament Link
+                  1. Tournament Overview URL
                 </span>
                 <span className="block text-xs font-mono font-bold text-stone-800 truncate">
                   {window.location.origin}/tournaments/{tournament.id}
@@ -809,7 +1236,7 @@ export default function TournamentWorkspacePage() {
                 icon={Copy}
                 onClick={() => {
                   navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}`);
-                  showToast('Tournament link copied!', 'success');
+                  showToast('Tournament overview link copied!', 'success');
                 }}
               >
                 Copy
@@ -820,7 +1247,7 @@ export default function TournamentWorkspacePage() {
             <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-50/60 border border-amber-200">
               <div className="min-w-0 flex-1">
                 <span className="block text-[10px] font-black uppercase text-amber-800">
-                  2. Registration Form Link
+                  2. Direct Athlete Registration URL
                 </span>
                 <span className="block text-xs font-mono font-bold text-stone-800 truncate">
                   {window.location.origin}/tournaments/{tournament.id}/register
@@ -938,24 +1365,28 @@ export default function TournamentWorkspacePage() {
             onClick={handleAddQuestionToSchema}
             className="w-full py-2.5 border-dashed font-bold"
           >
-            + Add Another Custom Field
+            + Add Another Custom Questionnaire Field
           </Button>
         </div>
       )}
 
       {/* ── TAB 4: PODIUM & AWARD CEREMONY ── */}
       {activeTab === 'podium' && (
-        <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs space-y-6">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-6">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-4">
             <div>
-              <h2 className="text-lg font-black text-stone-900">
-                Podium & Award Ceremony
+              <h2 className="text-xl font-black text-stone-900">
+                Podium & Credential Award Ceremony
               </h2>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Conclude the tournament to officially issue tamper-proof certificates and verified badges.
+              </p>
             </div>
 
             {tournament.status === 'COMPLETED' ? (
-              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-black">
-                ✓ ALL CREDENTIALS AWARDED
+              <span className="px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-black flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                <span>ALL CREDENTIALS ISSUED</span>
               </span>
             ) : (
               isInstitution && (
@@ -964,7 +1395,7 @@ export default function TournamentWorkspacePage() {
                   size="md"
                   icon={Award}
                   onClick={() => setFinalizeModalOpen(true)}
-                  className="font-black shadow-md hover:scale-105"
+                  className="font-black shadow-md hover:scale-105 transition-all"
                 >
                   Conclude Tournament & Award All
                 </Button>
@@ -972,37 +1403,37 @@ export default function TournamentWorkspacePage() {
             )}
           </div>
 
-          {/* Podium Visual Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          {/* 3D Olympic Podium Display */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end pt-4">
 
             {/* 2nd Place Silver */}
             <div className="p-5 rounded-3xl bg-stone-50 border border-stone-200 text-center space-y-3 order-2 sm:order-1">
               <div className="w-14 h-14 rounded-2xl bg-stone-200 text-stone-700 flex items-center justify-center mx-auto text-xl font-black shadow-xs">
                 🥈
               </div>
-              <h4 className="text-sm font-black text-stone-900">
-                2nd Place (Silver Medal)
+              <span className="text-[10px] font-black uppercase tracking-wider text-stone-400 block">
+                2nd Place
+              </span>
+              <h4 className="text-base font-black text-stone-900">
+                {tournament.winner2ndName || (participants.find((p) => String(p.id) === String(podium2ndId))?.athleteName) || 'TBD - Finalist'}
               </h4>
-              <p className="text-xs font-bold text-stone-600">
-                {tournament.winner2ndName || 'TBD - Finalist'}
-              </p>
-              <div className="p-2 rounded-xl bg-white border border-stone-200 text-[10px] font-bold text-stone-500">
+              <div className="p-2.5 rounded-xl bg-white border border-stone-200 text-xs font-bold text-stone-600">
                 Awards {tournament.linkedBadgeSilverName || 'Silver Medal'} & Certificate
               </div>
             </div>
 
             {/* 1st Place Gold Champion (Elevated) */}
-            <div className="p-6 rounded-3xl bg-gradient-to-b from-amber-100/90 to-amber-50 border-2 border-amber-400 text-center space-y-3 order-1 sm:order-2 shadow-md">
+            <div className="p-6 rounded-3xl bg-gradient-to-b from-amber-100/90 to-amber-50 border-2 border-amber-400 text-center space-y-3 order-1 sm:order-2 shadow-md relative">
               <div className="w-16 h-16 rounded-2xl bg-amber-500 text-stone-950 flex items-center justify-center mx-auto text-2xl font-black shadow-sm ring-4 ring-white">
                 🥇
               </div>
-              <h4 className="text-base font-black text-stone-900">
-                1st Place Champion (Gold Medal)
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 block">
+                Tournament Champion
+              </span>
+              <h4 className="text-lg font-black text-stone-950">
+                {tournament.winner1stName || (participants.find((p) => String(p.id) === String(podium1stId))?.athleteName) || 'TBD - Champion'}
               </h4>
-              <p className="text-sm font-black text-amber-950">
-                {tournament.winner1stName || 'TBD - Champion'}
-              </p>
-              <div className="p-2.5 rounded-xl bg-white border border-amber-300 text-xs font-black text-amber-900">
+              <div className="p-3 rounded-xl bg-white border border-amber-300 text-xs font-black text-amber-900">
                 Awards {tournament.linkedBadgeGoldName || 'Gold Medal'} & Official Winner Certificate
               </div>
             </div>
@@ -1012,18 +1443,52 @@ export default function TournamentWorkspacePage() {
               <div className="w-14 h-14 rounded-2xl bg-amber-200 text-amber-900 flex items-center justify-center mx-auto text-xl font-black shadow-xs">
                 🥉
               </div>
-              <h4 className="text-sm font-black text-stone-900">
-                3rd Place (Bronze Medal)
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-800/70 block">
+                3rd Place
+              </span>
+              <h4 className="text-base font-black text-stone-900">
+                {tournament.winner3rdName || (participants.find((p) => String(p.id) === String(podium3rdId))?.athleteName) || 'TBD - 3rd Place'}
               </h4>
-              <p className="text-xs font-bold text-stone-600">
-                {tournament.winner3rdName || 'TBD - Podium'}
-              </p>
-              <div className="p-2 rounded-xl bg-white border border-amber-200 text-[10px] font-bold text-stone-500">
+              <div className="p-2.5 rounded-xl bg-white border border-amber-200 text-xs font-bold text-stone-600">
                 Awards {tournament.linkedBadgeBronzeName || 'Bronze Medal'} & Certificate
               </div>
             </div>
 
           </div>
+
+          {/* Concluded Summary & Hub Navigation */}
+          {tournament.status === 'COMPLETED' && (
+            <div className="p-6 rounded-3xl bg-stone-900 text-white space-y-4 shadow-md">
+              <div className="flex items-center gap-3">
+                <Trophy className="w-6 h-6 text-amber-400" />
+                <div>
+                  <h3 className="text-base font-black">Tournament Credentials Successfully Issued</h3>
+                  <p className="text-xs text-stone-400">
+                    Badges and tamper-proof certificates have been anchored and deposited into recipients' portfolios.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link
+                  to="/certificates"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 text-stone-950 font-black text-xs hover:bg-amber-400 transition-all shadow-xs"
+                >
+                  <Award className="w-4 h-4" />
+                  <span>View in Certificate Hub →</span>
+                </Link>
+
+                <Link
+                  to={`/tournaments/${tournament.id}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/10 text-white font-bold text-xs hover:bg-white/20 transition-all"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>View Public Tournament Page</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 
@@ -1099,7 +1564,7 @@ export default function TournamentWorkspacePage() {
         )}
       </Modal>
 
-      {/* ── MODAL: REGISTER PLAYER / ATHLETE (ORGANIZER MANUAL ENTRY) ── */}
+      {/* ── MODAL: REGISTER PLAYER / ATHLETE (MANUAL ENTRY) ── */}
       <Modal
         isOpen={registerModalOpen}
         onClose={() => setRegisterModalOpen(false)}
@@ -1107,8 +1572,6 @@ export default function TournamentWorkspacePage() {
         size="md"
       >
         <form onSubmit={handleRegisterParticipant} className="space-y-4">
-
-          {/* Quick pick from arena accounts */}
           <div>
             <label className="block text-xs font-bold text-stone-700 mb-1">
               Link Existing Arena Athlete (Optional)
@@ -1137,7 +1600,7 @@ export default function TournamentWorkspacePage() {
 
           <Input
             label="Athlete Full Name"
-            placeholder="e.g. Indrajeet Patil"
+            placeholder="e.g. Alex Vance"
             value={newAthleteName}
             onChange={(e) => setNewAthleteName(e.target.value)}
             required
@@ -1159,7 +1622,6 @@ export default function TournamentWorkspacePage() {
             />
           </div>
 
-          {/* Custom Google-Form questions to answer for this athlete */}
           {formQuestions.length > 0 && (
             <div className="pt-2 border-t border-stone-200 space-y-3">
               <span className="text-[11px] font-black uppercase tracking-wider text-amber-900 block">
@@ -1247,7 +1709,7 @@ export default function TournamentWorkspacePage() {
                 <option value="Round 1">Round 1 / Heats</option>
                 <option value="Quarter-Finals">Quarter-Finals</option>
                 <option value="Semi-Finals">Semi-Finals</option>
-                <option value="Grand Final">Grand Final / Gold Medal Match</option>
+                <option value="Grand Final">Grand Final / Championship</option>
               </select>
             </div>
             <div>
@@ -1335,7 +1797,7 @@ export default function TournamentWorkspacePage() {
       <Modal
         isOpen={finalizeModalOpen}
         onClose={() => setFinalizeModalOpen(false)}
-        title="Finalize Tournament & Award Verified Credentials"
+        title="Conclude Tournament & Award Verified Credentials"
         size="md"
       >
         <div className="space-y-4">
@@ -1345,7 +1807,7 @@ export default function TournamentWorkspacePage() {
               <span>Automated Credential Issuance</span>
             </p>
             <p className="text-stone-600">
-              Select podium winners to issue verified certificates and badges.
+              Confirm podium winners below to automatically mint and anchor official digital certificates and achievement badges.
             </p>
           </div>
 
@@ -1400,6 +1862,29 @@ export default function TournamentWorkspacePage() {
             </select>
           </div>
 
+          {/* Credential Options Checkboxes */}
+          <div className="pt-2 border-t border-stone-200 space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-stone-800">
+              <input
+                type="checkbox"
+                checked={awardCredentials}
+                onChange={(e) => setAwardCredentials(e.target.checked)}
+                className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+              />
+              <span>Award Gold, Silver & Bronze Badges and Winner Certificates</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-stone-800">
+              <input
+                type="checkbox"
+                checked={awardParticipationCertificates}
+                onChange={(e) => setAwardParticipationCertificates(e.target.checked)}
+                className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400"
+              />
+              <span>Award Official Participation Certificates to all other competitors</span>
+            </label>
+          </div>
+
           <div className="pt-3 border-t border-stone-200 flex justify-end gap-2">
             <Button
               type="button"
@@ -1413,10 +1898,78 @@ export default function TournamentWorkspacePage() {
               type="button"
               variant="gold"
               size="sm"
+              loading={finalizing}
               onClick={handleFinalizeTournament}
               className="font-black shadow-md"
             >
               Confirm & Issue All Credentials →
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── MODAL: POST-FINALIZE CELEBRATION MODAL ── */}
+      <Modal
+        isOpen={finalizeSuccessModalOpen}
+        onClose={() => setFinalizeSuccessModalOpen(false)}
+        title="Tournament Concluded & Credentials Issued"
+        size="md"
+      >
+        <div className="text-center space-y-5 py-2">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500 text-stone-950 flex items-center justify-center mx-auto text-3xl font-black shadow-md ring-4 ring-amber-100">
+            🏆
+          </div>
+
+          <div className="space-y-1">
+            <h3 className="text-xl font-black text-stone-900">
+              Credentials Anchored & Delivered!
+            </h3>
+            <p className="text-xs text-stone-600 max-w-sm mx-auto leading-relaxed">
+              Official digital certificates and achievement badges have been generated and deposited into the recipient athletes' verified portfolios.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 text-left space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-stone-600">🥇 Gold Champion:</span>
+              <span className="font-black text-stone-900">
+                {participants.find((p) => String(p.id) === String(podium1stId))?.athleteName || 'Winner'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-stone-600">🥈 Silver Finalist:</span>
+              <span className="font-black text-stone-900">
+                {participants.find((p) => String(p.id) === String(podium2ndId))?.athleteName || 'Finalist'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-stone-600">🥉 Bronze Podium:</span>
+              <span className="font-black text-stone-900">
+                {participants.find((p) => String(p.id) === String(podium3rdId))?.athleteName || 'Podium'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Button
+              variant="gold"
+              onClick={() => {
+                setFinalizeSuccessModalOpen(false);
+                navigate('/certificates');
+              }}
+              className="w-full sm:w-auto font-black shadow-md"
+            >
+              View in Certificate Hub →
+            </Button>
+            <Button
+              variant="dark"
+              onClick={() => {
+                setFinalizeSuccessModalOpen(false);
+                navigate(`/tournaments/${tournament.id}`);
+              }}
+              className="w-full sm:w-auto font-bold"
+            >
+              View Public Tournament
             </Button>
           </div>
         </div>

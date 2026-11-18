@@ -41,6 +41,18 @@ export const finalizeTournament = (tournamentId, data) => {
   return axiosClient.post(`/tournaments/${tournamentId}/finalize`, data);
 };
 
+export const generateFixtures = (tournamentId) => {
+  return axiosClient.post(`/tournaments/${tournamentId}/generate-fixtures`);
+};
+
+export const bulkRegisterParticipants = (tournamentId, data) => {
+  return axiosClient.post(`/tournaments/${tournamentId}/participants/bulk`, data);
+};
+
+export const updateTournamentStatus = (tournamentId, status) => {
+  return axiosClient.put(`/tournaments/${tournamentId}/status?status=${status}`);
+};
+
 export default {
   getAllTournaments,
   getTournamentById,
@@ -52,4 +64,7 @@ export default {
   createMatch,
   updateMatchScore,
   finalizeTournament,
+  generateFixtures,
+  bulkRegisterParticipants,
+  updateTournamentStatus,
 };

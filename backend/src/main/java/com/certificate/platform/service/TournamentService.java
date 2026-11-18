@@ -200,13 +200,13 @@ public class TournamentService {
 
         // Batch Award Badges and Certificates if requested
         if (Boolean.TRUE.equals(request.getAwardCredentials())) {
-            awardPodiumCredentials(tournament, p1, p2, p3);
+            awardPodiumCredentials(tournament, p1, p2, p3, Boolean.TRUE.equals(request.getAwardParticipationCertificates()));
         }
 
         return mapToResponse(tournament, true);
     }
 
-    private void awardPodiumCredentials(Tournament tournament, TournamentParticipant p1, TournamentParticipant p2, TournamentParticipant p3) {
+    private void awardPodiumCredentials(Tournament tournament, TournamentParticipant p1, TournamentParticipant p2, TournamentParticipant p3, boolean awardParticipation) {
         // 1st Place Gold Medal
         if (p1 != null) {
             awardBadgeIfLinked(p1.getUser(), tournament.getLinkedBadgeGoldId(), tournament.getInstitution());
@@ -222,6 +222,214 @@ public class TournamentService {
             awardBadgeIfLinked(p3.getUser(), tournament.getLinkedBadgeBronzeId(), tournament.getInstitution());
             issueCertificate(tournament, p3, "Podium Finish - Bronze Medal", "3rd Place Finisher");
         }
+
+        // Issue Participation Certificates to all other competitors if requested
+        if (awardParticipation) {
+            List<TournamentParticipant> allParticipants = participantRepository.findByTournamentIdOrderByCreatedAtAsc(tournament.getId());
+            for (TournamentParticipant p : allParticipants) {
+                if ((p1 != null && p.getId().equals(p1.getId())) ||
+                    (p2 != null && p.getId().equals(p2.getId())) ||
+                    (p3 != null && p.getId().equals(p3.getId()))) {
+                    continue; // Skip podium winners who already have medals
+                }
+                issueCertificate(tournament, p, "Official Competitor Credential", "Official Verified Athlete Competitor");
+            }
+            log.info("Issued participation certificates to all remaining competitors in '{}'", tournament.getTitle());
+        }
+    }
+
+    @Transactional
+    public List<TournamentMatchResponse> generateFixtures(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tournament", tournamentId));
+
+        List<TournamentParticipant> participants = participantRepository.findByTournamentIdOrderByCreatedAtAsc(tournamentId);
+        if (participants.isEmpty()) {
+            throw new BadRequestException("At least 2 registered participants are required to generate fixtures");
+        }
+
+        // Clear existing matches for this tournament
+        List<TournamentMatch> existingMatches = matchRepository.findByTournamentIdOrderByMatchNumberAsc(tournamentId);
+        matchRepository.deleteAll(existingMatches);
+
+        List<TournamentMatch> generated = new ArrayList<>();
+        int count = participants.size();
+        String format = tournament.getFormat() != null ? tournament.getFormat().toLowerCase() : "";
+
+        if (format.contains("heat") || format.contains("time trial")) {
+            int heatSize = Math.max(2, (int) Math.ceil((double) count / 2));
+            int matchNum = 1;
+
+            // Heat 1
+            for (int i = 0; i < Math.min(count, heatSize); i += 2) {
+                TournamentParticipant p1 = participants.get(i);
+                TournamentParticipant p2 = (i + 1 < count && i + 1 < heatSize) ? participants.get(i + 1) : null;
+                generated.add(TournamentMatch.builder()
+                        .tournament(tournament)
+                        .roundName("Heat 1 - Qualifying")
+                        .matchNumber(matchNum++)
+                        .participant1(p1)
+                        .participant2(p2)
+                        .scheduledDate(tournament.getStartDate())
+                        .scheduledTime("10:00 AM")
+                        .courtVenue(tournament.getVenue())
+                        .status("UPCOMING")
+                        .build());
+            }
+
+            // Heat 2 if remaining
+            if (count > heatSize) {
+                for (int i = heatSize; i < count; i += 2) {
+                    TournamentParticipant p1 = participants.get(i);
+                    TournamentParticipant p2 = (i + 1 < count) ? participants.get(i + 1) : null;
+                    generated.add(TournamentMatch.builder()
+                            .tournament(tournament)
+                            .roundName("Heat 2 - Qualifying")
+                            .matchNumber(matchNum++)
+                            .participant1(p1)
+                            .participant2(p2)
+                            .scheduledDate(tournament.getStartDate())
+                            .scheduledTime("11:30 AM")
+                            .courtVenue(tournament.getVenue())
+                            .status("UPCOMING")
+                            .build());
+                }
+            }
+
+            // Grand Final
+            generated.add(TournamentMatch.builder()
+                    .tournament(tournament)
+                    .roundName("Grand Final - Championship")
+                    .matchNumber(matchNum++)
+                    .participant1(null)
+                    .participant2(null)
+                    .scheduledDate(tournament.getEndDate() != null ? tournament.getEndDate() : tournament.getStartDate())
+                    .scheduledTime("04:00 PM")
+                    .courtVenue(tournament.getVenue())
+                    .status("UPCOMING")
+                    .build());
+        } else {
+            // Knockout Bracket
+            int matchNum = 1;
+
+            if (count >= 8) {
+                // Quarter-Finals (4 matches)
+                for (int i = 0; i < 8; i += 2) {
+                    TournamentParticipant p1 = i < count ? participants.get(i) : null;
+                    TournamentParticipant p2 = (i + 1 < count) ? participants.get(i + 1) : null;
+                    generated.add(TournamentMatch.builder()
+                            .tournament(tournament)
+                            .roundName("Quarter-Final " + (i / 2 + 1))
+                            .matchNumber(matchNum++)
+                            .participant1(p1)
+                            .participant2(p2)
+                            .scheduledDate(tournament.getStartDate())
+                            .scheduledTime((9 + (i / 2) * 2) + ":00 AM")
+                            .courtVenue(tournament.getVenue())
+                            .status("UPCOMING")
+                            .build());
+                }
+                // Semi-Finals (2 matches)
+                generated.add(TournamentMatch.builder()
+                        .tournament(tournament)
+                        .roundName("Semi-Final 1")
+                        .matchNumber(matchNum++)
+                        .scheduledDate(tournament.getStartDate())
+                        .scheduledTime("02:00 PM")
+                        .courtVenue(tournament.getVenue())
+                        .status("UPCOMING")
+                        .build());
+                generated.add(TournamentMatch.builder()
+                        .tournament(tournament)
+                        .roundName("Semi-Final 2")
+                        .matchNumber(matchNum++)
+                        .scheduledDate(tournament.getStartDate())
+                        .scheduledTime("03:30 PM")
+                        .courtVenue(tournament.getVenue())
+                        .status("UPCOMING")
+                        .build());
+            } else if (count >= 3) {
+                // Semi-Finals (2 matches)
+                for (int i = 0; i < Math.min(count, 4); i += 2) {
+                    TournamentParticipant p1 = participants.get(i);
+                    TournamentParticipant p2 = (i + 1 < count) ? participants.get(i + 1) : null;
+                    generated.add(TournamentMatch.builder()
+                            .tournament(tournament)
+                            .roundName("Semi-Final " + (i / 2 + 1))
+                            .matchNumber(matchNum++)
+                            .participant1(p1)
+                            .participant2(p2)
+                            .scheduledDate(tournament.getStartDate())
+                            .scheduledTime((10 + (i / 2) * 2) + ":00 AM")
+                            .courtVenue(tournament.getVenue())
+                            .status("UPCOMING")
+                            .build());
+                }
+            } else {
+                // Direct Grand Final
+                generated.add(TournamentMatch.builder()
+                        .tournament(tournament)
+                        .roundName("Grand Final")
+                        .matchNumber(matchNum++)
+                        .participant1(participants.get(0))
+                        .participant2(participants.size() > 1 ? participants.get(1) : null)
+                        .scheduledDate(tournament.getStartDate())
+                        .scheduledTime("11:00 AM")
+                        .courtVenue(tournament.getVenue())
+                        .status("UPCOMING")
+                        .build());
+                matchRepository.saveAll(generated);
+                return generated.stream().map(this::mapToMatchResponse).collect(Collectors.toList());
+            }
+
+            // Grand Final
+            generated.add(TournamentMatch.builder()
+                    .tournament(tournament)
+                    .roundName("Grand Final - Championship")
+                    .matchNumber(matchNum++)
+                    .scheduledDate(tournament.getEndDate() != null ? tournament.getEndDate() : tournament.getStartDate())
+                    .scheduledTime("05:00 PM")
+                    .courtVenue(tournament.getVenue())
+                    .status("UPCOMING")
+                    .build());
+        }
+
+        generated = matchRepository.saveAll(generated);
+        log.info("Auto-generated {} fixture matches for tournament '{}'", generated.size(), tournament.getTitle());
+        return generated.stream().map(this::mapToMatchResponse).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<TournamentParticipantResponse> bulkRegisterParticipants(Long tournamentId, List<RegisterParticipantRequest> requests) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tournament", tournamentId));
+
+        List<TournamentParticipant> toSave = new ArrayList<>();
+        for (RegisterParticipantRequest req : requests) {
+            String athleteName = req.getAthleteName();
+            if (athleteName == null || athleteName.isBlank()) continue;
+            toSave.add(TournamentParticipant.builder()
+                    .tournament(tournament)
+                    .athleteName(athleteName.trim())
+                    .email(req.getEmail() != null ? req.getEmail().trim() : null)
+                    .phone(req.getPhone() != null ? req.getPhone().trim() : null)
+                    .status("CONFIRMED")
+                    .formResponses(req.getFormResponses() != null ? req.getFormResponses() : "{}")
+                    .build());
+        }
+        List<TournamentParticipant> saved = participantRepository.saveAll(toSave);
+        log.info("Bulk-registered {} athletes into tournament '{}'", saved.size(), tournament.getTitle());
+        return saved.stream().map(this::mapToParticipantResponse).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public TournamentResponse updateTournamentStatus(Long id, String status) {
+        Tournament tournament = tournamentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tournament", id));
+        tournament.setStatus(status.toUpperCase());
+        tournament = tournamentRepository.save(tournament);
+        log.info("Updated tournament '{}' status to '{}'", tournament.getTitle(), tournament.getStatus());
+        return mapToResponse(tournament, true);
     }
 
     private void awardBadgeIfLinked(User user, Long badgeId, Institution institution) {
