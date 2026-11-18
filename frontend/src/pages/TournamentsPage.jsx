@@ -28,6 +28,45 @@ import { getAllTournaments } from '../api/tournamentsApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
+// Helper to format clean human dates (e.g. "Nov 20 – 22, 2026")
+const formatDateRange = (start, end) => {
+  if (!start && !end) return 'Date TBD';
+  if (!end || start === end) {
+    try {
+      const d = new Date(start);
+      return isNaN(d) ? start : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return start;
+    }
+  }
+  try {
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s) || isNaN(e)) return `${start} – ${end}`;
+    if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
+      return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.getDate()}, ${e.getFullYear()}`;
+    }
+    return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  } catch {
+    return `${start} – ${end}`;
+  }
+};
+
+const getSportEmoji = (sport) => {
+  if (!sport) return '🏆';
+  const s = sport.toLowerCase();
+  if (s.includes('track') || s.includes('athletic') || s.includes('run')) return '🏃';
+  if (s.includes('swim')) return '🏊';
+  if (s.includes('badminton')) return '🏸';
+  if (s.includes('tennis')) return '🎾';
+  if (s.includes('chess')) return '♟️';
+  if (s.includes('football') || s.includes('soccer')) return '⚽';
+  if (s.includes('basketball')) return '🏀';
+  if (s.includes('martial') || s.includes('karate') || s.includes('judo')) return '🥋';
+  if (s.includes('esport') || s.includes('gaming')) return '🎮';
+  return '🏆';
+};
+
 export default function TournamentsPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -76,28 +115,28 @@ export default function TournamentsPage() {
     switch (status) {
       case 'LIVE':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-black tracking-wide shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-black tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>LIVE NOW</span>
           </span>
         );
       case 'REGISTRATION_OPEN':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-300 text-xs font-black tracking-wide shadow-2xs">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-[11px] font-bold">
             <Clock className="w-3 h-3 text-amber-600" />
-            <span>REGISTRATION OPEN</span>
+            <span>Open</span>
           </span>
         );
       case 'COMPLETED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-stone-800 border border-stone-300 text-xs font-black tracking-wide shadow-2xs">
-            <CheckCircle2 className="w-3 h-3 text-stone-600" />
-            <span>COMPLETED</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 text-[11px] font-bold">
+            <CheckCircle2 className="w-3 h-3 text-stone-500" />
+            <span>Ended</span>
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-stone-700 border border-stone-200 text-xs font-bold">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 text-[11px] font-medium">
             {status}
           </span>
         );
@@ -105,7 +144,7 @@ export default function TournamentsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12 font-sans">
       
       {/* ── 1. HEADER & ACTIONS ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-200 pb-5">
@@ -115,7 +154,7 @@ export default function TournamentsPage() {
             <span>Tournaments</span>
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 font-medium mt-1">
-            Active competitions, fixtures & verified honors.
+            Active competitions, fixtures & verified credentials.
           </p>
         </div>
 
@@ -125,7 +164,7 @@ export default function TournamentsPage() {
             size="md"
             icon={Plus}
             onClick={() => navigate('/tournaments/create')}
-            className="shadow-md hover:scale-105 font-bold"
+            className="shadow-sm hover:scale-105 font-bold"
           >
             Organize a Tournament
           </Button>
@@ -137,7 +176,7 @@ export default function TournamentsPage() {
         
         {/* Metric 1: Total Competitions */}
         <Card className="p-4 bg-white border border-stone-200/90 rounded-2xl shadow-2xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-800 flex items-center justify-center font-black">
             <Trophy className="w-5 h-5 text-amber-700" />
           </div>
           <div>
@@ -152,7 +191,7 @@ export default function TournamentsPage() {
 
         {/* Metric 2: Live / In Progress */}
         <Card className="p-4 bg-white border border-stone-200/90 rounded-2xl shadow-2xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 flex items-center justify-center font-black">
             <Flame className="w-5 h-5 text-emerald-700" />
           </div>
           <div>
@@ -167,7 +206,7 @@ export default function TournamentsPage() {
 
         {/* Metric 3: Registration Open */}
         <Card className="p-4 bg-white border border-stone-200/90 rounded-2xl shadow-2xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-800 flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-800 flex items-center justify-center font-black">
             <Clock className="w-5 h-5 text-blue-700" />
           </div>
           <div>
@@ -182,7 +221,7 @@ export default function TournamentsPage() {
 
         {/* Metric 4: Registered Athletes */}
         <Card className="p-4 bg-white border border-stone-200/90 rounded-2xl shadow-2xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-800 flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-800 flex items-center justify-center font-black">
             <Users className="w-5 h-5 text-purple-700" />
           </div>
           <div>
@@ -212,7 +251,7 @@ export default function TournamentsPage() {
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl text-xs font-bold border border-stone-200 overflow-x-auto">
           {[
-            { key: 'ALL', label: 'All Tournaments' },
+            { key: 'ALL', label: 'All' },
             { key: 'LIVE', label: 'Live' },
             { key: 'REGISTRATION_OPEN', label: 'Registering' },
             { key: 'COMPLETED', label: 'Completed' },
@@ -261,7 +300,7 @@ export default function TournamentsPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredTournaments.map((t) => {
             const participantPct = Math.min(
               100,
@@ -271,92 +310,80 @@ export default function TournamentsPage() {
             return (
               <div
                 key={t.id}
-                className="bg-white border border-stone-200/90 hover:border-amber-400 rounded-3xl p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
+                onClick={() => navigate(`/tournaments/${t.id}`)}
+                className="bg-white border border-stone-200/90 hover:border-amber-400 rounded-3xl p-5 sm:p-6 shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
               >
-                {/* Top Row: Sport pill & Status badge */}
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-900 border border-amber-500/30 text-xs font-black tracking-wide uppercase">
-                      🏃 {t.sport}
+                {/* Top Row: Discipline & Status */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-stone-100 text-stone-800 text-xs font-black">
+                      <span>{getSportEmoji(t.sport)}</span>
+                      <span>{t.sport}</span>
                     </span>
-                    {getStatusBadge(t.status)}
+                    {t.format && (
+                      <span className="text-[11px] font-semibold text-stone-400">
+                        · {t.format}
+                      </span>
+                    )}
                   </div>
+                  {getStatusBadge(t.status)}
+                </div>
 
-                  {/* Title & Organization */}
-                  <h3 className="text-xl font-black text-stone-900 tracking-tight group-hover:text-amber-950 transition-colors">
+                {/* Main: Title & Organizer */}
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-stone-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-1">
                     {t.title}
                   </h3>
-                  <p className="text-xs font-bold text-amber-800 mt-1">
-                    Hosted by {t.institutionName}
+                  <p className="text-xs text-stone-500 font-medium">
+                    Hosted by <span className="text-stone-800 font-semibold">{t.institutionName}</span>
                   </p>
-                  
-                  {t.description && (
-                    <p className="text-xs text-stone-600 font-medium mt-2 line-clamp-2 leading-relaxed">
-                      {t.description}
-                    </p>
+                </div>
+
+                {/* Metadata Strip: Date & Venue */}
+                <div className="flex items-center gap-3 text-xs text-stone-500 font-medium flex-wrap">
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                    <span>{formatDateRange(t.startDate, t.endDate)}</span>
+                  </span>
+                  {t.venue && (
+                    <>
+                      <span className="text-stone-300">·</span>
+                      <span className="flex items-center gap-1.5 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                        <span className="truncate">{t.venue}</span>
+                      </span>
+                    </>
                   )}
                 </div>
 
-                {/* Details & Metadata Grid */}
-                <div className="space-y-3 pt-3 border-t border-stone-100">
-                  
-                  <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-stone-600">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <Calendar className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                      <span className="truncate">{t.startDate || 'TBD'} to {t.endDate || 'TBD'}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-                      <span className="truncate">{t.venue || 'Main Athletic Arena'}</span>
-                    </div>
-                  </div>
-
-                  {/* Participant Capacity Bar */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-stone-600">
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3 text-stone-400" />
-                        <span>Registered Athletes: {t.participantCount || 0} / {t.maxParticipants || 16}</span>
-                      </span>
-                      <span>{participantPct}% Full</span>
-                    </div>
-                    <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden border border-stone-200/60">
+                {/* Bottom Row: Capacity Progress & Linked Awards */}
+                <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-3 text-xs">
+                  {/* Clean Athletes Capacity Bar */}
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-20 h-1.5 bg-stone-100 rounded-full overflow-hidden border border-stone-200/50">
                       <div
-                        className={`h-full transition-all duration-500 ${
-                          participantPct >= 90 ? 'bg-rose-500' : 'bg-gradient-to-r from-amber-500 to-amber-600'
-                        }`}
+                        className="h-full bg-amber-500 rounded-full transition-all duration-500"
                         style={{ width: `${participantPct}%` }}
                       />
                     </div>
-                  </div>
-
-                  {/* Linked Badges & Credentials Ribbon */}
-                  <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5 text-stone-700 font-bold truncate">
-                      <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                      <span className="truncate">
-                        {t.linkedBadgeGoldName ? `Awards ${t.linkedBadgeGoldName}` : 'Accredited Credentials Linked'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-black text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-300 shrink-0">
-                      Verified
+                    <span className="text-[11px] font-bold text-stone-600">
+                      {t.participantCount || 0} / {t.maxParticipants || 16} athletes
                     </span>
                   </div>
 
-                </div>
-
-                {/* Footer Action Buttons */}
-                <div className="pt-2 flex items-center justify-between gap-2">
-                  <Button
-                    variant="dark"
-                    size="sm"
-                    icon={ChevronRight}
-                    iconPosition="right"
-                    onClick={() => navigate(`/tournaments/${t.id}`)}
-                    className="w-full font-bold shadow-xs justify-center"
-                  >
-                    Open Tournament Hub
-                  </Button>
+                  {/* Awards / Arrow */}
+                  <div className="flex items-center gap-2">
+                    {t.linkedBadgeGoldName && (
+                      <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 max-w-[140px] truncate">
+                        <Award className="w-3 h-3 text-amber-600 shrink-0" />
+                        <span className="truncate">{t.linkedBadgeGoldName}</span>
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-xs font-black text-stone-700 group-hover:text-amber-800 group-hover:translate-x-0.5 transition-all">
+                      <span>Enter</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </span>
+                  </div>
                 </div>
 
               </div>
