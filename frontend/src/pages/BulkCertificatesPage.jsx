@@ -32,7 +32,7 @@ export default function BulkCertificatesPage() {
   const [idPrefix, setIdPrefix] = useState('ATHLOS-2026');
   
   const [recipients, setRecipients] = useState([
-    { recipientName: 'Indrajeet Sharma', recipientEmail: 'indrajeet@example.com' },
+    { recipientName: 'Indrajeet Patil', recipientEmail: 'indrajeet@example.com' },
     { recipientName: 'Marcus Vance', recipientEmail: 'marcus@example.com' },
     { recipientName: 'Sarah Chen', recipientEmail: 'sarah@example.com' },
   ]);
@@ -58,7 +58,7 @@ export default function BulkCertificatesPage() {
 
   // CSV Template download
   const handleDownloadSampleCsv = () => {
-    const csvContent = 'data:text/csv;charset=utf-8,recipientName,recipientEmail\nIndrajeet Sharma,indrajeet@example.com\nMarcus Vance,marcus@example.com\nSarah Chen,sarah@example.com';
+    const csvContent = 'data:text/csv;charset=utf-8,recipientName,recipientEmail\nIndrajeet Patil,indrajeet@example.com\nMarcus Vance,marcus@example.com\nSarah Chen,sarah@example.com';
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);

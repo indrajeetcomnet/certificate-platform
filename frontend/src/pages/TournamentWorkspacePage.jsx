@@ -366,20 +366,33 @@ export default function TournamentWorkspacePage() {
             </div>
           </div>
 
-          {/* Quick Actions (Share Registration Link, Register Athlete) */}
+          {/* Quick Actions: Two Links (Share Tournament & Registration Form Link) */}
           <div className="flex items-center gap-2 flex-wrap shrink-0">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Copy}
+            <button
+              type="button"
               onClick={() => {
-                navigator.clipboard?.writeText(window.location.href);
-                showToast('Athlete registration link copied to clipboard!', 'success');
+                navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}`);
+                showToast('Tournament link copied!', 'success');
               }}
-              className="border-stone-300 font-bold"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-xs font-bold text-stone-700 shadow-2xs transition-all"
+              title="Copy Tournament Overview link"
             >
-              Share Link
-            </Button>
+              <Copy className="w-3.5 h-3.5 text-stone-400" />
+              <span>Share Tournament</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}/register`);
+                showToast('Registration form link copied!', 'success');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-xs font-black text-amber-900 shadow-2xs transition-all"
+              title="Copy Direct Registration Form link"
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-700" />
+              <span>Registration Form Link</span>
+            </button>
 
             {isInstitution && tournament.status !== 'COMPLETED' && (
               <Button
@@ -778,6 +791,66 @@ export default function TournamentWorkspacePage() {
             )}
           </div>
 
+          {/* Quick Two-Links Bar: Share Tournament & Registration Form Filling */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-stone-50 border border-stone-200">
+            {/* Link 1: Tournament Share */}
+            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-stone-200">
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] font-black uppercase text-stone-400">
+                  1. Tournament Link
+                </span>
+                <span className="block text-xs font-mono font-bold text-stone-800 truncate">
+                  {window.location.origin}/tournaments/{tournament.id}
+                </span>
+              </div>
+              <Button
+                size="xs"
+                variant="secondary"
+                icon={Copy}
+                onClick={() => {
+                  navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}`);
+                  showToast('Tournament link copied!', 'success');
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+
+            {/* Link 2: Registration Form Filling */}
+            <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-50/60 border border-amber-200">
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] font-black uppercase text-amber-800">
+                  2. Registration Form Link
+                </span>
+                <span className="block text-xs font-mono font-bold text-stone-800 truncate">
+                  {window.location.origin}/tournaments/{tournament.id}/register
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  icon={Copy}
+                  onClick={() => {
+                    navigator.clipboard?.writeText(`${window.location.origin}/tournaments/${tournament.id}/register`);
+                    showToast('Registration form link copied!', 'success');
+                  }}
+                >
+                  Copy
+                </Button>
+                <Link
+                  to={`/tournaments/${tournament.id}/register`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 transition-colors"
+                >
+                  <span>Open</span>
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-3">
             {formQuestions.map((f, i) => (
               <div
@@ -1064,7 +1137,7 @@ export default function TournamentWorkspacePage() {
 
           <Input
             label="Athlete Full Name"
-            placeholder="e.g. Indrajeet Sharma"
+            placeholder="e.g. Indrajeet Patil"
             value={newAthleteName}
             onChange={(e) => setNewAthleteName(e.target.value)}
             required

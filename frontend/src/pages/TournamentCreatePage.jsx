@@ -662,7 +662,7 @@ export default function TournamentCreatePage() {
           <div className="space-y-3">
             <div className="space-y-1">
               <label className="text-xs font-bold text-stone-700">Athlete Full Name *</label>
-              <input disabled placeholder="Indrajeet Sharma" className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs" />
+              <input disabled placeholder="Indrajeet Patil" className="w-full px-3 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-stone-700">Email Address *</label>

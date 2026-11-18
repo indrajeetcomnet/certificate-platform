@@ -205,7 +205,7 @@ const TEMPLATE_PRESETS = {
         x: 561,
         y: 375,
         text: '{{recipient_name}}',
-        sampleText: 'Indrajeet Sharma',
+        sampleText: 'Indrajeet Patil',
         fontFamily: 'playfair',
         fontSize: 44,
         fontWeight: 'bold',
@@ -468,7 +468,7 @@ const TEMPLATE_PRESETS = {
         x: 561,
         y: 375,
         text: '{{recipient_name}}',
-        sampleText: 'Indrajeet Sharma',
+        sampleText: 'Indrajeet Patil',
         fontFamily: 'playfair',
         fontSize: 44,
         fontWeight: 'bold',
@@ -609,7 +609,7 @@ export default function CertificateBoardDesigner({
     initialCertificate?.title || 'Game City National Invitational 2026'
   );
   const [recipientName, setRecipientName] = useState(
-    initialCertificate?.recipientName || 'Indrajeet Sharma'
+    initialCertificate?.recipientName || 'Indrajeet Patil'
   );
   const [recipientEmail, setRecipientEmail] = useState(
     initialCertificate?.recipientEmail || 'indrajeet@example.com'
@@ -2081,7 +2081,7 @@ export default function CertificateBoardDesigner({
                       type="text"
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
-                      placeholder="e.g. Indrajeet Sharma"
+                      placeholder="e.g. Indrajeet Patil"
                       className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:border-amber-500"
                     />
                   </div>

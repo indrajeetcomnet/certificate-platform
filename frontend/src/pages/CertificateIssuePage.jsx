@@ -294,7 +294,7 @@ export default function CertificateIssuePage() {
                     label="Recipient Full Name"
                     value={formData.recipientName}
                     onChange={(e) => setFormData({ ...formData, recipientName: e.target.value })}
-                    placeholder="e.g. Indrajeet Sharma"
+                    placeholder="e.g. Indrajeet Patil"
                     required
                   />
 

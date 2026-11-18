@@ -177,7 +177,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             User u = User.builder()
                     .username("indrajeet")
                     .email("indrajeet@athlete.org")
-                    .displayName("Indrajeet Sharma")
+                    .displayName("Indrajeet Patil")
                     .passwordHash(PasswordEncoderUtil.hash("userpass2026"))
                     .role(User.Role.USER)
                     .bio("National 100m Sprint Champion | PB: 10.18s | Track & Field Athlete | 2026 Asian Games Contender")
@@ -185,6 +185,10 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .build();
             return userRepository.save(u);
         });
+        if (indrajeet != null && !"Indrajeet Patil".equals(indrajeet.getDisplayName())) {
+            indrajeet.setDisplayName("Indrajeet Patil");
+            userRepository.save(indrajeet);
+        }
 
         User marcus = userRepository.findByUsername("marcus_vance").orElseGet(() -> {
             User u = User.builder()
@@ -397,7 +401,7 @@ public class DatabaseInitializer implements CommandLineRunner {
             TournamentParticipant tp1 = tournamentParticipantRepository.save(TournamentParticipant.builder()
                     .tournament(t)
                     .user(indrajeet)
-                    .athleteName("Indrajeet Sharma")
+                    .athleteName("Indrajeet Patil")
                     .email("indrajeet@athlete.org")
                     .phone("+91 98765 43210")
                     .status("CONFIRMED")
@@ -489,7 +493,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .mentor(rohit)
                     .roleTitle("Strength & Performance Coach")
                     .build());
-            log.info("Initialized initial mentor credit: Indrajeet Sharma credited Rohit Kumar as coach.");
+            log.info("Initialized initial mentor credit: Indrajeet Patil credited Rohit Kumar as coach.");
         }
     }
 }

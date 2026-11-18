@@ -25,6 +25,7 @@ import TournamentCreatePage from './pages/TournamentCreatePage';
 import TournamentWorkspacePage from './pages/TournamentWorkspacePage';
 import SponsorsPage from './pages/SponsorsPage';
 import HallOfFamePage from './pages/HallOfFamePage';
+import TournamentRegistrationPage from './pages/TournamentRegistrationPage';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/register" element={<LoginPage />} />
           <Route path="/sponsors" element={<AppLayout><SponsorsPage /></AppLayout>} />
           <Route path="/hall-of-fame" element={<AppLayout><HallOfFamePage /></AppLayout>} />
+          <Route path="/tournaments/:tournamentId/register" element={<TournamentRegistrationPage />} />
 
           {/* Public Direct Verification Portal (Accessed strictly via footer link / direct link / QR code) */}
           <Route path="/certificates/verify" element={<CertificateVerifyPage />} />
@@ -129,6 +131,7 @@ export default function App() {
               }
             />
             <Route path="tournaments/:tournamentId" element={<TournamentWorkspacePage />} />
+            <Route path="tournaments/:tournamentId/register" element={<TournamentRegistrationPage />} />
           </Route>
 
           {/* Fallback route */}

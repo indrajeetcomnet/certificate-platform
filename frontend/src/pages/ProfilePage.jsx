@@ -897,7 +897,7 @@ export default function ProfilePage() {
               label="Display Name"
               value={editForm.displayName}
               onChange={(e) => setEditForm((prev) => ({ ...prev, displayName: e.target.value }))}
-              placeholder="e.g. Indrajeet Sharma"
+              placeholder="e.g. Indrajeet Patil"
               required
             />
 
