@@ -9,6 +9,22 @@ export default function CertificateTemplate({
 }) {
   if (!certificate) return null;
 
+  const parsedTemplateData = (() => {
+    if (certificate?.templateData) {
+      try {
+        return typeof certificate.templateData === 'string'
+          ? JSON.parse(certificate.templateData)
+          : certificate.templateData;
+      } catch { }
+    }
+    return null;
+  })();
+
+  const bgImageUrl = parsedTemplateData?.bgImageUrl || null;
+  const bgImageOpacity = parsedTemplateData?.bgImageOpacity ?? 1;
+  const bgImageFit = parsedTemplateData?.bgImageFit || 'cover';
+  const customBgColor = parsedTemplateData?.bgClass || null;
+
   const {
     title = 'Certificate of Achievement',
     recipientName = 'Recipient Name',
@@ -28,16 +44,38 @@ export default function CertificateTemplate({
 
   return (
     <div
+      style={customBgColor ? { backgroundColor: customBgColor } : undefined}
       className={`relative p-8 sm:p-12 rounded-2xl shadow-xl overflow-hidden text-center flex flex-col justify-between min-h-[420px] ${borderStyles} ${className}`}
     >
+      {/* Background Image Layer if present */}
+      {bgImageUrl && (
+        <div
+          style={{
+            opacity: bgImageOpacity,
+            backgroundImage: `url(${bgImageUrl})`,
+            backgroundSize:
+              bgImageFit === 'cover'
+                ? 'cover'
+                : bgImageFit === 'contain'
+                ? 'contain'
+                : bgImageFit === 'repeat'
+                ? 'auto'
+                : '100% 100%',
+            backgroundRepeat: bgImageFit === 'repeat' ? 'repeat' : 'no-repeat',
+            backgroundPosition: 'center',
+          }}
+          className="absolute inset-0 pointer-events-none z-0"
+        />
+      )}
+
       {/* Corner decorative accents */}
-      <div className="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-amber-500/60 pointer-events-none" />
-      <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-amber-500/60 pointer-events-none" />
-      <div className="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-amber-500/60 pointer-events-none" />
-      <div className="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-amber-500/60 pointer-events-none" />
+      <div className="absolute top-2 left-2 w-8 h-8 border-t-2 border-l-2 border-amber-500/60 pointer-events-none z-10" />
+      <div className="absolute top-2 right-2 w-8 h-8 border-t-2 border-r-2 border-amber-500/60 pointer-events-none z-10" />
+      <div className="absolute bottom-2 left-2 w-8 h-8 border-b-2 border-l-2 border-amber-500/60 pointer-events-none z-10" />
+      <div className="absolute bottom-2 right-2 w-8 h-8 border-b-2 border-r-2 border-amber-500/60 pointer-events-none z-10" />
 
       {/* Header / Institution logo */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2 relative z-10">
         <div className="w-14 h-14 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shadow-sm">
           {institution.logoUrl ? (
             <img
@@ -58,7 +96,7 @@ export default function CertificateTemplate({
       </div>
 
       {/* Recipient body */}
-      <div className="my-6 space-y-2">
+      <div className="my-6 space-y-2 relative z-10">
         <p className="text-xs uppercase tracking-widest text-stone-500 font-medium">
           This is proudly presented to
         </p>
@@ -71,7 +109,7 @@ export default function CertificateTemplate({
       </div>
 
       {/* Footer details & verification badge */}
-      <div className="pt-4 border-t border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+      <div className="pt-4 border-t border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500 relative z-10">
         <div className="text-left">
           <p className="font-semibold text-stone-700">Date Issued</p>
           <p>{formatDate(issuedAt)}</p>

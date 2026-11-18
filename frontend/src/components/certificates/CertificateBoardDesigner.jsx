@@ -47,7 +47,8 @@ import {
   Sliders,
   Image as ImageIcon,
   Download,
-  ChevronDown
+  ChevronDown,
+  Link2,
 } from 'lucide-react';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
@@ -60,6 +61,8 @@ import {
   downloadCertificateSvg,
   downloadCertificateJson,
 } from '../../utils/certificateExport';
+import { CERTIFICATE_BACKGROUND_PRESETS } from '../../utils/certificateBackgrounds';
+import { uploadImage } from '../../api/mediaApi';
 import { useToast } from '../../context/ToastContext';
 import { create as createCertApi, update as updateCertApi } from '../../api/certificatesApi';
 import { getAllUsers } from '../../api/usersApi';
@@ -685,21 +688,80 @@ export default function CertificateBoardDesigner({
     return () => document.removeEventListener('mousedown', handleOutsideDownload);
   }, []);
 
-  // Custom Background Upload handler
-  const handleBackgroundUpload = (e) => {
-    const file = e.target.files && e.target.files[0];
+  // Custom Background Upload & URL handlers
+  const [bgUrlInput, setBgUrlInput] = useState('');
+  const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
+
+  const handleBackgroundUpload = async (fileOrEvent) => {
+    let file = null;
+    if (fileOrEvent?.target?.files) {
+      file = fileOrEvent.target.files[0];
+    } else if (fileOrEvent instanceof File) {
+      file = fileOrEvent;
+    }
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('Please upload an image file (PNG, JPG, SVG)', 'error');
+
+    if (!file.type || !file.type.startsWith('image/')) {
+      showToast('Please upload an image file (PNG, JPG, SVG, WebP)', 'error');
       return;
     }
+
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('Image file too large (Max 15MB)', 'error');
+      return;
+    }
+
+    // Instant local preview
     const reader = new FileReader();
     reader.onload = () => {
       setBgImageUrl(reader.result);
       setBgType('image');
-      showToast('Custom background image applied!', 'success');
+      showToast('Certificate background image applied!', 'success');
     };
     reader.readAsDataURL(file);
+
+    // Persist to server uploads if media API is available
+    try {
+      const res = await uploadImage(file);
+      if (res && (res.url || res.imageUrl)) {
+        setBgImageUrl(res.url || res.imageUrl);
+      }
+    } catch {
+      // Keep data URL in state
+    }
+
+    if (fileOrEvent?.target) {
+      fileOrEvent.target.value = '';
+    }
+    if (bgFileInputRef.current) {
+      bgFileInputRef.current.value = '';
+    }
+  };
+
+  const handleApplyBgUrl = () => {
+    if (!bgUrlInput.trim()) return;
+    setBgImageUrl(bgUrlInput.trim());
+    setBgType('image');
+    showToast('Background image applied from URL!', 'success');
+    setBgUrlInput('');
+  };
+
+  const handleSelectBgPreset = (preset) => {
+    setBgImageUrl(preset.dataUrl);
+    setBgType('image');
+    if (preset.defaultOpacity !== undefined) {
+      setBgImageOpacity(preset.defaultOpacity);
+    }
+    if (preset.defaultFit) {
+      setBgImageFit(preset.defaultFit);
+    }
+    showToast(`Applied "${preset.name}" background`, 'success');
+  };
+
+  const handleRemoveBgImage = () => {
+    setBgImageUrl(null);
+    setBgType('color');
+    showToast('Background image removed', 'info');
   };
 
   // Custom Signature state
@@ -1438,7 +1500,7 @@ export default function CertificateBoardDesigner({
                 key={tab.id}
                 type="button"
                 onClick={() => handleRailClick(tab.id)}
-                className={`w-[50px] py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-center ${isActive
+                className={`w-[50px] py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-center relative ${isActive
                   ? 'bg-amber-500/15 text-amber-900 font-extrabold shadow-xs border border-amber-500/30'
                   : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100'
                   }`}
@@ -1446,6 +1508,9 @@ export default function CertificateBoardDesigner({
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-amber-700' : 'text-stone-600'}`} />
                 <span className="text-[9.5px] leading-tight font-bold">{tab.label}</span>
+                {tab.id === 'background' && bgImageUrl && (
+                  <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" title="Background image active" />
+                )}
               </button>
             );
           })}
@@ -1512,13 +1577,145 @@ export default function CertificateBoardDesigner({
                     </div>
                   </div>
 
-                  {/* MS Paint Style Saturation & Color Box for Canvas Background */}
+                  {/* Canvas Background Tone (Color) */}
                   <div>
                     <PaintColorPicker
                       label="Canvas Background Tone"
                       color={bgClass}
                       onChange={(c) => setBgClass(c)}
                     />
+                  </div>
+
+                  {/* Certificate Background Image (Quick Access in Design Tab) */}
+                  <div className="space-y-2.5 pt-2 border-t border-stone-200/80">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-black uppercase text-stone-500 flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-amber-600" />
+                        Background Image
+                      </label>
+                      {bgImageUrl && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Active
+                        </span>
+                      )}
+                    </div>
+
+                    {bgImageUrl ? (
+                      <div className="space-y-2.5 p-2.5 bg-stone-50 rounded-xl border border-stone-200">
+                        <div className="relative rounded-lg border border-stone-200 overflow-hidden bg-white p-1 flex items-center justify-center">
+                          <img
+                            src={bgImageUrl}
+                            alt="Background Preview"
+                            className="max-h-20 max-w-full object-contain rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveBgImage}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-white/95 text-stone-500 hover:text-rose-600 shadow-xs transition-colors"
+                            title="Remove background image"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => bgFileInputRef.current?.click()}
+                            className="flex-1 py-1 px-2 rounded-lg border border-stone-200 bg-white hover:bg-stone-100 text-[11px] font-bold text-stone-700 text-center transition-all shadow-xs"
+                          >
+                            Replace
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRemoveBgImage}
+                            className="py-1 px-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-bold text-rose-700 transition-all"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between text-[10px] font-bold text-stone-600 mb-1">
+                            <span>Image Opacity</span>
+                            <span className="font-mono text-stone-500">{Math.round(bgImageOpacity * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.05"
+                            max="1.00"
+                            step="0.05"
+                            value={bgImageOpacity}
+                            onChange={(e) => setBgImageOpacity(parseFloat(e.target.value))}
+                            className="w-full accent-amber-600 cursor-pointer"
+                          />
+                        </div>
+
+                        <div>
+                          <div className="text-[10px] font-bold text-stone-600 mb-1">Sizing Mode</div>
+                          <div className="grid grid-cols-4 gap-1">
+                            {[
+                              { id: 'cover', label: 'Cover' },
+                              { id: 'contain', label: 'Contain' },
+                              { id: 'stretch', label: 'Stretch' },
+                              { id: 'repeat', label: 'Tile' },
+                            ].map((fit) => (
+                              <button
+                                key={fit.id}
+                                type="button"
+                                onClick={() => setBgImageFit(fit.id)}
+                                className={`py-0.5 rounded-lg border text-[10px] font-bold transition-all ${
+                                  bgImageFit === fit.id
+                                    ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
+                                    : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
+                                }`}
+                              >
+                                {fit.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => bgFileInputRef.current?.click()}
+                          className="w-full py-2 px-3 rounded-xl border border-dashed border-stone-300 hover:border-amber-500 bg-amber-50/30 hover:bg-amber-50 text-xs font-bold text-amber-900 flex items-center justify-center gap-2 transition-all shadow-xs group"
+                        >
+                          <Upload className="w-4 h-4 text-amber-700 group-hover:scale-110 transition-transform" />
+                          Upload Background Image
+                        </button>
+
+                        <div>
+                          <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+                            Or Apply Curated Diploma Background
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {CERTIFICATE_BACKGROUND_PRESETS.map((preset) => (
+                              <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => handleSelectBgPreset(preset)}
+                                className="p-1 rounded-lg border border-stone-200 hover:border-amber-400 bg-white hover:bg-amber-50/50 text-left transition-all group flex flex-col items-center justify-center text-center"
+                                title={preset.name}
+                              >
+                                <div
+                                  className="w-full h-8 rounded border border-stone-200/80 mb-1 bg-cover bg-center shadow-2xs"
+                                  style={{
+                                    backgroundImage: `url(${preset.dataUrl})`,
+                                    backgroundColor: preset.thumbnailColor,
+                                  }}
+                                />
+                                <span className="text-[9px] font-bold text-stone-700 group-hover:text-amber-900 truncate w-full">
+                                  {preset.name.split(' ')[0]}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Border Style & Custom Border Color */}
@@ -1567,20 +1764,24 @@ export default function CertificateBoardDesigner({
                     </label>
                     <div className="grid grid-cols-3 gap-1 bg-stone-100 p-1 rounded-xl">
                       {[
-                        { id: 'color', label: 'Solid Color' },
-                        { id: 'gradient', label: 'Gradient' },
-                        { id: 'image', label: 'Template' },
+                        { id: 'image', label: 'Image', icon: ImageIcon },
+                        { id: 'color', label: 'Solid Color', icon: Palette },
+                        { id: 'gradient', label: 'Gradient', icon: Sparkles },
                       ].map((mode) => (
                         <button
                           key={mode.id}
                           type="button"
                           onClick={() => setBgType(mode.id)}
-                          className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${bgType === mode.id
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${bgType === mode.id
                             ? 'bg-white text-stone-900 shadow-xs'
                             : 'text-stone-600 hover:text-stone-900'
                             }`}
                         >
-                          {mode.label}
+                          <mode.icon className="w-3.5 h-3.5 shrink-0" />
+                          <span>{mode.label}</span>
+                          {mode.id === 'image' && bgImageUrl && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -1589,6 +1790,22 @@ export default function CertificateBoardDesigner({
                   {/* Mode 1: Solid Color */}
                   {bgType === 'color' && (
                     <div className="space-y-3">
+                      {bgImageUrl && (
+                        <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span className="text-[11px] font-bold">Background image is active</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setBgType('image')}
+                            className="text-[10px] font-black uppercase text-amber-800 underline hover:text-amber-950"
+                          >
+                            Edit Image
+                          </button>
+                        </div>
+                      )}
+
                       <PaintColorPicker
                         label="Solid Background Color"
                         color={bgClass}
@@ -1634,6 +1851,22 @@ export default function CertificateBoardDesigner({
                   {/* Mode 2: Luxury Diploma Gradients */}
                   {bgType === 'gradient' && (
                     <div className="space-y-2">
+                      {bgImageUrl && (
+                        <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span className="text-[11px] font-bold">Background image is active</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setBgType('image')}
+                            className="text-[10px] font-black uppercase text-amber-800 underline hover:text-amber-950"
+                          >
+                            Edit Image
+                          </button>
+                        </div>
+                      )}
+
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
                         Select Luxury Diploma Gradient
                       </label>
@@ -1664,9 +1897,9 @@ export default function CertificateBoardDesigner({
                     </div>
                   )}
 
-                  {/* Mode 3: Custom Background Image / Template Upload */}
+                  {/* Mode 3: Custom Background Image & Curated Presets */}
                   {bgType === 'image' && (
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
                       <input
                         ref={bgFileInputRef}
                         type="file"
@@ -1675,22 +1908,28 @@ export default function CertificateBoardDesigner({
                         onChange={handleBackgroundUpload}
                       />
 
-                      {bgImageUrl ? (
-                        <div className="space-y-3">
-                          <div className="relative rounded-xl border border-stone-200 overflow-hidden bg-stone-100 p-1 flex items-center justify-center">
+                      {/* Active Background Image Controls */}
+                      {bgImageUrl && (
+                        <div className="space-y-3 p-3 bg-stone-50 rounded-2xl border border-stone-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-stone-700 flex items-center gap-1.5">
+                              <ImageIcon className="w-3.5 h-3.5 text-amber-600" /> Current Background Image
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Active
+                            </span>
+                          </div>
+
+                          <div className="relative rounded-xl border border-stone-200 overflow-hidden bg-white p-1 flex items-center justify-center shadow-xs">
                             <img
                               src={bgImageUrl}
                               alt="Background Preview"
-                              className="max-h-28 max-w-full object-contain rounded-lg shadow-xs"
+                              className="max-h-24 max-w-full object-contain rounded-lg"
                             />
                             <button
                               type="button"
-                              onClick={() => {
-                                setBgImageUrl(null);
-                                setBgType('color');
-                                showToast('Custom background template removed', 'info');
-                              }}
-                              className="absolute top-2 right-2 p-1 rounded-full bg-white/90 text-stone-600 hover:text-red-600 shadow-md transition-colors"
+                              onClick={handleRemoveBgImage}
+                              className="absolute top-2 right-2 p-1 rounded-full bg-white/95 text-stone-600 hover:text-red-600 shadow-md transition-colors"
                               title="Remove background image"
                             >
                               <X className="w-3.5 h-3.5" />
@@ -1701,17 +1940,15 @@ export default function CertificateBoardDesigner({
                             <button
                               type="button"
                               onClick={() => bgFileInputRef.current?.click()}
-                              className="flex-1 py-1.5 px-3 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 text-xs font-bold text-stone-700 text-center transition-all shadow-xs"
+                              className="flex-1 py-1.5 px-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-xs font-bold text-stone-700 text-center transition-all shadow-xs flex items-center justify-center gap-1.5"
                             >
-                              Replace Image
+                              <Upload className="w-3.5 h-3.5 text-stone-500" />
+                              Replace File
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
-                                setBgImageUrl(null);
-                                setBgType('color');
-                              }}
-                              className="py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-xs font-bold text-red-700 transition-all"
+                              onClick={handleRemoveBgImage}
+                              className="py-1.5 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-xs font-bold text-rose-700 transition-all"
                             >
                               Clear
                             </button>
@@ -1726,7 +1963,7 @@ export default function CertificateBoardDesigner({
                             </div>
                             <input
                               type="range"
-                              min="0.10"
+                              min="0.05"
                               max="1.00"
                               step="0.05"
                               value={bgImageOpacity}
@@ -1739,10 +1976,11 @@ export default function CertificateBoardDesigner({
                             <label className="block text-[11px] font-bold text-stone-700 mb-1">
                               Image Sizing Mode
                             </label>
-                            <div className="grid grid-cols-3 gap-1">
+                            <div className="grid grid-cols-4 gap-1">
                               {[
                                 { id: 'cover', label: 'Cover' },
                                 { id: 'contain', label: 'Contain' },
+                                { id: 'stretch', label: 'Stretch' },
                                 { id: 'repeat', label: 'Tile' },
                               ].map((fit) => (
                                 <button
@@ -1751,7 +1989,7 @@ export default function CertificateBoardDesigner({
                                   onClick={() => setBgImageFit(fit.id)}
                                   className={`py-1 rounded-lg border text-xs font-bold transition-all ${bgImageFit === fit.id
                                     ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
-                                    : 'border-stone-200 bg-stone-50 text-stone-600 hover:bg-stone-100'
+                                    : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-100'
                                     }`}
                                 >
                                   {fit.label}
@@ -1760,22 +1998,116 @@ export default function CertificateBoardDesigner({
                             </div>
                           </div>
                         </div>
-                      ) : (
-                        <div
-                          onClick={() => bgFileInputRef.current?.click()}
-                          className="border-2 border-dashed border-stone-200 hover:border-amber-400 rounded-2xl p-6 text-center cursor-pointer transition-all bg-stone-50/50 hover:bg-amber-50/20 group"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
-                            <Upload className="w-5 h-5" />
-                          </div>
-                          <div className="text-xs font-bold text-stone-800 mb-0.5">
-                            Upload Custom Certificate Template
-                          </div>
-                          <p className="text-[10px] text-stone-500">
-                            PNG, JPG, or SVG (Up to 10MB)
-                          </p>
-                        </div>
                       )}
+
+                      {/* Upload from Computer Box */}
+                      <div
+                        onClick={() => bgFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-stone-200 hover:border-amber-400 rounded-2xl p-5 text-center cursor-pointer transition-all bg-stone-50/50 hover:bg-amber-50/30 group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform shadow-xs">
+                          <Upload className="w-5 h-5" />
+                        </div>
+                        <div className="text-xs font-bold text-stone-800 mb-0.5">
+                          Upload Custom Certificate Background
+                        </div>
+                        <p className="text-[10px] text-stone-500">
+                          PNG, JPG, WebP, or SVG (Up to 15MB)
+                        </p>
+                      </div>
+
+                      {/* Paste Web Image URL */}
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+                          Or Paste Web Image URL
+                        </label>
+                        <div className="flex gap-1.5">
+                          <div className="relative flex-1">
+                            <Link2 className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="url"
+                              placeholder="https://.../diploma-bg.png"
+                              value={bgUrlInput}
+                              onChange={(e) => setBgUrlInput(e.target.value)}
+                              className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono text-[11px]"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleApplyBgUrl}
+                            disabled={!bgUrlInput.trim()}
+                            className="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-amber-600 disabled:opacity-40 text-white font-bold text-xs transition-colors shrink-0 shadow-xs"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Curated Background Gallery */}
+                      <div className="pt-2 border-t border-stone-200 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black uppercase tracking-wider text-stone-500">
+                            Curated Diploma Backgrounds
+                          </label>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                            {CERTIFICATE_BACKGROUND_PRESETS.length} Vector Presets
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {CERTIFICATE_BACKGROUND_PRESETS.map((preset) => {
+                            const isSelected = bgImageUrl === preset.dataUrl;
+                            return (
+                              <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => handleSelectBgPreset(preset)}
+                                className={`w-full text-left p-2 rounded-xl border transition-all flex items-center gap-2.5 group ${
+                                  isSelected
+                                    ? 'border-amber-500 bg-amber-50/70 ring-2 ring-amber-500/20 shadow-xs'
+                                    : 'border-stone-200 hover:border-amber-300 bg-white hover:bg-stone-50'
+                                }`}
+                              >
+                                <div
+                                  className="w-12 h-9 rounded-lg border border-stone-200 bg-cover bg-center shrink-0 shadow-2xs relative overflow-hidden"
+                                  style={{
+                                    backgroundImage: `url(${preset.dataUrl})`,
+                                    backgroundColor: preset.thumbnailColor,
+                                  }}
+                                >
+                                  {isSelected && (
+                                    <div className="absolute inset-0 bg-amber-600/30 flex items-center justify-center">
+                                      <Check className="w-4 h-4 text-white stroke-[3]" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="text-xs font-bold text-stone-900 group-hover:text-amber-950 truncate">
+                                      {preset.name}
+                                    </span>
+                                    <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 shrink-0">
+                                      {preset.category.split(' ')[0]}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-stone-500 truncate mt-0.5">
+                                    {preset.description}
+                                  </p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Underlying Base Tone */}
+                      <div className="pt-2 border-t border-stone-200">
+                        <PaintColorPicker
+                          label="Underlying Canvas Tone (Shows Through)"
+                          color={bgClass}
+                          onChange={(c) => setBgClass(c)}
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -2327,6 +2659,97 @@ export default function CertificateBoardDesigner({
           }}
           className="flex-1 w-full h-full flex items-center justify-center overflow-auto bg-[#EBEBE6] p-4 relative"
         >
+          {/* Floating Contextual Canvas Toolbar (Quick Access for Background & Image) */}
+          {!selectedId && !previewMode && (
+            <div
+              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-md px-3.5 py-1.5 rounded-full flex items-center gap-2.5 text-xs text-stone-700 pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="text-[10px] font-black uppercase tracking-wider text-stone-400 flex items-center gap-1">
+                <Palette className="w-3.5 h-3.5 text-amber-600" />
+                Canvas
+              </span>
+              <div className="h-3.5 w-px bg-stone-200" />
+
+              {/* Color button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveRailTab('background');
+                  setBgType('color');
+                  setDrawerOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded-md hover:bg-stone-100 font-bold transition-colors"
+                title="Set Background Tone"
+              >
+                <span
+                  className="w-3.5 h-3.5 rounded-full border border-stone-300 shadow-2xs shrink-0"
+                  style={{ backgroundColor: bgClass }}
+                />
+                <span>Color</span>
+              </button>
+
+              <div className="h-3.5 w-px bg-stone-200" />
+
+              {/* Background Image button */}
+              {bgImageUrl ? (
+                <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md font-bold text-amber-900">
+                  <ImageIcon className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Image Active ({Math.round(bgImageOpacity * 100)}%)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveRailTab('background');
+                      setBgType('image');
+                      setDrawerOpen(true);
+                    }}
+                    className="text-[10px] underline hover:text-amber-950 ml-1"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveBgImage}
+                    className="p-0.5 rounded hover:bg-rose-100 text-stone-400 hover:text-rose-600 transition-colors ml-0.5"
+                    title="Remove Background Image"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveRailTab('background');
+                    setBgType('image');
+                    setDrawerOpen(true);
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold border border-amber-300 transition-colors shadow-2xs"
+                  title="Add Background Image to Certificate"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-amber-700" />
+                  <span>+ Add Background Image</span>
+                </button>
+              )}
+
+              <div className="h-3.5 w-px bg-stone-200" />
+
+              {/* Border Style */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveRailTab('design');
+                  setDrawerOpen(true);
+                }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-stone-100 font-bold transition-colors text-stone-600"
+                title="Border Settings"
+              >
+                <Shield className="w-3.5 h-3.5 text-stone-500" />
+                <span className="capitalize">{borderStyle.replace('-', ' ')}</span>
+              </button>
+            </div>
+          )}
+
           {/* Virtual Canvas wrapper scaled via CSS Transform */}
           <div
             style={{
@@ -2350,6 +2773,25 @@ export default function CertificateBoardDesigner({
                 setActiveRailTab('background');
                 setDrawerOpen(true);
               }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOverCanvas(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOverCanvas(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDragOverCanvas(false);
+                const files = e.dataTransfer?.files;
+                if (files && files.length > 0) {
+                  handleBackgroundUpload(files[0]);
+                }
+              }}
               style={{
                 width: `${canvasWidth}px`,
                 height: `${canvasHeight}px`,
@@ -2358,6 +2800,16 @@ export default function CertificateBoardDesigner({
               }}
               className="relative shadow-2xl overflow-hidden border border-stone-300 select-none cursor-default"
             >
+              {/* Drag & Drop Feedback Overlay */}
+              {isDragOverCanvas && (
+                <div className="absolute inset-0 bg-amber-500/20 backdrop-blur-xs border-4 border-dashed border-amber-500 rounded-xl z-50 flex items-center justify-center pointer-events-none">
+                  <div className="bg-white/95 px-6 py-4 rounded-2xl shadow-2xl text-center space-y-1">
+                    <Upload className="w-8 h-8 text-amber-600 mx-auto" />
+                    <div className="font-black text-stone-900 text-sm">Drop Image to Set as Background</div>
+                    <div className="text-xs text-stone-500">Supports PNG, JPG, SVG, WebP</div>
+                  </div>
+                </div>
+              )}
 
               {/* ── SECURITY WATERMARK / PATTERN LAYER (Z-1) ── */}
               {bgPattern && bgPattern !== 'none' && (
@@ -2378,7 +2830,14 @@ export default function CertificateBoardDesigner({
                   style={{
                     opacity: bgImageOpacity,
                     backgroundImage: `url(${bgImageUrl})`,
-                    backgroundSize: bgImageFit === 'cover' ? 'cover' : bgImageFit === 'contain' ? 'contain' : 'auto',
+                    backgroundSize:
+                      bgImageFit === 'cover'
+                        ? 'cover'
+                        : bgImageFit === 'contain'
+                        ? 'contain'
+                        : bgImageFit === 'repeat'
+                        ? 'auto'
+                        : '100% 100%',
                     backgroundRepeat: bgImageFit === 'repeat' ? 'repeat' : 'no-repeat',
                     backgroundPosition: 'center',
                   }}

@@ -23,7 +23,11 @@ backend/target/
 *.jar
 *.war
 
-# Logs & Runtime
+# Uploads & Scratch
+backend/uploads/
+uploads/
+scratch/
+
 *.log
 logs/
 npm-debug.log*

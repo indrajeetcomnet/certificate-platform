@@ -63,6 +63,20 @@ public class DatabaseInitializer implements CommandLineRunner {
             return institutionRepository.save(inst);
         });
 
+        // Ensure apex_academy user also exists with accredited access for seamless compatibility
+        if (userRepository.findByUsername("apex_academy").isEmpty()) {
+            User apexUser = User.builder()
+                    .username("apex_academy")
+                    .email("admin@apexacademy.org")
+                    .displayName("Athlos Sports Academy")
+                    .passwordHash(PasswordEncoderUtil.hash("apexpass2026"))
+                    .role(User.Role.INSTITUTION)
+                    .bio("Official Accredited Sports Academy & Tournament Federation")
+                    .avatarUrl("https://images.unsplash.com/photo-1546519638-68e109498ffc?w=150&h=150&fit=crop&crop=faces")
+                    .build();
+            userRepository.save(apexUser);
+        }
+
         // 2. Seed Real Brand Sponsors if empty
         if (sponsorRepository.count() == 0) {
             Sponsor nike = Sponsor.builder()

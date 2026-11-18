@@ -69,7 +69,16 @@ export function AuthProvider({ children }) {
     persistSessionToStorage(localStorage, userObj, tokenStr);
   };
 
-  // Athlete & Creator Login - Authentic Database Authentication
+  // Helper to extract descriptive error message without collapsing to generic "Bad Request"
+const extractAuthError = (err, fallback) => {
+  const data = err?.response?.data;
+  if (data?.detail && (!data?.message || data?.message === 'Bad Request')) {
+    return data.detail;
+  }
+  return err?.userFriendlyMessage || data?.message || data?.detail || err?.message || fallback;
+};
+
+// Athlete & Creator Login - Authentic Database Authentication
   const loginUser = useCallback(async (credentials) => {
     try {
       const res = await authApi.login(credentials);
@@ -86,8 +95,7 @@ export function AuthProvider({ children }) {
       persistSession(userObj, data.token);
       return { success: true, user: userObj };
     } catch (err) {
-      const errorMsg = err.userFriendlyMessage || err.response?.data?.message || err.response?.data?.detail || err.message || 'Invalid username or password';
-      throw new Error(errorMsg);
+      throw new Error(extractAuthError(err, 'Invalid username or password'));
     }
   }, []);
 
@@ -107,8 +115,7 @@ export function AuthProvider({ children }) {
       persistSession(userObj, data.token);
       return { success: true, user: userObj };
     } catch (err) {
-      const errorMsg = err.userFriendlyMessage || err.response?.data?.message || err.response?.data?.detail || err.message || 'Registration failed';
-      throw new Error(errorMsg);
+      throw new Error(extractAuthError(err, 'Registration failed'));
     }
   }, []);
 
@@ -127,8 +134,7 @@ export function AuthProvider({ children }) {
       persistSession(institutionObj, data.token);
       return { success: true, user: institutionObj };
     } catch (err) {
-      const errorMsg = err.userFriendlyMessage || err.response?.data?.message || err.response?.data?.detail || err.message || 'Institution authentication failed';
-      throw new Error(errorMsg);
+      throw new Error(extractAuthError(err, 'Institution authentication failed'));
     }
   }, []);
 
