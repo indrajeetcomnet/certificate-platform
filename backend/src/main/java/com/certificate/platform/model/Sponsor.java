@@ -57,6 +57,8 @@ public class Sponsor {
     @Builder.Default
     private String sponsorType = "BRAND";
 
+    private Integer slotNumber;
+
     private Long createdById;
 
     private String createdByName;

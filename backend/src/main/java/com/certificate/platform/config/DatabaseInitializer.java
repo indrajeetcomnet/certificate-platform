@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 @Lazy
@@ -77,6 +78,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .totalClicks(4820L)
                     .targetCategory("ATHLETICS")
                     .sponsorType("BRAND")
+                    .slotNumber(1)
                     .status("ACTIVE")
                     .isActive(true)
                     .campaignStart(LocalDateTime.now())
@@ -97,6 +99,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .totalClicks(7150L)
                     .targetCategory("ALL")
                     .sponsorType("BRAND")
+                    .slotNumber(2)
                     .status("ACTIVE")
                     .isActive(true)
                     .campaignStart(LocalDateTime.now())
@@ -117,6 +120,7 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .totalClicks(3290L)
                     .targetCategory("FOOTBALL")
                     .sponsorType("BRAND")
+                    .slotNumber(3)
                     .status("ACTIVE")
                     .isActive(true)
                     .campaignStart(LocalDateTime.now())
@@ -124,6 +128,16 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .build();
             sponsorRepository.save(puma);
             log.info("Initialized 3 active brand sponsors in database.");
+        }
+
+        // Ensure all active sponsors have slot numbers assigned according to availability
+        List<Sponsor> allCurrentSponsors = sponsorRepository.findAll();
+        for (int i = 0; i < allCurrentSponsors.size(); i++) {
+            Sponsor s = allCurrentSponsors.get(i);
+            if (s.getSlotNumber() == null) {
+                s.setSlotNumber(i + 1);
+                sponsorRepository.save(s);
+            }
         }
 
         // 3. Seed Competition Badges if empty

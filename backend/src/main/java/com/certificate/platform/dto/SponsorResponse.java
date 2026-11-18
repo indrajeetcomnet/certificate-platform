@@ -24,6 +24,7 @@ public class SponsorResponse {
     private Long totalClicks;
     private String targetCategory;
     private String sponsorType;
+    private Integer slotNumber;
     private Long createdById;
     private String createdByName;
     private String status;

@@ -556,7 +556,7 @@ export default function CertificateBoardDesigner({
         return typeof initialCertificate.templateData === 'string'
           ? JSON.parse(initialCertificate.templateData)
           : initialCertificate.templateData;
-      } catch {}
+      } catch { }
     }
     return null;
   })();
@@ -616,7 +616,7 @@ export default function CertificateBoardDesigner({
   );
   const [citationText, setCitationText] = useState(
     initialCertificate?.description ||
-      'For exemplary competitive excellence, athletic discipline, and securing 1st Place Gold Medal in the Game City National Invitational 2026.'
+    'For exemplary competitive excellence, athletic discipline, and securing 1st Place Gold Medal in the Game City National Invitational 2026.'
   );
   const [activeUniqueCode, setActiveUniqueCode] = useState(
     initialCertificate?.uniqueCode || 'GC-2026-ATH-GOLD-01'
@@ -1173,10 +1173,10 @@ export default function CertificateBoardDesigner({
 
   return (
     <div className={`w-full h-full flex-1 flex flex-col bg-[#F3F3ED] text-stone-900 select-none overflow-hidden relative ${className}`}>
-      
+
       {/* ── 1. SINGLE UNIFIED TOP BAR (HEIGHT: 48px, BADGES & FEED BUTTONS REMOVED) ── */}
       <header className="h-12 bg-white border-b border-stone-200/90 px-3 sm:px-4 flex items-center justify-between gap-3 z-30 shrink-0">
-        
+
         {/* Left: Back button, Studio Logo, Editable Document Title */}
         <div className="flex items-center gap-2.5 min-w-0">
           <Link
@@ -1208,7 +1208,7 @@ export default function CertificateBoardDesigner({
 
         {/* Center: Undo/Redo, Zoom Controls, Orientation, Preview Mode */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          
+
           {/* Undo / Redo */}
           <div className="flex items-center bg-stone-100 rounded-lg p-0.5 border border-stone-200/80">
             <button
@@ -1239,9 +1239,8 @@ export default function CertificateBoardDesigner({
                 setOrientation('landscape');
                 setTimeout(fitToScreen, 100);
               }}
-              className={`px-2 py-0.5 rounded transition-colors ${
-                orientation === 'landscape' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-500 hover:text-stone-900'
-              }`}
+              className={`px-2 py-0.5 rounded transition-colors ${orientation === 'landscape' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-500 hover:text-stone-900'
+                }`}
             >
               Landscape
             </button>
@@ -1251,9 +1250,8 @@ export default function CertificateBoardDesigner({
                 setOrientation('portrait');
                 setTimeout(fitToScreen, 100);
               }}
-              className={`px-2 py-0.5 rounded transition-colors ${
-                orientation === 'portrait' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-500 hover:text-stone-900'
-              }`}
+              className={`px-2 py-0.5 rounded transition-colors ${orientation === 'portrait' ? 'bg-white text-stone-900 shadow-xs' : 'text-stone-500 hover:text-stone-900'
+                }`}
             >
               Portrait
             </button>
@@ -1294,11 +1292,10 @@ export default function CertificateBoardDesigner({
           <button
             type="button"
             onClick={() => setSnapEnabled(!snapEnabled)}
-            className={`p-1.5 rounded-lg border transition-colors ${
-              snapEnabled
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                : 'bg-stone-100 text-stone-400 border-stone-200 hover:text-stone-700'
-            }`}
+            className={`p-1.5 rounded-lg border transition-colors ${snapEnabled
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+              : 'bg-stone-100 text-stone-400 border-stone-200 hover:text-stone-700'
+              }`}
             title={snapEnabled ? 'Magnetic Snap Guides ON' : 'Magnetic Snap Guides OFF'}
           >
             <Magnet className="w-3.5 h-3.5" />
@@ -1308,11 +1305,10 @@ export default function CertificateBoardDesigner({
           <button
             type="button"
             onClick={() => setPreviewMode(!previewMode)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${
-              previewMode
-                ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
-                : 'bg-stone-100 text-stone-700 hover:bg-stone-200 border-stone-200'
-            }`}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${previewMode
+              ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+              : 'bg-stone-100 text-stone-700 hover:bg-stone-200 border-stone-200'
+              }`}
             title="Preview final printout"
           >
             {previewMode ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -1322,7 +1318,7 @@ export default function CertificateBoardDesigner({
 
         {/* Right: Download Menu & Print & Primary Save/Issue Action */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          
+
           {/* Download Dropdown */}
           <div ref={downloadMenuRef} className="relative">
             <button
@@ -1442,11 +1438,10 @@ export default function CertificateBoardDesigner({
                 key={tab.id}
                 type="button"
                 onClick={() => handleRailClick(tab.id)}
-                className={`w-[50px] py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-center ${
-                  isActive
-                    ? 'bg-amber-500/15 text-amber-900 font-extrabold shadow-xs border border-amber-500/30'
-                    : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100'
-                }`}
+                className={`w-[50px] py-2 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all text-center ${isActive
+                  ? 'bg-amber-500/15 text-amber-900 font-extrabold shadow-xs border border-amber-500/30'
+                  : 'text-stone-500 hover:text-stone-900 hover:bg-stone-100'
+                  }`}
                 title={tab.title}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-amber-700' : 'text-stone-600'}`} />
@@ -1459,7 +1454,7 @@ export default function CertificateBoardDesigner({
         {/* ── 2B. COLLAPSIBLE TOOL DRAWER (WIDTH: 290px) ── */}
         {drawerOpen && activeRailTab && (
           <aside className="w-[290px] bg-white border-r border-stone-200/90 flex flex-col z-20 shadow-lg shrink-0 overflow-hidden animate-in slide-in-from-left-2 duration-150">
-            
+
             {/* Drawer Header */}
             <div className="h-10 px-3 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
               <span className="text-xs font-black text-stone-900 tracking-tight flex items-center gap-1.5 uppercase">
@@ -1477,7 +1472,7 @@ export default function CertificateBoardDesigner({
 
             {/* Drawer Body */}
             <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs">
-              
+
               {/* TAB 1: DESIGN & BACKGROUND THEMES + MS PAINT COLOR PICKER */}
               {activeRailTab === 'design' && (
                 <div className="space-y-4">
@@ -1543,11 +1538,10 @@ export default function CertificateBoardDesigner({
                           key={b.id}
                           type="button"
                           onClick={() => setBorderStyle(b.id)}
-                          className={`p-1.5 rounded-xl border text-center text-[11px] font-bold transition-all ${
-                            borderStyle === b.id
-                              ? 'bg-amber-50 text-amber-900 border-amber-400 shadow-xs'
-                              : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
-                          }`}
+                          className={`p-1.5 rounded-xl border text-center text-[11px] font-bold transition-all ${borderStyle === b.id
+                            ? 'bg-amber-50 text-amber-900 border-amber-400 shadow-xs'
+                            : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                            }`}
                         >
                           {b.label}
                         </button>
@@ -1581,11 +1575,10 @@ export default function CertificateBoardDesigner({
                           key={mode.id}
                           type="button"
                           onClick={() => setBgType(mode.id)}
-                          className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
-                            bgType === mode.id
-                              ? 'bg-white text-stone-900 shadow-xs'
-                              : 'text-stone-600 hover:text-stone-900'
-                          }`}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${bgType === mode.id
+                            ? 'bg-white text-stone-900 shadow-xs'
+                            : 'text-stone-600 hover:text-stone-900'
+                            }`}
                         >
                           {mode.label}
                         </button>
@@ -1627,11 +1620,10 @@ export default function CertificateBoardDesigner({
                                 setBgType('color');
                               }}
                               style={{ backgroundColor: swatch.color }}
-                              className={`h-7 rounded-lg border transition-all ${
-                                bgClass === swatch.color && bgType === 'color'
-                                  ? 'border-amber-600 ring-2 ring-amber-500/30 scale-105'
-                                  : 'border-stone-300 hover:border-stone-400'
-                              }`}
+                              className={`h-7 rounded-lg border transition-all ${bgClass === swatch.color && bgType === 'color'
+                                ? 'border-amber-600 ring-2 ring-amber-500/30 scale-105'
+                                : 'border-stone-300 hover:border-stone-400'
+                                }`}
                             />
                           ))}
                         </div>
@@ -1654,11 +1646,10 @@ export default function CertificateBoardDesigner({
                               setBgGradient(grad.css);
                               setBgType('gradient');
                             }}
-                            className={`p-2 rounded-xl border text-left transition-all ${
-                              bgGradient === grad.css && bgType === 'gradient'
-                                ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/40'
-                                : 'border-stone-200 hover:border-stone-300 bg-white'
-                            }`}
+                            className={`p-2 rounded-xl border text-left transition-all ${bgGradient === grad.css && bgType === 'gradient'
+                              ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-50/40'
+                              : 'border-stone-200 hover:border-stone-300 bg-white'
+                              }`}
                           >
                             <div
                               style={{ background: grad.css }}
@@ -1758,11 +1749,10 @@ export default function CertificateBoardDesigner({
                                   key={fit.id}
                                   type="button"
                                   onClick={() => setBgImageFit(fit.id)}
-                                  className={`py-1 rounded-lg border text-xs font-bold transition-all ${
-                                    bgImageFit === fit.id
-                                      ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
-                                      : 'border-stone-200 bg-stone-50 text-stone-600 hover:bg-stone-100'
-                                  }`}
+                                  className={`py-1 rounded-lg border text-xs font-bold transition-all ${bgImageFit === fit.id
+                                    ? 'border-amber-500 bg-amber-50 text-amber-900 shadow-xs'
+                                    : 'border-stone-200 bg-stone-50 text-stone-600 hover:bg-stone-100'
+                                    }`}
                                 >
                                   {fit.label}
                                 </button>
@@ -1808,11 +1798,10 @@ export default function CertificateBoardDesigner({
                           key={p.id}
                           type="button"
                           onClick={() => setBgPattern(p.id)}
-                          className={`p-2 rounded-xl border text-left text-xs font-bold transition-all ${
-                            bgPattern === p.id
-                              ? 'bg-amber-50 text-amber-900 border-amber-400 shadow-xs'
-                              : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
-                          }`}
+                          className={`p-2 rounded-xl border text-left text-xs font-bold transition-all ${bgPattern === p.id
+                            ? 'bg-amber-50 text-amber-900 border-amber-400 shadow-xs'
+                            : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                            }`}
                         >
                           {p.label}
                         </button>
@@ -2155,7 +2144,7 @@ export default function CertificateBoardDesigner({
               {/* TAB 6: CUSTOM SIGNATURES & IMAGE UPLOAD */}
               {activeRailTab === 'signatures' && (
                 <div className="space-y-4">
-                  
+
                   {/* Option 1: Upload Signature Image */}
                   <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2.5">
                     <div className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
@@ -2306,11 +2295,10 @@ export default function CertificateBoardDesigner({
                     <div
                       key={elem.id}
                       onClick={() => setSelectedId(elem.id)}
-                      className={`p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-colors ${
-                        selectedId === elem.id
-                          ? 'bg-amber-50 border-amber-400 text-amber-950 font-bold'
-                          : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
-                      }`}
+                      className={`p-2 rounded-lg border flex items-center justify-between cursor-pointer transition-colors ${selectedId === elem.id
+                        ? 'bg-amber-50 border-amber-400 text-amber-950 font-bold'
+                        : 'bg-stone-50 border-stone-200 hover:bg-stone-100 text-stone-700'
+                        }`}
                     >
                       <div className="flex items-center gap-2 truncate">
                         <span className="text-[10px] text-stone-400 font-mono">#{idx + 1}</span>
@@ -2472,19 +2460,19 @@ export default function CertificateBoardDesigner({
                     zIndex: 40,
                     ...(guide.type === 'v'
                       ? {
-                          left: `${guide.pos}px`,
-                          top: 0,
-                          bottom: 0,
-                          width: '1px',
-                          borderLeft: '1.5px dashed #EC4899',
-                        }
+                        left: `${guide.pos}px`,
+                        top: 0,
+                        bottom: 0,
+                        width: '1px',
+                        borderLeft: '1.5px dashed #EC4899',
+                      }
                       : {
-                          top: `${guide.pos}px`,
-                          left: 0,
-                          right: 0,
-                          height: '1px',
-                          borderTop: '1.5px dashed #EC4899',
-                        }),
+                        top: `${guide.pos}px`,
+                        left: 0,
+                        right: 0,
+                        height: '1px',
+                        borderTop: '1.5px dashed #EC4899',
+                      }),
                   }}
                 >
                   <span className="absolute top-2 left-2 bg-pink-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">
@@ -2519,11 +2507,10 @@ export default function CertificateBoardDesigner({
                       zIndex: isSelected ? 30 : 10,
                       touchAction: 'none',
                     }}
-                    className={`group transition-shadow duration-75 select-none ${
-                      isSelected ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-white' : ''
-                    }`}
+                    className={`group transition-shadow duration-75 select-none ${isSelected ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-white' : ''
+                      }`}
                   >
-                    
+
                     {/* Small Pencil icon button to edit text on component */}
                     {isSelected && elem.type === 'text' && !isInlineEditing && (
                       <button

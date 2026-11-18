@@ -78,6 +78,8 @@ export default function SponsorsPage() {
   const [budget, setBudget] = useState('2000');
   const [targetCategory, setTargetCategory] = useState('ALL');
   const [sponsorType, setSponsorType] = useState('BRAND');
+  const [selectedSlotForBooking, setSelectedSlotForBooking] = useState(null);
+  const TOTAL_SLOTS = 6;
 
   // Deposit Form State
   const [depositAmount, setDepositAmount] = useState('1000');
@@ -109,6 +111,28 @@ export default function SponsorsPage() {
   useEffect(() => {
     loadData();
   }, [isAuthenticated, currentUser]);
+
+  // Compute Platform Availability Slots (1 to 6)
+  const activeSponsors = useMemo(() => {
+    return (sponsors || []).filter((s) => s.isActive && (s.status === 'ACTIVE' || !s.status));
+  }, [sponsors]);
+
+  const slots = useMemo(() => {
+    const list = [];
+    for (let i = 1; i <= TOTAL_SLOTS; i++) {
+      const assigned = activeSponsors.find((s) => s.slotNumber === i) || activeSponsors[i - 1] || null;
+      list.push({
+        slotNumber: i,
+        sponsor: assigned,
+        isOccupied: Boolean(assigned),
+      });
+    }
+    return list;
+  }, [activeSponsors]);
+
+  const occupiedCount = slots.filter((s) => s.isOccupied).length;
+  const availableCount = TOTAL_SLOTS - occupiedCount;
+  const nextAvailableSlot = slots.find((s) => !s.isOccupied)?.slotNumber || (occupiedCount + 1);
 
   // Aggregate Metrics
   const metrics = useMemo(() => {
@@ -151,11 +175,12 @@ export default function SponsorsPage() {
         cpmRate: 20.00,
         targetCategory,
         sponsorType,
+        slotNumber: selectedSlotForBooking || nextAvailableSlot,
         isActive: true,
       };
 
       const res = await createSponsorApi(payload);
-      showToast(`Campaign for "${brandName}" launched! It is now rotating live on verified badges.`, 'success');
+      showToast(`Campaign for "${brandName}" launched! Allotted Slot #${selectedSlotForBooking || nextAvailableSlot}.`, 'success');
       setIsCreateOpen(false);
       resetCreateForm();
       await loadData();
@@ -176,6 +201,7 @@ export default function SponsorsPage() {
     setBudget('2000');
     setTargetCategory('ALL');
     setSponsorType('BRAND');
+    setSelectedSlotForBooking(null);
   };
 
   // Open Edit Modal
@@ -359,6 +385,108 @@ export default function SponsorsPage() {
         </div>
       </div>
 
+      {/* ── 2. ARENA SPONSORSHIP AVAILABILITY SLOTS ── */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-2xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h2 className="text-lg font-black text-stone-900 tracking-tight">
+                Platform Sponsorship Slots & Availability
+              </h2>
+            </div>
+            <p className="text-xs text-stone-500 font-medium mt-0.5">
+              Sponsorships are allocated by availability slots across the platform. Each verified badge rotates 1:1 with one sponsor slot.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-xl bg-stone-100 text-stone-700 text-xs font-bold font-mono border border-stone-200">
+              {occupiedCount} / {TOTAL_SLOTS} Occupied
+            </span>
+            <span className="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold font-mono border border-emerald-300">
+              {availableCount} Slots Open
+            </span>
+          </div>
+        </div>
+
+        {/* 6 Slots Visual Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {slots.map((slot) => {
+            if (slot.isOccupied && slot.sponsor) {
+              const sp = slot.sponsor;
+              const remainingBudget = Math.max(0, Number(sp.budget || 0) - Number(sp.spentAmount || 0));
+              return (
+                <div
+                  key={slot.slotNumber}
+                  className="p-4 rounded-2xl bg-stone-50/70 border border-stone-200/90 hover:border-amber-300 transition-all flex flex-col justify-between space-y-3 shadow-2xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black uppercase tracking-wider">
+                      Slot #{slot.slotNumber}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Active in Arena
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-center py-2">
+                    <SponsorBadge sponsor={sp} />
+                  </div>
+
+                  <div className="pt-2 border-t border-stone-200/70 flex items-center justify-between text-[11px] text-stone-600">
+                    <span className="font-semibold">{sp.name}</span>
+                    <span className="font-mono font-bold text-stone-900">
+                      ₹{remainingBudget.toLocaleString()} left
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={slot.slotNumber}
+                className="p-4 rounded-2xl bg-white border border-dashed border-stone-300 hover:border-amber-400 hover:bg-amber-50/30 transition-all flex flex-col justify-between space-y-3 group"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 text-[10px] font-black uppercase tracking-wider">
+                    Slot #{slot.slotNumber}
+                  </span>
+                  <span className="text-[10px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-full">
+                    Available
+                  </span>
+                </div>
+
+                <div className="py-2 text-center space-y-1">
+                  <span className="text-xs font-bold text-stone-700 block">
+                    Open Rotation Slot
+                  </span>
+                  <span className="text-[11px] text-stone-400 block">
+                    Available for brand or fan sponsorship
+                  </span>
+                </div>
+
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  onClick={() => {
+                    if (isInstitution) {
+                      showToast('Institutions create certificates and awards. Sponsorships are reserved for brands, fans, and creators.', 'info');
+                    }
+                    setSelectedSlotForBooking(slot.slotNumber);
+                    setIsCreateOpen(true);
+                  }}
+                  className="w-full justify-center font-bold text-xs group-hover:border-amber-400 group-hover:text-amber-900"
+                >
+                  Claim Slot #{slot.slotNumber}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── 2. CONTROLS & TAB FILTER ── */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         {/* Segmented Filter */}
@@ -456,8 +584,8 @@ export default function SponsorsPage() {
                         >
                           {sponsor.name}
                         </h3>
-                        <span className="text-[11px] font-bold text-amber-700 tracking-wide uppercase">
-                          {sponsor.targetCategory || 'All Podium Badges'}
+                        <span className="text-[11px] font-bold text-amber-800 tracking-wide uppercase">
+                          Slot #{sponsor.slotNumber || (displayedList.indexOf(sponsor) + 1)} • Active Arena Slot
                         </span>
                       </div>
                     </div>
@@ -481,6 +609,11 @@ export default function SponsorsPage() {
                   <p className="text-xs text-stone-600 leading-relaxed font-normal">
                     {sponsor.tagline || 'Supporting verified champions on Athlos.'}
                   </p>
+
+                  {/* Single Sponsor Badge Render */}
+                  <div className="pt-1 flex items-center justify-center">
+                    <SponsorBadge sponsor={sponsor} />
+                  </div>
                 </div>
 
                 {/* Performance & Budget Bar */}
@@ -639,7 +772,7 @@ export default function SponsorsPage() {
             <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
               <HeartHandshake className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <span>
-                <strong>Open to Everyone:</strong> Launch your sponsorship to rotate on athlete badges across the platform. Your budget directly funds athletic achievements.
+                <strong>Slot-Based Sponsorship:</strong> Your brand badge will be allotted Slot #{selectedSlotForBooking || nextAvailableSlot} to rotate 1:1 with verified badges across all athlete posts.
               </span>
             </div>
 
@@ -668,22 +801,16 @@ export default function SponsorsPage() {
               />
             </div>
 
-            {/* Target Category & Type */}
+            {/* Slot Allocation & Type */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
-                  Target Badge Category
+                  Allotted Platform Slot
                 </label>
-                <select
-                  value={targetCategory}
-                  onChange={(e) => setTargetCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-white rounded-xl border border-stone-200 text-xs font-bold text-stone-800 focus:outline-hidden focus:ring-2 focus:ring-amber-400"
-                >
-                  <option value="ALL">All Competitions (Platform-Wide)</option>
-                  <option value="ATHLETICS">Athletics & Track Badges</option>
-                  <option value="FOOTBALL">Football & Team Sports</option>
-                  <option value="GOLD">Gold Champions Only (Rank #1)</option>
-                </select>
+                <div className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-black text-amber-950 flex items-center justify-between">
+                  <span>Slot #{selectedSlotForBooking || nextAvailableSlot} of {TOTAL_SLOTS}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">Available</span>
+                </div>
               </div>
 
               <div>

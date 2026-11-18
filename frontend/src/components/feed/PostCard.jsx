@@ -29,6 +29,13 @@ export default function PostCard({
   const userBadges = extractAuthorBadges(post);
   const sponsors = post.sponsors || user.sponsors || [];
 
+  // Allocate 1 sponsor slot per post: strictly pairs 1 badge with 1 sponsor (never displays 2 sponsors at a time on one badge)
+  const singlePostSponsor = useMemo(() => {
+    if (!sponsors || sponsors.length === 0) return [];
+    const slotIdx = post?.id ? Math.abs(Number(post.id)) % sponsors.length : 0;
+    return [sponsors[slotIdx] || sponsors[0]];
+  }, [sponsors, post?.id]);
+
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likesCount, setLikesCount] = useState(post.likesCount || 0);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -209,11 +216,11 @@ export default function PostCard({
           </div>
         </div>
 
-        {/* Right side: BadgeRotator (User Badges + Sponsors) */}
+        {/* Right side: BadgeRotator (User Badges + 1 Allotted Sponsor Slot) */}
         <div className="flex-shrink-0">
           <BadgeRotator
             badges={userBadges}
-            sponsors={sponsors}
+            sponsors={singlePostSponsor}
             postId={post.id}
           />
         </div>

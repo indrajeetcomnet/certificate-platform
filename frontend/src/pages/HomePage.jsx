@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Logo from '../components/ui/Logo';
+import SponsorBadge from '../components/badges/SponsorBadge';
 import { useAuth } from '../context/AuthContext';
 import { getFeed } from '../api/postsApi';
 import { getAll as getAllSponsors } from '../api/sponsorsApi';
@@ -273,11 +274,19 @@ export default function HomePage() {
                         <span className="px-1.5 py-0.5 rounded-md bg-amber-900/90 text-amber-100 font-black text-[10px]">#1</span>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-950 font-black text-xs border border-emerald-300 shadow-xs animate-in fade-in zoom-in-95 duration-300">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] text-emerald-700 uppercase tracking-wider font-extrabold">Sponsor</span>
-                        <span>{activeSponsors?.length > 0 && activeSponsors[0]?.name ? activeSponsors[0].name : 'Nike Pro'}</span>
-                        <span className="text-[9px] font-mono px-1 py-0.5 rounded bg-emerald-200 text-emerald-900 border border-emerald-300">+₹</span>
+                      <div className="animate-in fade-in zoom-in-95 duration-300">
+                        <SponsorBadge
+                          sponsor={
+                            activeSponsors?.length > 0 && activeSponsors[0]?.name
+                              ? activeSponsors[0]
+                              : {
+                                  id: 1,
+                                  name: 'Nike Pro',
+                                  logoUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=150&h=150&fit=crop',
+                                  brandColor: '#E11D48',
+                                }
+                          }
+                        />
                       </div>
                     )}
                   </div>

@@ -43,6 +43,16 @@ public class SponsorService {
                 ? (currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getUsername())
                 : (request.getName() != null ? request.getName() : "Independent Brand Sponsor");
 
+        // Allot next available slot (1 to 10)
+        List<Integer> occupiedSlots = sponsorRepository.findByIsActiveTrue().stream()
+                .map(Sponsor::getSlotNumber)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList());
+        int allottedSlot = 1;
+        while (occupiedSlots.contains(allottedSlot)) {
+            allottedSlot++;
+        }
+
         Sponsor sponsor = Sponsor.builder()
                 .name(request.getName())
                 .tagline(request.getTagline() != null ? request.getTagline() : "Supporting competitive athletes & tournament champions")
@@ -61,6 +71,7 @@ public class SponsorService {
                 .totalClicks(0L)
                 .targetCategory(request.getTargetCategory() != null ? request.getTargetCategory() : "ALL")
                 .sponsorType(request.getSponsorType() != null ? request.getSponsorType() : "BRAND")
+                .slotNumber(allottedSlot)
                 .createdById(createdById)
                 .createdByName(createdByName)
                 .status("ACTIVE")
@@ -255,6 +266,7 @@ public class SponsorService {
                 .totalClicks(sponsor.getTotalClicks() != null ? sponsor.getTotalClicks() : 0L)
                 .targetCategory(sponsor.getTargetCategory() != null ? sponsor.getTargetCategory() : "ALL")
                 .sponsorType(sponsor.getSponsorType() != null ? sponsor.getSponsorType() : "BRAND")
+                .slotNumber(sponsor.getSlotNumber())
                 .createdById(sponsor.getCreatedById())
                 .createdByName(sponsor.getCreatedByName() != null ? sponsor.getCreatedByName() : "Brand Sponsor")
                 .status(sponsor.getStatus() != null ? sponsor.getStatus() : (Boolean.TRUE.equals(sponsor.getIsActive()) ? "ACTIVE" : "PAUSED"))
