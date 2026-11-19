@@ -19,7 +19,8 @@ import {
   CheckCircle2, 
   Copy, 
   Check,
-  Trophy 
+  Trophy,
+  Sparkles
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -29,6 +30,7 @@ import EmptyState from '../components/ui/EmptyState';
 import CertificateCard from '../components/certificates/CertificateCard';
 import Modal from '../components/ui/Modal';
 import CertificateTemplate from '../components/certificates/CertificateTemplate';
+import CertificateTemplatesGallery, { CERTIFICATE_TEMPLATES } from '../components/certificates/CertificateTemplatesGallery';
 import { listByInstitution, deleteCertificate } from '../api/certificatesApi';
 import { formatDate } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
@@ -46,6 +48,7 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [currentPage, setCurrentPage] = useState(1);
   const [previewCert, setPreviewCert] = useState(null);
+  const [activeTab, setActiveTab] = useState('ledger'); // 'ledger' | 'templates'
   const pageSize = 9;
 
   const loadCertificates = async () => {
@@ -235,172 +238,277 @@ export default function CertificatesPage({ institutionId: propInstitutionId }) {
         </Card>
       </div>
 
-      {/* ── SEARCH, FILTER & VIEW CONTROLS ── */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-        <div className="w-full sm:w-80">
-          <SearchBar
-            placeholder="Search by recipient, title, or code..."
-            onSearch={(q) => {
-              setSearchQuery(q);
-              setCurrentPage(1);
-            }}
-          />
-        </div>
-
-        <div className="flex items-center gap-3 self-end sm:self-auto">
-          <span className="text-xs text-stone-500 font-semibold">
-            {filtered.length} {filtered.length === 1 ? 'Certificate' : 'Certificates'}
+      {/* ── SECTION NAVIGATION TABS ── */}
+      <div className="flex items-center gap-2 border-b border-stone-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('ledger')}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 ${
+            activeTab === 'ledger'
+              ? 'bg-stone-900 text-white shadow-xs'
+              : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+          }`}
+        >
+          <Award className="w-4 h-4 text-amber-400" />
+          <span>Issued Ledger</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+            activeTab === 'ledger' ? 'bg-stone-800 text-amber-300' : 'bg-stone-200 text-stone-700'
+          }`}>
+            {certificates.length}
           </span>
+        </button>
 
-          <div className="inline-flex rounded-xl border border-stone-200 p-0.5 bg-stone-100 text-xs">
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-white text-stone-900 shadow-2xs'
-                  : 'text-stone-400 hover:text-stone-700'
-              }`}
-              title="Grid View"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'table'
-                  ? 'bg-white text-stone-900 shadow-2xs'
-                  : 'text-stone-400 hover:text-stone-700'
-              }`}
-              title="Table View"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('templates')}
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 ${
+            activeTab === 'templates'
+              ? 'bg-stone-900 text-white shadow-xs'
+              : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+          }`}
+        >
+          <Palette className="w-4 h-4 text-amber-500" />
+          <span>Ready-Made Templates Gallery</span>
+          <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
+            activeTab === 'templates' ? 'bg-amber-500/20 text-amber-300' : 'bg-stone-200 text-stone-700'
+          }`}>
+            {CERTIFICATE_TEMPLATES.length}
+          </span>
+        </button>
       </div>
 
-      {/* ── CERTIFICATE LISTING ── */}
-      {loading ? (
-        <div className="py-16 text-center text-sm font-bold text-stone-400">
-          Loading certificate ledger...
-        </div>
-      ) : paginatedItems.length === 0 ? (
-        <Card className="py-16 text-center bg-white border border-dashed border-stone-200 rounded-3xl space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-700 flex items-center justify-center mx-auto">
-            <Award className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-black text-stone-900">
-              {searchQuery ? 'No Matching Certificates' : 'No Certificates Issued Yet'}
-            </h3>
-            <p className="text-xs text-stone-500 max-w-sm mx-auto">
-              {searchQuery
-                ? `No certificates matched "${searchQuery}". Try searching with a different recipient name or ID.`
-                : 'Start by creating your first official tournament credential or accreditation certificate.'}
-            </p>
-          </div>
-          <div className="pt-2">
-            <Button
-              variant="dark"
-              icon={Palette}
-              onClick={() => navigate('/certificates/create')}
-            >
-              Open Certificate Studio
-            </Button>
-          </div>
-        </Card>
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {paginatedItems.map((cert) => (
-            <CertificateCard
-              key={cert.id || cert.uniqueCode}
-              certificate={cert}
-              onEdit={() => navigate(`/certificates/edit/${cert.id}`)}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+      {/* ── CONDITIONAL VIEW BASED ON ACTIVE TAB ── */}
+      {activeTab === 'templates' ? (
+        <CertificateTemplatesGallery />
       ) : (
-        /* Table View */
-        <Card className="overflow-hidden p-0 border border-stone-200/90 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-stone-700">
-              <thead className="bg-stone-50 text-stone-700 font-extrabold border-b border-stone-200 uppercase tracking-wider text-[11px]">
-                <tr>
-                  <th className="py-3 px-4">Certificate Title</th>
-                  <th className="py-3 px-4">Recipient</th>
-                  <th className="py-3 px-4">Identification Code</th>
-                  <th className="py-3 px-4">Issued At</th>
-                  <th className="py-3 px-4">Registry Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 font-medium">
-                {paginatedItems.map((cert) => (
-                  <tr key={cert.id || cert.uniqueCode} className="hover:bg-stone-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-black text-stone-900 max-w-[200px] truncate">
-                      {cert.title}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-stone-900">{cert.recipientName}</div>
-                      <div className="text-[11px] font-semibold text-stone-600">{cert.recipientEmail}</div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-mono font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-300">
-                        {cert.uniqueCode}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-stone-700 font-semibold">{formatDate(cert.issuedAt)}</td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Verified</span>
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setPreviewCert(cert)}
-                          className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
-                          title="Preview Certificate"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/certificates/edit/${cert.id}`)}
-                          className="p-1.5 text-stone-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Edit on Full-Window Studio"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(cert.id)}
-                          className="p-1.5 text-stone-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Delete Certificate"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
+        <>
+          {/* ── SEARCH, FILTER & VIEW CONTROLS ── */}
+          {certificates.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <div className="w-full sm:w-80">
+                <SearchBar
+                  placeholder="Search by recipient, title, or code..."
+                  onSearch={(q) => {
+                    setSearchQuery(q);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={(p) => setCurrentPage(p)}
-      />
+              <div className="flex items-center gap-3 self-end sm:self-auto">
+                <span className="text-xs text-stone-500 font-semibold">
+                  {filtered.length} {filtered.length === 1 ? 'Certificate' : 'Certificates'}
+                </span>
+
+                <div className="inline-flex rounded-xl border border-stone-200 p-0.5 bg-stone-100 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-stone-900 shadow-2xs'
+                        : 'text-stone-400 hover:text-stone-700'
+                    }`}
+                    title="Grid View"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('table')}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      viewMode === 'table'
+                        ? 'bg-white text-stone-900 shadow-2xs'
+                        : 'text-stone-400 hover:text-stone-700'
+                    }`}
+                    title="Table View"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── CERTIFICATE LISTING ── */}
+          {loading ? (
+            <div className="py-16 text-center text-sm font-bold text-stone-400">
+              Loading certificate ledger...
+            </div>
+          ) : paginatedItems.length === 0 ? (
+            searchQuery ? (
+              <Card className="py-16 text-center bg-white border border-dashed border-stone-200 rounded-3xl space-y-4">
+                <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-700 flex items-center justify-center mx-auto">
+                  <Search className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-stone-900">
+                    No Matching Certificates Found
+                  </h3>
+                  <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                    No certificates matched "{searchQuery}". Try searching with a different recipient name, title, or unique credential ID.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setCurrentPage(1);
+                    }}
+                  >
+                    Clear Search Query
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-10">
+                <Card className="py-12 px-6 text-center bg-white border border-dashed border-stone-200 rounded-3xl space-y-4 shadow-2xs">
+                  <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-700 flex items-center justify-center mx-auto shadow-2xs">
+                    <Award className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-stone-900">
+                      No Certificates Issued Yet
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
+                      Start by creating your first official tournament credential or accreditation certificate.
+                    </p>
+                  </div>
+                  <div className="pt-2 flex items-center justify-center gap-3">
+                    <Button
+                      variant="dark"
+                      icon={Palette}
+                      onClick={() => navigate('/certificates/create')}
+                      className="shadow-sm font-bold"
+                    >
+                      Open Certificate Studio
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      icon={Zap}
+                      onClick={() => navigate('/certificates/issue')}
+                      className="font-bold"
+                    >
+                      Quick Issue
+                    </Button>
+                  </div>
+                </Card>
+
+                {/* Templates Section Below the No Certificates Issued Yet card */}
+                <div className="pt-4 border-t border-stone-200">
+                  <CertificateTemplatesGallery />
+                </div>
+              </div>
+            )
+          ) : viewMode === 'grid' ? (
+            <div className="space-y-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {paginatedItems.map((cert) => (
+                  <CertificateCard
+                    key={cert.id || cert.uniqueCode}
+                    certificate={cert}
+                    onEdit={() => navigate(`/certificates/edit/${cert.id}`)}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+
+              {/* Ready-made templates section below the ledger */}
+              <div className="pt-8 border-t border-stone-200">
+                <CertificateTemplatesGallery />
+              </div>
+            </div>
+          ) : (
+            /* Table View */
+            <div className="space-y-12">
+              <Card className="overflow-hidden p-0 border border-stone-200/90 bg-white">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-stone-700">
+                    <thead className="bg-stone-50 text-stone-700 font-extrabold border-b border-stone-200 uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="py-3 px-4">Certificate Title</th>
+                        <th className="py-3 px-4">Recipient</th>
+                        <th className="py-3 px-4">Identification Code</th>
+                        <th className="py-3 px-4">Issued At</th>
+                        <th className="py-3 px-4">Registry Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 font-medium">
+                      {paginatedItems.map((cert) => (
+                        <tr key={cert.id || cert.uniqueCode} className="hover:bg-stone-50/70 transition-colors">
+                          <td className="py-3.5 px-4 font-black text-stone-900 max-w-[200px] truncate">
+                            {cert.title}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-bold text-stone-900">{cert.recipientName}</div>
+                            <div className="text-[11px] font-semibold text-stone-600">{cert.recipientEmail}</div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-mono font-bold text-amber-900 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-300">
+                              {cert.uniqueCode}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-stone-700 font-semibold">{formatDate(cert.issuedAt)}</td>
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Verified</span>
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewCert(cert)}
+                                className="p-1.5 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
+                                title="Preview Certificate"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/certificates/edit/${cert.id}`)}
+                                className="p-1.5 text-stone-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors"
+                                title="Edit on Full-Window Studio"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(cert.id)}
+                                className="p-1.5 text-stone-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                                title="Delete Certificate"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+
+              {/* Ready-made templates section below the table */}
+              <div className="pt-8 border-t border-stone-200">
+                <CertificateTemplatesGallery />
+              </div>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {paginatedItems.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(p) => setCurrentPage(p)}
+            />
+          )}
+        </>
+      )}
 
       {/* Full Preview Modal */}
       {previewCert && (

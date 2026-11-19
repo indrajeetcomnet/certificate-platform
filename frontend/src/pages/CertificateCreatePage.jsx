@@ -23,10 +23,13 @@ export default function CertificateCreatePage() {
   const institutionId = currentUser?.institutionId || currentUser?.id;
 
   const recipient = location.state?.recipient;
-  const initialCertificate = recipient
+  const templateData = location.state?.templateData;
+  const initialCertificate = (templateData || recipient)
     ? {
+        ...(templateData || {}),
+        templateData,
         recipientName: recipient?.displayName || recipient?.username || '',
-        recipientEmail: recipient?.email || `${recipient?.username || 'user'}@arena.platform`,
+        recipientEmail: recipient?.email || (recipient ? `${recipient?.username || 'user'}@arena.platform` : ''),
       }
     : null;
 
